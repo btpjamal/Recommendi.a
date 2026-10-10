@@ -35,8 +35,11 @@ public class OverpassService {
 
     private final HobbyLocationRankingService rankingService;
 
-    public OverpassService(HobbyLocationRankingService rankingService) {
+    private final HobbyLocationQuery hobbyLocationQuery;
+
+    public OverpassService(HobbyLocationRankingService rankingService, HobbyLocationQuery hobbyLocationQuery) {
         this.rankingService = rankingService;
+        this.hobbyLocationQuery = hobbyLocationQuery;
 
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
@@ -182,17 +185,18 @@ public class OverpassService {
 
     @Cacheable(
             cacheNames = "hobbyLocations",
-            key = "#hobbyNome.toLowerCase() + ':' + #latitude + ':' + #longitude",
+            key = "#hobbyId + ':' + #latitude + ':' + #longitude",
             sync = true
     )
     public List<HobbyLocationDTO> buscarLocais(
+            Long hobbyId,
             String hobbyNome,
             double latitude,
             double longitude
     ) {
 
-        String query = HobbyLocationQuery
-                .construir(hobbyNome, latitude, longitude)
+        String query = hobbyLocationQuery
+                .construir(hobbyId, latitude, longitude)
                 .orElse(null);
 
         if (query == null) {

@@ -75,6 +75,7 @@ public class HobbyLocationController {
                 geocodingService.buscarCoordenadas(cidade, estado);
 
         var locais = overpassService.buscarLocais(
+                hobby.getId(),
                 hobby.getNome(),
                 coordenadas.latitude(),
                 coordenadas.longitude()
@@ -156,6 +157,7 @@ public class HobbyLocationController {
                 );
 
                 var locais = overpassService.buscarLocais(
+                        hobby.getId(),
                         hobby.getNome(),
                         coordenadas.latitude(),
                         coordenadas.longitude()
