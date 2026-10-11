@@ -1,6 +1,8 @@
 package dev.jamal.projetotcc.Service.Location;
 
 import dev.jamal.projetotcc.DTO.Location.HobbyLocationDTO;
+import dev.jamal.projetotcc.Entities.HobbyLocationRule;
+import dev.jamal.projetotcc.Repository.HobbyLocationRuleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
@@ -37,9 +39,12 @@ public class OverpassService {
 
     private final HobbyLocationQuery hobbyLocationQuery;
 
-    public OverpassService(HobbyLocationRankingService rankingService, HobbyLocationQuery hobbyLocationQuery) {
+    private final HobbyLocationRuleRepository ruleRepository;
+
+    public OverpassService(HobbyLocationRankingService rankingService, HobbyLocationQuery hobbyLocationQuery, HobbyLocationRuleRepository hobbyLocationRuleRepository) {
         this.rankingService = rankingService;
         this.hobbyLocationQuery = hobbyLocationQuery;
+        this.ruleRepository = hobbyLocationRuleRepository;
 
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
@@ -217,6 +222,9 @@ public class OverpassService {
                 "Locais válidos após filtragem: " + locais.size()
         );
 
+        List<HobbyLocationRule> regras =
+                ruleRepository.findActiveWithConditions(hobbyId);
+
         for (JsonNode elemento : elementos) {
 
             JsonNode tags = elemento.path("tags");
@@ -238,7 +246,7 @@ public class OverpassService {
             String endereco = construirEndereco(tags);
 
             String relevancia = rankingService.classificar(
-                    hobbyNome,
+                    regras,
                     tags
             );
 
@@ -271,13 +279,17 @@ public class OverpassService {
                 Comparator
                         .comparingInt(
                                 (HobbyLocationDTO local) ->
-                                        "ALTA".equals(local.relevancia())
-                                                ? 0 : 1
+                                        switch (local.relevancia()) {
+                                            case "ALTA" -> 0;
+                                            case "MEDIA" -> 1;
+                                            default -> 2;
+                                        }
                         )
                         .thenComparing(
                                 HobbyLocationDTO::distanciaKm
                         )
         );
+
 
         System.out.println(
                 "Locais válidos após filtragem: " + locais.size()
