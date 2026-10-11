@@ -7,6 +7,11 @@ import dev.jamal.projetotcc.Repository.HobbyRepository;
 import dev.jamal.projetotcc.Repository.RecommendationProfileRepository;
 import dev.jamal.projetotcc.Service.Location.GeocodingService;
 import dev.jamal.projetotcc.Service.Location.OverpassService;
+import dev.jamal.projetotcc.Repository.HobbyLocationRuleRepository;
+import dev.jamal.projetotcc.Enum.HobbyLocationSearchStatus;
+import dev.jamal.projetotcc.Entities.HobbyLocationRule;
+
+import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,6 +38,7 @@ public class HobbyLocationController {
     private final HobbyRepository hobbyRepository;
     private final ExecutorService executor =
             Executors.newFixedThreadPool(4);
+    private final HobbyLocationRuleRepository ruleRepository;
 
     @GetMapping("/{hobbyId}/locations")
     public HobbyLocationsResponseDTO buscarLocais(
@@ -70,6 +76,19 @@ public class HobbyLocationController {
                         HttpStatus.NOT_FOUND,
                         "Hobby não encontrado."
                 ));
+
+        HobbyLocationSearchStatus statusConfiguracao =
+                verificarConfiguracaoGeografica(hobbyId);
+
+        if (statusConfiguracao != null) {
+            return respostaSemConfiguracao(
+                    cidade,
+                    estado,
+                    0.0,
+                    0.0,
+                    statusConfiguracao
+            );
+        }
 
         GeocodingService.Coordinates coordenadas =
                 geocodingService.buscarCoordenadas(cidade, estado);
@@ -138,6 +157,34 @@ public class HobbyLocationController {
                                 HttpStatus.NOT_FOUND,
                                 "Hobby não encontrado."
                         ));
+
+
+                HobbyLocationSearchStatus statusConfiguracao =
+                        verificarConfiguracaoGeografica(hobbyId);
+
+                if (statusConfiguracao != null) {
+
+                    enviarEvento(
+                            emitter,
+                            "progresso",
+                            "Verificando disponibilidade da busca geográfica..."
+                    );
+
+                    HobbyLocationsResponseDTO resultado =
+                            respostaSemConfiguracao(
+                                    cidade,
+                                    estado,
+                                    null,
+                                    null,
+                                    statusConfiguracao
+                            );
+
+                    enviarEvento(emitter, "resultado", resultado);
+                    emitter.complete();
+
+                    return;
+                }
+
 
                 enviarEvento(
                         emitter,
@@ -212,4 +259,58 @@ public class HobbyLocationController {
             );
         }
     }
+
+
+    private HobbyLocationSearchStatus verificarConfiguracaoGeografica(
+            Long hobbyId
+    ) {
+        List<HobbyLocationRule> regras =
+                ruleRepository.findByHobbyId(hobbyId);
+
+        if (regras.isEmpty()) {
+            return HobbyLocationSearchStatus.SEM_REGRAS;
+        }
+
+        boolean possuiRegraAtiva = regras.stream()
+                .anyMatch(HobbyLocationRule::isAtivo);
+
+        if (!possuiRegraAtiva) {
+            return HobbyLocationSearchStatus.REGRAS_INATIVAS;
+        }
+
+        return null;
+    }
+
+
+    private HobbyLocationsResponseDTO respostaSemConfiguracao(
+            String cidade,
+            String estado,
+            Double latitude,
+            Double longitude,
+            HobbyLocationSearchStatus status
+    ) {
+        String mensagem = switch (status) {
+            case SEM_REGRAS ->
+                    "Este hobby ainda não possui locais de prática configurados.";
+
+            case REGRAS_INATIVAS ->
+                    "A busca de locais está indisponível para este hobby.";
+
+            default ->
+                    throw new IllegalArgumentException(
+                            "Status de configuração inválido."
+                    );
+        };
+
+        return new HobbyLocationsResponseDTO(
+                cidade,
+                estado,
+                latitude,
+                longitude,
+                List.of(),
+                status,
+                mensagem
+        );
+    }
+
 }
