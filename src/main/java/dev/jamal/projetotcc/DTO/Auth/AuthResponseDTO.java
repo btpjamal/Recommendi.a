@@ -1,5 +1,6 @@
 package dev.jamal.projetotcc.DTO.Auth;
 
+import dev.jamal.projetotcc.Enum.Role;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -11,4 +12,5 @@ public class AuthResponseDTO {
     private Long userId;
     private String nome;
     private String email;
+    private Role role;
 }
