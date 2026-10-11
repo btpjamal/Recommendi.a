@@ -40,4 +40,6 @@ public interface HobbySuggestionRepository
     Optional<HobbySuggestion> findByIdForUpdate(
             @org.springframework.data.repository.query.Param("id") Long id
     );
+
+    List<HobbySuggestion> findAllByOrderByCreatedAtDesc();
 }

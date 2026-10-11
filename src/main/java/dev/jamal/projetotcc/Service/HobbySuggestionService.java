@@ -192,6 +192,25 @@ public class HobbySuggestionService {
                 .toList();
     }
 
+    @Transactional
+    public List<HobbySuggestionResponseDTO> listarTodas(
+            HobbySuggestionStatus status
+    ) {
+        List<HobbySuggestion> sugestoes;
+
+        if (status == null) {
+            sugestoes = suggestionRepository
+                    .findAllByOrderByCreatedAtDesc();
+        } else {
+            sugestoes = suggestionRepository
+                    .findByStatusOrderByCreatedAtAsc(status);
+        }
+
+        return sugestoes.stream()
+                .map(this::toResponseDTO)
+                .toList();
+    }
+
     public HobbySuggestionResponseDTO rejeitar(
             Long suggestionId,
             String justificativa,

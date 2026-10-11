@@ -23,12 +23,14 @@ export default function Login() {
 
       console.log("Resposta do login:", response.data);
 
-      const { token, userId, nome, emailUsuario } = response.data;
+      const { token, userId, nome, email: emailUsuario, role } = response.data;
 
       localStorage.setItem("token", token);
       localStorage.setItem("userId", userId);
       localStorage.setItem("nome", nome);
       localStorage.setItem("email", emailUsuario);
+      localStorage.setItem("role", role);
+
 
       const statusResponse = await api.get(
           `/recommendation-profiles/${userId}/status`,
@@ -39,10 +41,15 @@ export default function Login() {
           }
       );
 
+      if (role === "ADMIN") {
+          navigate("/admin", { replace: true });
+          return;
+      }
+
       if (statusResponse.data === true) {
-        navigate("/recommendations");
+          navigate("/recommendations");
       } else {
-        navigate("/onboarding");
+          navigate("/onboarding");
       }
 
     } catch (error) {

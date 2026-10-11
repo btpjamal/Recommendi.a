@@ -15,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import dev.jamal.projetotcc.DTO.HobbySuggestion.HobbySuggestionApproveRequestDTO;
+import dev.jamal.projetotcc.Enum.HobbySuggestionStatus;
 
 import java.util.List;
 
@@ -25,6 +26,15 @@ import java.util.List;
 public class AdminHobbySuggestionController {
 
     private final HobbySuggestionService suggestionService;
+
+    @GetMapping
+    public ResponseEntity<List<HobbySuggestionResponseDTO>> listarTodas(
+            @RequestParam(required = false) HobbySuggestionStatus status
+    ) {
+        return ResponseEntity.ok(
+                suggestionService.listarTodas(status)
+        );
+    }
 
     @GetMapping("/pending")
     public ResponseEntity<List<HobbySuggestionResponseDTO>>
