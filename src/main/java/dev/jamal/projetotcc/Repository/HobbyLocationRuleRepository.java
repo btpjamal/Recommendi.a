@@ -31,4 +31,15 @@ public interface HobbyLocationRuleRepository
     List<HobbyLocationRule> findActiveWithConditions(
             @Param("hobbyId") Long hobbyId
     );
+
+    @Query("""
+    SELECT DISTINCT r
+    FROM HobbyLocationRule r
+    LEFT JOIN FETCH r.conditions
+    WHERE r.hobby.id = :hobbyId
+    ORDER BY r.id
+""")
+    List<HobbyLocationRule> findAllWithConditionsByHobbyId(
+            @Param("hobbyId") Long hobbyId
+    );
 }
