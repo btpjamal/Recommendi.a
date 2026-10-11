@@ -1,0 +1,157 @@
+.my-suggestions-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+.my-suggestions-heading h1 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 30px;
+    font-weight: 800;
+}
+
+.my-suggestions-heading p {
+    margin: 10px 0 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.my-suggestions-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 26px;
+}
+
+.my-suggestions-filters button {
+    padding: 10px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.my-suggestions-filters button.active {
+    background: #6366f1;
+    color: #fff;
+    border-color: #6366f1;
+}
+
+.my-suggestions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.my-suggestion-card {
+    padding: 24px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+.my-suggestion-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.my-suggestion-card h2 {
+    margin: 6px 0 0;
+    color: #1e293b;
+    font-size: 19px;
+}
+
+.my-suggestion-category {
+    color: #6366f1;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.my-suggestion-status {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.status-pendente {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-aprovada {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-rejeitada {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.my-suggestion-description {
+    margin: 18px 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+}
+
+.my-suggestion-meta {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.my-suggestion-feedback {
+    margin-top: 18px;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.my-suggestion-feedback.approved {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.my-suggestion-feedback.rejected {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.my-suggestion-feedback p {
+    margin: 6px 0 0;
+}
+
+@media (max-width: 800px) {
+    .my-suggestions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .my-suggestions-heading {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 600px) {
+    .my-suggestion-card {
+        padding: 18px;
+    }
+
+    .my-suggestion-card-top {
+        flex-wrap: wrap;
+    }
+}

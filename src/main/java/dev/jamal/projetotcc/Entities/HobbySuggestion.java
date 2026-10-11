@@ -44,10 +44,6 @@ public class HobbySuggestion {
     @Column(nullable = false)
     private AmbientePreferido ambiente;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private FormatoPreferido formato;
-
     @Column(nullable = false)
     private boolean requerEquipamento;
 

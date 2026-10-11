@@ -99,7 +99,6 @@ public class HobbySuggestionService {
                 dto.getNivelAtividadeFisica()
         );
         suggestion.setAmbiente(dto.getAmbiente());
-        suggestion.setFormato(dto.getFormato());
         suggestion.setRequerEquipamento(dto.isRequerEquipamento());
 
         suggestion.setCategory(category);
@@ -155,7 +154,6 @@ public class HobbySuggestionService {
                 suggestion.getNivelAtividadeFisica()
         );
         dto.setAmbiente(suggestion.getAmbiente());
-        dto.setFormato(suggestion.getFormato());
         dto.setRequerEquipamento(
                 suggestion.isRequerEquipamento()
         );
@@ -277,7 +275,6 @@ public class HobbySuggestionService {
                 dto.getNivelAtividadeFisica()
         );
         hobbyDTO.setAmbiente(dto.getAmbiente());
-        hobbyDTO.setFormato(dto.getFormato());
         hobbyDTO.setRequerEquipamento(dto.isRequerEquipamento());
 
         hobbyDTO.setCategoryId(dto.getCategoryId());

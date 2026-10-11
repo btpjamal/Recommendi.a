@@ -5,6 +5,7 @@ import dev.jamal.projetotcc.Enum.*; import jakarta.validation.constraints.*; imp
  @NotNull @PositiveOrZero private Double custoEstimado; @PositiveOrZero private Double custoRecorrenteEstimado;
  @NotNull @Min(1) @Max(5) private Integer nivelDificuldade; @NotNull @Positive private Double tempoNecessario;
  @NotNull private TipoSocializacao tipoSocializacao; @NotNull private NivelAtividadeFisica nivelAtividadeFisica;
- @NotNull private AmbientePreferido ambiente; @NotNull private FormatoPreferido formato; private boolean requerEquipamento;
+ @NotNull private AmbientePreferido ambiente;
+ private boolean requerEquipamento;
  @NotNull private Long categoryId;
 }

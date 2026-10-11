@@ -23,7 +23,6 @@ public class HobbySuggestionResponseDTO {
     private TipoSocializacao tipoSocializacao;
     private NivelAtividadeFisica nivelAtividadeFisica;
     private AmbientePreferido ambiente;
-    private FormatoPreferido formato;
     private boolean requerEquipamento;
 
     private Long categoryId;

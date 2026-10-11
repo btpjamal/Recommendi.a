@@ -17,6 +17,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminLayout from "./components/AdminLayout";
 import AdminSuggestions from "./pages/AdminSuggestions";
 import SuggestHobby from "./pages/SuggestHobby";
+import MySuggestions from "./pages/MySuggestions";
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/community/communities/:communityId" element={<CommunityDetails />} />
         <Route path="/ai-settings" element={<AISettings />} />
         <Route path="/suggest-hobby" element={<SuggestHobby />} />
+        <Route path="/my-suggestions" element={<MySuggestions />} />
 
             <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<AdminLayout />}>

@@ -8,7 +8,6 @@ const steps = [
   { key: "tipoSocializacao", title: "Como prefere praticar?", options: [["INDIVIDUAL","Sozinho"],["SOCIAL","Com outras pessoas"],["INDIFERENTE","Tanto faz"]] },
   { key: "nivelAtividadeFisicaDesejada", title: "Quanto movimento você procura?", options: [["BAIXO","Leve"],["MODERADO","Moderado"],["ALTO","Intenso"],["INDIFERENTE","Tanto faz"]] },
   { key: "ambientePreferido", title: "Onde você prefere praticar?", options: [["CASA","Em casa"],["AO_AR_LIVRE","Ao ar livre"],["AMBIENTE_FECHADO","Em local fechado"],["INDIFERENTE","Tanto faz"]] },
-  { key: "formatoPreferido", title: "Qual formato combina com você?", options: [["PRESENCIAL","Presencial"],["REMOTO","Remoto"],["HIBRIDO","Híbrido"],["INDIFERENTE","Tanto faz"]] },
   { key: "nivelExperiencia", title: "Como você se considera ao começar?", options: [["INICIANTE","Iniciante"],["INTERMEDIARIO","Intermediário"],["AVANCADO","Avançado"]] },
 ];
 

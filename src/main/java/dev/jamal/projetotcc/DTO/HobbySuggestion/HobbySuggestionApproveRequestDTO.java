@@ -44,9 +44,6 @@ public class HobbySuggestionApproveRequestDTO {
     @NotNull
     private AmbientePreferido ambiente;
 
-    @NotNull
-    private FormatoPreferido formato;
-
     private boolean requerEquipamento;
 
     @NotNull
