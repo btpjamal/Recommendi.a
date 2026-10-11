@@ -7,6 +7,12 @@ export default function AdminSuggestions() {
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
     const [filtro, setFiltro] = useState("PENDENTE");
+    const [sugestaoEmAnalise, setSugestaoEmAnalise] = useState(null);
+    const [tipoAnalise, setTipoAnalise] = useState(null);
+    const [justificativa, setJustificativa] = useState("");
+    const [processando, setProcessando] = useState(false);
+    const [erroAnalise, setErroAnalise] = useState("");
+    const [sucesso, setSucesso] = useState("");
 
     const carregarSugestoes = useCallback(async () => {
         setCarregando(true);
@@ -61,6 +67,82 @@ export default function AdminSuggestions() {
         });
     }
 
+    function abrirAnalise(sugestao, tipo) {
+        setSugestaoEmAnalise(sugestao);
+        setTipoAnalise(tipo);
+        setJustificativa("");
+        setErroAnalise("");
+        setSucesso("");
+    }
+
+    function fecharAnalise() {
+        if (processando) return;
+
+        setSugestaoEmAnalise(null);
+        setTipoAnalise(null);
+        setJustificativa("");
+        setErroAnalise("");
+    }
+
+    async function rejeitarSugestao() {
+        if (!sugestaoEmAnalise || processando) return;
+
+        const motivo = justificativa.trim();
+
+        if (!motivo) {
+            setErroAnalise("Informe a justificativa da rejeição.");
+            return;
+        }
+
+        if (motivo.length > 2000) {
+            setErroAnalise(
+                "A justificativa deve ter no máximo 2000 caracteres."
+            );
+            return;
+        }
+
+        try {
+            setProcessando(true);
+            setErroAnalise("");
+            setSucesso("");
+
+            await api.patch(
+                `/admin/hobby-suggestions/${sugestaoEmAnalise.id}/reject`,
+                {
+                    justificativa: motivo
+                },
+                {
+                    headers: {
+                        Authorization:
+                            `Bearer ${localStorage.getItem("token")}`
+                    }
+                }
+            );
+
+            setSucesso(
+                `A sugestão "${sugestaoEmAnalise.nome}" foi rejeitada.`
+            );
+
+            setSugestaoEmAnalise(null);
+            setTipoAnalise(null);
+            setJustificativa("");
+
+            await carregarSugestoes();
+
+        } catch (error) {
+            console.error("Erro ao rejeitar sugestão:", error);
+
+            setErroAnalise(
+                error.response?.data?.message ||
+                error.response?.data?.error ||
+                "Não foi possível rejeitar a sugestão."
+            );
+
+        } finally {
+            setProcessando(false);
+        }
+    }
+
     return (
         <div className="admin-suggestions">
             <div className="admin-page-heading">
@@ -71,6 +153,12 @@ export default function AdminSuggestions() {
                     antes de adicioná-los ao catálogo oficial.
                 </p>
             </div>
+
+            {sucesso && (
+                <div className="admin-success" role="status">
+                    {sucesso}
+                </div>
+            )}
 
             <div className="admin-suggestions-toolbar">
                 <div>
@@ -224,8 +312,112 @@ export default function AdminSuggestions() {
                                     {formatarData(sugestao.createdAt)}
                                 </span>
                             </div>
+                            {sugestao.status === "PENDENTE" && (
+                                <div className="admin-suggestion-actions">
+                                    <button
+                                        type="button"
+                                        className="admin-approve-button"
+                                        onClick={() => abrirAnalise(sugestao, "APROVAR")}
+                                    >
+                                        Aprovar sugestão
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="admin-reject-button"
+                                        onClick={() => abrirAnalise(sugestao, "REJEITAR")}
+                                    >
+                                        Rejeitar
+                                    </button>
+                                </div>
+                            )}
                         </article>
                     ))}
+                    {sugestaoEmAnalise && (
+                        <div className="admin-review-overlay">
+                            <div
+                                className="admin-review-modal"
+                                role="dialog"
+                                aria-modal="true"
+                                aria-labelledby="admin-review-title"
+                            >
+                                <h2 id="admin-review-title">
+                                    {tipoAnalise === "APROVAR"
+                                        ? "Aprovar sugestão"
+                                        : "Rejeitar sugestão"}
+                                </h2>
+
+                                <p>
+                                    Hobby: <strong>{sugestaoEmAnalise.nome}</strong>
+                                </p>
+
+                                <label htmlFor="admin-review-notes">
+                                    {tipoAnalise === "REJEITAR"
+                                        ? "Justificativa da rejeição"
+                                        : "Observações da aprovação (opcional)"}
+                                </label>
+
+                                <textarea
+                                    id="admin-review-notes"
+                                    value={justificativa}
+                                    onChange={(event) =>
+                                        setJustificativa(event.target.value)
+                                    }
+                                    rows={4}
+                                    maxLength={2000}
+                                    placeholder={
+                                        tipoAnalise === "REJEITAR"
+                                            ? "Explique por que a sugestão não será aprovada..."
+                                            : "Adicione observações, se necessário..."
+                                    }
+                                />
+
+                                {erroAnalise && (
+                                    <p className="admin-error" role="alert">
+                                        {erroAnalise}
+                                    </p>
+                                )}
+
+                                <div className="admin-review-actions">
+                                    <button
+                                        type="button"
+                                        className="admin-review-cancel"
+                                        onClick={fecharAnalise}
+                                    >
+                                        Cancelar
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className={
+                                            tipoAnalise === "APROVAR"
+                                                ? "admin-approve-button"
+                                                : "admin-reject-button"
+                                        }
+                                        disabled={
+                                            processando ||
+                                            tipoAnalise === "APROVAR" ||
+                                            (
+                                                tipoAnalise === "REJEITAR" &&
+                                                !justificativa.trim()
+                                            )
+                                        }
+                                        onClick={
+                                            tipoAnalise === "REJEITAR"
+                                                ? rejeitarSugestao
+                                                : undefined
+                                        }
+                                    >
+                                        {processando
+                                            ? "Processando..."
+                                            : tipoAnalise === "APROVAR"
+                                                ? "Confirmar aprovação"
+                                                : "Confirmar rejeição"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
