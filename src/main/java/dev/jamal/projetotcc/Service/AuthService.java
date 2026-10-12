@@ -54,11 +54,14 @@ public class AuthService {
 
         String token = jwtService.gerarToken(user);
 
+
         return new AuthResponseDTO(
                 token,
                 user.getId(),
                 user.getNome(),
-                user.getEmail()
+                user.getEmail(),
+                user.getRole()
         );
+
     }
 }

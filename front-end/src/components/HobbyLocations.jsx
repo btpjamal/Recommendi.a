@@ -13,6 +13,8 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
     const [estado, setEstado] = useState("");
     const [progresso, setProgresso] = useState("");
     const [tentativaAtual, setTentativaAtual] = useState(0);
+    const [statusBusca, setStatusBusca] = useState(null);
+    const [mensagemBusca, setMensagemBusca] = useState("");
 
     const requisicaoAtual = useRef(null);
 
@@ -32,6 +34,8 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
         setProgresso("");
         setTentativaAtual(0);
         setCarregando(false);
+        setStatusBusca(null);
+        setMensagemBusca("");
     }, [hobbyId]);
 
 
@@ -48,6 +52,10 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
         setProgresso("Iniciando busca de locais...");
         setTentativaAtual(0);
         setBuscaRealizada(false);
+        setStatusBusca(null);
+        setMensagemBusca("");
+        setLocais([]);
+        setCentro(null);
 
         let recebeuResultado = false;
 
@@ -115,21 +123,42 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
                     }
                 }
 
+
                 if (tipo === "resultado") {
                     const resultado = JSON.parse(conteudo);
 
+                    const status = resultado.status ??
+                        ((resultado.locais ?? []).length > 0
+                            ? "SUCESSO"
+                            : "SEM_RESULTADOS");
+
+                    setStatusBusca(status);
+                    setMensagemBusca(resultado.mensagem ?? "");
                     setLocais(resultado.locais ?? []);
-                    setCentro({
-                        latitude: resultado.latitude,
-                        longitude: resultado.longitude
-                    });
-                    setCidade(resultado.cidade);
-                    setEstado(resultado.estado);
+
+                    const coordenadasValidas =
+                        resultado.latitude != null &&
+                        resultado.longitude != null &&
+                        Number.isFinite(Number(resultado.latitude)) &&
+                        Number.isFinite(Number(resultado.longitude));
+
+                    setCentro(
+                        coordenadasValidas
+                            ? {
+                                latitude: Number(resultado.latitude),
+                                longitude: Number(resultado.longitude)
+                            }
+                            : null
+                    );
+
+                    setCidade(resultado.cidade ?? "");
+                    setEstado(resultado.estado ?? "");
                     setBuscaRealizada(true);
                     setProgresso("Busca concluída!");
 
                     recebeuResultado = true;
                 }
+
 
                 if (tipo === "erro") {
                     throw new Error(conteudo);
@@ -186,6 +215,8 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
             setCentro(null);
             setBuscaRealizada(false);
             setProgresso("");
+            setStatusBusca(null);
+            setMensagemBusca("");
 
         } finally {
             clearTimeout(timeout);
@@ -196,6 +227,32 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
             }
         }
     };
+
+
+    const mensagensStatus = {
+        SEM_REGRAS: {
+            titulo: "Locais ainda não configurados",
+            descricao:
+                "Este hobby ainda não possui locais de prática configurados. " +
+                "Você pode continuar explorando outras recomendações."
+        },
+
+        REGRAS_INATIVAS: {
+            titulo: "Busca de locais indisponível",
+            descricao:
+                "A busca de locais está temporariamente indisponível " +
+                "para este hobby."
+        },
+
+        SEM_RESULTADOS: {
+            titulo: "Nenhum local encontrado",
+            descricao:
+                "Não encontramos locais cadastrados para este hobby " +
+                "na sua região. Você pode tentar novamente mais tarde."
+        }
+    };
+
+    const informacaoStatus = mensagensStatus[statusBusca];
 
 
     return (
@@ -251,69 +308,89 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
 
             {buscaRealizada && (
                 <>
-                    <p className="hobby-locations-count">
-                        {locais.length} locais encontrados
-                    </p>
+                {informacaoStatus ? (
+                    <div
+                        className="hobby-locations-status"
+                        role="status"
+                    >
+                <span
+                    className="hobby-locations-status-icon"
+                    aria-hidden="true"
+                >
+                    📍
+                </span>
 
-                    {locais.length > 0 ? (
-                        <>
-                            {cidade && estado && (
-                                <p className="hobby-locations-description">
-                                    Locais encontrados em {cidade} - {estado} e arredores.
-                                </p>
-                            )}
-                            {centro && (
-                                <HobbyMap
-                                    key={`${centro.latitude}-${centro.longitude}`}
-                                    latitude={centro.latitude}
-                                    longitude={centro.longitude}
-                                    locais={locais}
-                                />
-                            )}
+                        <h3>{informacaoStatus.titulo}</h3>
+
+                        <p>
+                            {mensagemBusca || informacaoStatus.descricao}
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        <p className="hobby-locations-count">
+                            {locais.length} locais encontrados
+                        </p>
+
+                        {locais.length > 0 ? (
+                            <>
+                                {cidade && estado && (
+                                    <p className="hobby-locations-description">
+                                        Locais encontrados em {cidade} - {estado} e arredores.
+                                    </p>
+                                )}
+                                {centro && (
+                                    <HobbyMap
+                                        key={`${centro.latitude}-${centro.longitude}`}
+                                        latitude={centro.latitude}
+                                        longitude={centro.longitude}
+                                        locais={locais}
+                                    />
+                                )}
 
 
-                            <div className="hobby-locations-list">
-                                {locais.map((local) => {
-                                    const relevancia = local.relevancia;
+                                <div className="hobby-locations-list">
+                                    {locais.map((local) => {
+                                        const relevancia = local.relevancia;
 
-                                    const relevanciaTexto = {
-                                        ALTA: "Alta relevância",
-                                        MEDIA: "Relevância média",
-                                        COMPLEMENTAR: "Local complementar"
-                                    }[relevancia];
+                                        const relevanciaTexto = {
+                                            ALTA: "Alta relevância",
+                                            MEDIA: "Relevância média",
+                                            COMPLEMENTAR: "Local complementar"
+                                        }[relevancia];
 
-                                    const distanciaValida =
-                                        local.distanciaKm !== null &&
-                                        local.distanciaKm !== undefined &&
-                                        Number.isFinite(Number(local.distanciaKm));
+                                        const distanciaValida =
+                                            local.distanciaKm !== null &&
+                                            local.distanciaKm !== undefined &&
+                                            Number.isFinite(Number(local.distanciaKm));
 
-                                    return (
-                                        <div
-                                            className="hobby-location-item"
-                                            key={local.id}
-                                        >
-                                            <div className="hobby-location-header">
-                                                <strong>{local.nome}</strong>
+                                        return (
+                                            <div
+                                                className="hobby-location-item"
+                                                key={local.id}
+                                            >
+                                                <div className="hobby-location-header">
+                                                    <strong>{local.nome}</strong>
 
-                                                {relevanciaTexto && (
-                                                    <span
-                                                        className={`hobby-location-badge ${
-                                                            relevancia === "ALTA"
-                                                                ? "hobby-location-badge-high"
-                                                                : relevancia === "MEDIA"
-                                                                    ? "hobby-location-badge-medium"
-                                                                    : "hobby-location-badge-complementary"
-                                                        }`}
-                                                    >
+                                                    {relevanciaTexto && (
+                                                        <span
+                                                            className={`hobby-location-badge ${
+                                                                relevancia === "ALTA"
+                                                                    ? "hobby-location-badge-high"
+                                                                    : relevancia === "MEDIA"
+                                                                        ? "hobby-location-badge-medium"
+                                                                        : "hobby-location-badge-complementary"
+                                                            }`}
+                                                        >
                             {relevanciaTexto}
                         </span>
-                                                )}
-                                            </div>
+                                                    )}
+                                                </div>
 
-                                            {distanciaValida && (
-                                                <div className="hobby-location-distance">
-                                                    <span aria-hidden="true">📍</span>
-                                                    <span>
+                                                {distanciaValida && (
+                                                    <div className="hobby-location-distance">
+                                                        <span aria-hidden="true">📍</span>
+                                                        <span>
                             {Number(local.distanciaKm).toLocaleString(
                                 "pt-BR",
                                 {
@@ -322,34 +399,34 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
                                 }
                             )} km do centro da cidade
                         </span>
-                                                </div>
-                                            )}
+                                                    </div>
+                                                )}
 
-                                            <p className="hobby-location-address">
-                                                {local.endereco ||
-                                                    "Endereço não informado"}
-                                            </p>
+                                                <p className="hobby-location-address">
+                                                    {local.endereco ||
+                                                        "Endereço não informado"}
+                                                </p>
 
-                                            <a
-                                                href={`https://www.google.com/maps/search/?api=1&query=${local.latitude}%2C${local.longitude}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                            >
-                                                Ver no Google Maps ↗
-                                            </a>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                                <a
+                                                    href={`https://www.google.com/maps/search/?api=1&query=${local.latitude}%2C${local.longitude}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    Ver no Google Maps ↗
+                                                </a>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
 
-                        </>
-                    ) : (
-                        <p>
-                            Nenhum local encontrado para este hobby.
-                        </p>
-                    )}
+                            </>
+                        ) : (
+                            <p>Nenhum local encontrado para este hobby.</p>
+                        )}
+                    </>
+                )}
                 </>
             )}
         </div>
-    );
+    )
 }

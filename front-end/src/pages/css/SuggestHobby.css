@@ -1,0 +1,151 @@
+
+.suggest-hobby-page {
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+    background: #f4f7fb;
+}
+
+.suggest-hobby-container {
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+.suggest-back-button {
+    margin-bottom: 24px;
+    padding: 10px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #475569;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.suggest-hobby-header {
+    margin-bottom: 28px;
+}
+
+.suggest-hobby-header h1 {
+    margin: 0 0 10px;
+    color: #1e293b;
+    font-size: 32px;
+}
+
+.suggest-hobby-header p {
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.suggest-hobby-form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 32px;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+}
+
+.suggest-field {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.suggest-field label {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.suggest-field input,
+.suggest-field textarea,
+.suggest-field select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #1e293b;
+    font: inherit;
+    box-sizing: border-box;
+}
+
+.suggest-field input:focus,
+.suggest-field textarea:focus,
+.suggest-field select:focus {
+    outline: 2px solid #c7d2fe;
+    border-color: #6366f1;
+}
+
+.suggest-field small {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.suggest-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.suggest-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #334155;
+    font-size: 14px;
+}
+
+.suggest-submit-button {
+    padding: 14px 20px;
+    border: none;
+    border-radius: 11px;
+    background: #6366f1;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.suggest-submit-button:hover:not(:disabled) {
+    background: #4f46e5;
+}
+
+.suggest-submit-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.suggest-error,
+.suggest-success {
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+.suggest-error {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.suggest-success {
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+@media (max-width: 600px) {
+    .suggest-hobby-form {
+        padding: 22px;
+    }
+
+    .suggest-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.suggest-category-error {
+    color: #dc2626 !important;
+    font-weight: 500;
+}

@@ -625,3 +625,67 @@
 .community-card-open:hover {
     background: #e0e7ff;
 }
+
+/* ÁREA DE SUGESTÕES */
+
+.community-suggestions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+
+    margin-bottom: 28px;
+    padding: 24px;
+
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+.community-suggestions-info h2 {
+    margin: 0 0 8px;
+    color: #1e293b;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.community-suggestions-info p {
+    margin: 0;
+    max-width: 480px;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.community-suggestions-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 800px) {
+    .community-suggestions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .community-suggestions-actions {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 600px) {
+    .community-suggestions {
+        padding: 20px;
+    }
+
+    .community-suggestions-actions {
+        flex-direction: column;
+    }
+
+    .community-suggestions-actions button {
+        width: 100%;
+    }
+}

@@ -1,7 +1,6 @@
 package dev.jamal.projetotcc.config.DataSeeder;
 import dev.jamal.projetotcc.Entities.*;
 import dev.jamal.projetotcc.Enum.AmbientePreferido;
-import dev.jamal.projetotcc.Enum.FormatoPreferido;
 import dev.jamal.projetotcc.Enum.NivelAtividadeFisica;
 import dev.jamal.projetotcc.Enum.TipoSocializacao;
 
@@ -184,8 +183,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.esporte(),
                 NivelAtividadeFisica.ALTO,
-                AmbientePreferido.AO_AR_LIVRE,
-                FormatoPreferido.PRESENCIAL
+                AmbientePreferido.AO_AR_LIVRE
         );
 
         seederMethods.adicionarObjetivoAoHobby(corrida, objetivos.condicionamento(), 3);
@@ -206,8 +204,7 @@ public class DevDataSeeder {
                 TipoSocializacao.SOCIAL,
                 categorias.esporte(),
                 NivelAtividadeFisica.ALTO,
-                AmbientePreferido.AO_AR_LIVRE,
-                FormatoPreferido.PRESENCIAL
+                AmbientePreferido.AO_AR_LIVRE
         );
 
         seederMethods.adicionarObjetivoAoHobby(futebol, objetivos.conhecerPessoas(), 3);
@@ -229,8 +226,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.esporte(),
                 NivelAtividadeFisica.ALTO,
-                AmbientePreferido.AO_AR_LIVRE,
-                FormatoPreferido.PRESENCIAL
+                AmbientePreferido.AO_AR_LIVRE
         );
 
         seederMethods.adicionarObjetivoAoHobby(ciclismo, objetivos.condicionamento(), 3);
@@ -251,8 +247,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.esporte(),
                 NivelAtividadeFisica.ALTO,
-                AmbientePreferido.AMBIENTE_FECHADO,
-                FormatoPreferido.PRESENCIAL
+                AmbientePreferido.AMBIENTE_FECHADO
         );
 
         seederMethods.adicionarObjetivoAoHobby(natacao, objetivos.condicionamento(), 3);
@@ -278,8 +273,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.criatividade(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.INDIFERENTE,
-                FormatoPreferido.HIBRIDO
+                AmbientePreferido.INDIFERENTE
         );
 
         seederMethods.adicionarObjetivoAoHobby(fotografia, objetivos.criatividade(), 3);
@@ -301,8 +295,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.criatividade(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.HIBRIDO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(desenho, objetivos.criatividade(), 3);
@@ -323,8 +316,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.criatividade(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.HIBRIDO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(pintura, objetivos.criatividade(), 3);
@@ -345,8 +337,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.criatividade,
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.HIBRIDO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(violao, objetivos.aprender(), 3);
@@ -374,8 +365,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.intelectual(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.HIBRIDO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(xadrez, objetivos.aprender(), 3);
@@ -395,8 +385,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.intelectual(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.HIBRIDO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(leitura, objetivos.aprender(), 3);
@@ -417,8 +406,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.intelectual(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.HIBRIDO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(escrita, objetivos.criatividade(), 3);
@@ -439,8 +427,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.intelectual(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.HIBRIDO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(idiomas, objetivos.aprender(), 3);
@@ -466,8 +453,7 @@ public class DevDataSeeder {
                 TipoSocializacao.SOCIAL,
                 categorias.social(),
                 NivelAtividadeFisica.MODERADO,
-                AmbientePreferido.AMBIENTE_FECHADO,
-                FormatoPreferido.PRESENCIAL
+                AmbientePreferido.AMBIENTE_FECHADO
         );
 
         seederMethods.adicionarObjetivoAoHobby(teatro, objetivos.conhecerPessoas(), 3);
@@ -488,8 +474,7 @@ public class DevDataSeeder {
                 TipoSocializacao.SOCIAL,
                 categorias.social(),
                 NivelAtividadeFisica.ALTO,
-                AmbientePreferido.AMBIENTE_FECHADO,
-                FormatoPreferido.PRESENCIAL
+                AmbientePreferido.AMBIENTE_FECHADO
         );
 
         seederMethods.adicionarObjetivoAoHobby(danca, objetivos.diversao(), 3);
@@ -510,8 +495,7 @@ public class DevDataSeeder {
                 TipoSocializacao.SOCIAL,
                 categorias.social(),
                 NivelAtividadeFisica.MODERADO,
-                AmbientePreferido.INDIFERENTE,
-                FormatoPreferido.PRESENCIAL
+                AmbientePreferido.INDIFERENTE
         );
 
         seederMethods.adicionarObjetivoAoHobby(voluntariado, objetivos.conhecerPessoas(), 3);
@@ -530,8 +514,7 @@ public class DevDataSeeder {
                 TipoSocializacao.SOCIAL,
                 categorias.social(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.AMBIENTE_FECHADO,
-                FormatoPreferido.PRESENCIAL
+                AmbientePreferido.AMBIENTE_FECHADO
         );
 
         seederMethods.adicionarObjetivoAoHobby(clubeJogos, objetivos.conhecerPessoas(), 3);
@@ -556,8 +539,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.tecnologia(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.REMOTO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(programacaoCriativa, objetivos.aprender(), 3);
@@ -578,8 +560,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.tecnologia(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.REMOTO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(edicaoVideo, objetivos.criatividade(), 3);
@@ -599,8 +580,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.tecnologia(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.HIBRIDO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(robotica, objetivos.aprender(), 3);
@@ -621,8 +601,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.tecnologia(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.REMOTO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(criacaoJogos, objetivos.criatividade(), 3);
@@ -649,8 +628,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.relaxamento(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.HIBRIDO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(meditacao, objetivos.relaxar(), 3);
@@ -668,8 +646,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.relaxamento(),
                 NivelAtividadeFisica.MODERADO,
-                AmbientePreferido.AO_AR_LIVRE,
-                FormatoPreferido.PRESENCIAL
+                AmbientePreferido.AO_AR_LIVRE
         );
 
         seederMethods.adicionarObjetivoAoHobby(jardinagem, objetivos.relaxar(), 3);
@@ -690,8 +667,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.relaxamento(),
                 NivelAtividadeFisica.BAIXO,
-                AmbientePreferido.CASA,
-                FormatoPreferido.HIBRIDO
+                AmbientePreferido.CASA
         );
 
         seederMethods.adicionarObjetivoAoHobby(culinaria, objetivos.produzir(), 3);
@@ -713,8 +689,7 @@ public class DevDataSeeder {
                 TipoSocializacao.INDIVIDUAL,
                 categorias.relaxamento(),
                 NivelAtividadeFisica.MODERADO,
-                AmbientePreferido.AO_AR_LIVRE,
-                FormatoPreferido.PRESENCIAL
+                AmbientePreferido.AO_AR_LIVRE
         );
 
         seederMethods.adicionarObjetivoAoHobby(caminhada, objetivos.relaxar(), 3);

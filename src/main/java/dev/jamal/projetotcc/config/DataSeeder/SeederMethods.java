@@ -2,7 +2,6 @@ package dev.jamal.projetotcc.config.DataSeeder;
 
 import dev.jamal.projetotcc.Entities.*;
 import dev.jamal.projetotcc.Enum.AmbientePreferido;
-import dev.jamal.projetotcc.Enum.FormatoPreferido;
 import dev.jamal.projetotcc.Enum.NivelAtividadeFisica;
 import dev.jamal.projetotcc.Enum.TipoSocializacao;
 import dev.jamal.projetotcc.Repository.*;
@@ -67,7 +66,7 @@ public class SeederMethods{
 
     public Hobby criarOuAtualizarHobby(String nome, String descricao, Double custoEstimado, Integer nivelDificuldade,
                                         Double tempoNecessario, TipoSocializacao tipoSocializacao, HobbyCategory category,
-                                        NivelAtividadeFisica atividadeFisica, AmbientePreferido ambiente, FormatoPreferido formato
+                                        NivelAtividadeFisica atividadeFisica, AmbientePreferido ambiente
     ) {
         Hobby hobby = hobbyRepository.findByNomeIgnoreCase(nome)
                 .orElseGet(Hobby::new);
@@ -81,7 +80,6 @@ public class SeederMethods{
         hobby.setCategory(category);
         hobby.setNivelAtividadeFisica(atividadeFisica);
         hobby.setAmbiente(ambiente);
-        hobby.setFormato(formato);
         hobby.setRequerEquipamento(hobby.getCustoEstimado() != null && hobby.getCustoEstimado() > 0);
 
         return hobbyRepository.save(hobby);

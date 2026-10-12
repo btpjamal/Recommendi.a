@@ -451,6 +451,39 @@ export default function Community() {
 
                             </div>
 
+                            <div className="community-suggestions">
+                                <div className="community-suggestions-info">
+                                    <span className="community-label">
+                                        CONTRIBUA COM O RECOMMENDI.A
+                                    </span>
+
+                                    <h2>Tem uma ideia de hobby?</h2>
+
+                                    <p>
+                                        Sugira novas atividades para o catálogo
+                                        e acompanhe a análise das suas sugestões.
+                                    </p>
+                                </div>
+
+                                <div className="community-suggestions-actions">
+                                    <button
+                                        type="button"
+                                        className="community-primary-button"
+                                        onClick={() => navigate("/suggest-hobby")}
+                                    >
+                                        + Sugerir hobby
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="community-secondary-button"
+                                        onClick={() => navigate("/my-suggestions")}
+                                    >
+                                        Minhas sugestões
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="community-tabs">
 
                                 <button

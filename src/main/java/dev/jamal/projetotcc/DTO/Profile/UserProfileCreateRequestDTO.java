@@ -10,6 +10,5 @@ public class UserProfileCreateRequestDTO {
  @NotNull private TipoSocializacao tipoSocializacao;
  @NotNull private NivelAtividadeFisica nivelAtividadeFisicaDesejada;
  @NotNull private AmbientePreferido ambientePreferido;
- @NotNull private FormatoPreferido formatoPreferido;
  @NotNull private NivelExperiencia nivelExperiencia;
 }
