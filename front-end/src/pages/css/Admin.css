@@ -827,3 +827,68 @@
         padding: 18px;
     }
 }
+
+.admin-hobby-new-button {
+    border: 0; border-radius: 10px; padding: 12px 18px;
+    background: #4f46e5; color: #fff; font: inherit; font-weight: 600;
+    cursor: pointer;
+}
+.admin-hobby-new-button:disabled { opacity: .55; cursor: not-allowed; }
+.admin-hobby-success { color: #166534; font-weight: 600; margin-bottom: 16px; }
+.admin-hobby-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(15,23,42,.65); display: flex;
+    justify-content: center; align-items: center; padding: 20px;
+}
+.admin-hobby-modal {
+    width: min(100%, 700px); max-height: 90vh; overflow-y: auto;
+    border-radius: 16px; background: #fff; padding: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.admin-hobby-modal-heading, .admin-hobby-actions {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.admin-hobby-modal-heading { margin-bottom: 18px; }
+.admin-hobby-modal-heading h2 { margin: 0; }
+.admin-hobby-modal-heading > button {
+    border: 0; background: transparent; font-size: 28px; cursor: pointer;
+}
+.admin-hobby-form { display: grid; gap: 16px; }
+.admin-hobby-form label { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
+.admin-hobby-form input:not([type="checkbox"]),
+.admin-hobby-form select, .admin-hobby-form textarea {
+    width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px;
+    border: 1px solid #cbd5e1; border-radius: 8px;
+    font: inherit; color: #1e293b; background: #fff;
+}
+.admin-hobby-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.admin-hobby-form .admin-hobby-checkbox { display: flex; align-items: center; gap: 8px; }
+.admin-hobby-actions { justify-content: flex-end; margin-top: 8px; }
+.admin-hobby-actions > button:first-child {
+    border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 18px;
+    background: #fff; cursor: pointer;
+}
+@media (max-width: 600px) {
+    .admin-hobby-form-grid { grid-template-columns: 1fr; }
+    .admin-hobby-modal { padding: 18px; }
+}
+
+/* Controles de edição no catálogo administrativo */
+.admin-hobby-card-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.admin-hobby-edit-button {
+    padding: 8px 14px;
+    border: 1px solid #6366f1;
+    border-radius: 9px;
+    background: #fff;
+    color: #4f46e5;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+.admin-hobby-edit-button:hover { background: #eef2ff; }
+.admin-hobby-edit-button:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
