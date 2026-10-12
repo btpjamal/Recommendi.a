@@ -623,3 +623,143 @@
     font-size: 13px;
     font-weight: 600;
 }
+
+/* FORMULÁRIO DE APROVAÇÃO */
+
+.admin-approval-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 22px;
+}
+
+.admin-approval-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.admin-approval-form input,
+.admin-approval-form select,
+.admin-approval-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #1e293b;
+    font: inherit;
+    font-weight: 400;
+}
+
+.admin-approval-form input:focus,
+.admin-approval-form select:focus,
+.admin-approval-form textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+}
+
+.admin-approval-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.admin-approval-form .admin-approval-checkbox {
+    flex-direction: row;
+    align-items: center;
+}
+
+.admin-approval-checkbox input {
+    width: auto;
+}
+
+@media (max-width: 600px) {
+    .admin-approval-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.admin-category-error {
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* HISTÓRICO DE AVALIAÇÕES */
+
+.admin-suggestion-review {
+    margin-top: 22px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+}
+
+.admin-suggestion-review-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.admin-suggestion-review-heading h3 {
+    margin: 0;
+    color: #334155;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.admin-suggestion-review-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-bottom: 18px;
+}
+
+.admin-suggestion-review-details > div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.admin-suggestion-review-details small,
+.admin-suggestion-review-notes small {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.admin-suggestion-review-details strong {
+    color: #1e293b;
+    font-size: 13px;
+}
+
+.admin-suggestion-review-notes {
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.admin-suggestion-review-notes p {
+    margin: 8px 0 0;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+    .admin-suggestion-review {
+        padding: 16px;
+    }
+
+    .admin-suggestion-review-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
