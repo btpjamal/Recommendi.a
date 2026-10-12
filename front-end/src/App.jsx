@@ -18,6 +18,7 @@ import AdminLayout from "./components/AdminLayout";
 import AdminSuggestions from "./pages/AdminSuggestions";
 import SuggestHobby from "./pages/SuggestHobby";
 import MySuggestions from "./pages/MySuggestions";
+import AdminHobbies from "./pages/AdminHobbies";
 
 export default function App() {
   return (
@@ -48,15 +49,13 @@ export default function App() {
                             element={<AdminSuggestions />}
                         />
 
-                        <Route
-                            path="hobbies"
-                            element={<h2>Catálogo de hobbies em desenvolvimento</h2>}
-                        />
+                        <Route path="hobbies" element={<AdminHobbies />} />
 
                         <Route
                             path="location-rules"
                             element={<h2>Regras geográficas em desenvolvimento</h2>}
                         />
+
                   </Route>
             </Route>
 

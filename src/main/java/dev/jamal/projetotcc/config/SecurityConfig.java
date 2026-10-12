@@ -65,10 +65,35 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
 
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                                // Rotas administrativas
+                                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
-                        // Demais endpoints exigem autenticação
-                        .anyRequest().authenticated()
+                                // Alterações no catálogo: somente administradores
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/v1/hobbies",
+                                        "/api/v1/hobbies/"
+                                ).hasRole("ADMIN")
+
+                                .requestMatchers(
+                                        HttpMethod.PUT,
+                                        "/api/v1/hobbies/*"
+                                ).hasRole("ADMIN")
+
+                                .requestMatchers(
+                                        HttpMethod.DELETE,
+                                        "/api/v1/hobbies/*"
+                                ).hasRole("ADMIN")
+
+                                // Consulta ao catálogo: usuários autenticados
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/v1/hobbies",
+                                        "/api/v1/hobbies/*"
+                                ).authenticated()
+
+                                // Demais endpoints exigem autenticação
+                                .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
