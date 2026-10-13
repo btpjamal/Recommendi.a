@@ -53,25 +53,41 @@ public class HobbyService {
         return hobbyMapper.toResponseDTO(salvo);
     }
 
+
     public HobbyResponseDTO atualizar(Long id, HobbyCreateRequestDTO dto) {
+
         Hobby hobby = hobbyRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Hobby não encontrado."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Hobby não encontrado.")
+                );
 
         HobbyCategory category = categoryRepository.findById(dto.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Categoria não encontrada.")
+                );
 
         hobby.setNome(dto.getNome());
         hobby.setDescricao(dto.getDescricao());
+        hobby.setImagemUrl(dto.getImagemUrl());
+
         hobby.setCustoEstimado(dto.getCustoEstimado());
+        hobby.setCustoRecorrenteEstimado(dto.getCustoRecorrenteEstimado());
+
         hobby.setNivelDificuldade(dto.getNivelDificuldade());
         hobby.setTempoNecessario(dto.getTempoNecessario());
+
         hobby.setTipoSocializacao(dto.getTipoSocializacao());
+        hobby.setNivelAtividadeFisica(dto.getNivelAtividadeFisica());
+        hobby.setAmbiente(dto.getAmbiente());
+
+        hobby.setRequerEquipamento(dto.isRequerEquipamento());
         hobby.setCategory(category);
 
         Hobby atualizado = hobbyRepository.save(hobby);
 
         return hobbyMapper.toResponseDTO(atualizado);
     }
+
 
     public void deletar(Long id) {
         if (!hobbyRepository.existsById(id)) {
