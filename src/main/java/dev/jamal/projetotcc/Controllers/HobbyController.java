@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 @Tag(
         name = "Hobbies",
         description = "Gerenciamento dos hobbies disponíveis para recomendação"
@@ -61,7 +63,7 @@ public class HobbyController {
     @ApiResponse(responseCode = "404", description = "Categoria não encontrada")
     @PostMapping
     public ResponseEntity<HobbyResponseDTO> cadastrar(
-            @RequestBody HobbyCreateRequestDTO dto
+            @Valid @RequestBody HobbyCreateRequestDTO dto
     ) {
         HobbyResponseDTO response = hobbyService.salvar(dto);
 
@@ -80,7 +82,7 @@ public class HobbyController {
     @PutMapping("/{id}")
     public ResponseEntity<HobbyResponseDTO> atualizar(
             @PathVariable Long id,
-            @RequestBody HobbyCreateRequestDTO dto
+            @Valid @RequestBody HobbyCreateRequestDTO dto
     ) {
         return ResponseEntity.ok(
                 hobbyService.atualizar(id, dto)
