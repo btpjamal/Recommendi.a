@@ -34,6 +34,8 @@ public class Hobby {
     private AmbientePreferido ambiente;
     @Column(nullable = false)
     private boolean requerEquipamento;
+    @Column(name = "ativo", nullable = false)
+    private boolean ativo = true;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private HobbyCategory category;
