@@ -938,3 +938,136 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.admin-hobbies-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0;
+}
+
+.admin-hobbies-filter-button {
+    padding: 9px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    color: #374151;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.admin-hobbies-filter-button:hover {
+    background: #f3f4f6;
+}
+
+.admin-hobbies-filter-button.active {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
+.admin-hobbies-filter-button:focus-visible {
+    outline: 3px solid #93c5fd;
+    outline-offset: 2px;
+}
+
+/* Modal de confirmação de desativação */
+
+.admin-hobby-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.65);
+}
+
+.admin-hobby-confirm-modal {
+    width: min(100%, 440px);
+    box-sizing: border-box;
+    padding: 30px;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+    text-align: center;
+}
+
+.admin-hobby-confirm-icon {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: #fff1f2;
+    color: #be123c;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.admin-hobby-confirm-modal h2 {
+    margin: 0 0 14px;
+    color: #1e293b;
+    font-size: 23px;
+}
+
+.admin-hobby-confirm-modal p {
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.admin-hobby-confirm-modal strong {
+    color: #1e293b;
+}
+
+.admin-hobby-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 26px;
+}
+
+.admin-hobby-confirm-cancel,
+.admin-hobby-confirm-submit {
+    padding: 12px 18px;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-hobby-confirm-cancel {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+}
+
+.admin-hobby-confirm-submit {
+    border: none;
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.admin-hobby-confirm-submit:hover {
+    background: #b91c1c;
+}
+
+.admin-hobby-confirm-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 500px) {
+    .admin-hobby-confirm-modal {
+        padding: 22px;
+    }
+
+    .admin-hobby-confirm-actions {
+        flex-direction: column;
+    }
+}
