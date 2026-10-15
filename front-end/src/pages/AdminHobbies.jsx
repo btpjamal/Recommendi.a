@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api/api";
 
 const FORM_INICIAL = {
@@ -38,6 +38,14 @@ export default function AdminHobbies() {
     const [alterandoStatusId, setAlterandoStatusId] = useState(null);
     const [filtroStatus, setFiltroStatus] = useState("TODOS");
     const [ordenacao, setOrdenacao] = useState("RECENTES");
+    const [pagina, setPagina] = useState(0);
+    const [tamanhoPagina, setTamanhoPagina] = useState(10);
+    const [totalElementos, setTotalElementos] = useState(0);
+    const [totalPaginas, setTotalPaginas] = useState(0);
+    const [estatisticas, setEstatisticas] = useState({ total: 0, ativos: 0, inativos: 0 });
+    const [buscaAplicada, setBuscaAplicada] = useState("");
+    const [revisao, setRevisao] = useState(0);
+    const requisicaoAtualRef = useRef(0);
     const [hobbyParaDesativar, setHobbyParaDesativar] = useState(null);
     const [erroDesativacao, setErroDesativacao] = useState("");
     const modalConfirmacaoRef = useRef(null);
@@ -47,22 +55,55 @@ export default function AdminHobbies() {
 
     const headers = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` });
 
-    const carregarHobbies = useCallback(async () => {
-        try {
+    // Aguarda a digitação terminar antes de consultar o servidor.
+    useEffect(() => {
+        const timer = setTimeout(() => setBuscaAplicada(busca.trim()), 350);
+        return () => clearTimeout(timer);
+    }, [busca]);
+
+    function atualizarLista() {
+        setRevisao((atual) => atual + 1);
+    }
+
+    useEffect(() => {
+        const identificador = ++requisicaoAtualRef.current;
+        let cancelado = false;
+        async function carregar() {
             setCarregando(true);
             setErro("");
-            const response = await api.get("/hobbies", { headers: headers() });
-            setHobbies(response.data);
-        } catch (error) {
-            console.error("Erro ao carregar hobbies:", error);
-            setHobbies([]);
-            setErro(error.response?.data?.message || "Não foi possível carregar os hobbies.");
-        } finally {
-            setCarregando(false);
+            try {
+                const [lista, totais] = await Promise.all([
+                    api.get("/hobbies/paginados", {
+                        headers: headers(),
+                        params: { nome: buscaAplicada, status: filtroStatus, page: pagina, size: tamanhoPagina, ordenacao }
+                    }),
+                    api.get("/hobbies/estatisticas", { headers: headers() })
+                ]);
+                if (cancelado || identificador !== requisicaoAtualRef.current) return;
+                const dados = lista.data;
+                // Após remover o último item da página, volta à anterior.
+                if (pagina > 0 && pagina >= dados.totalPages) {
+                    setPagina(Math.max(0, dados.totalPages - 1));
+                    return;
+                }
+                setHobbies(dados.content ?? []);
+                setTotalElementos(dados.totalElements ?? 0);
+                setTotalPaginas(dados.totalPages ?? 0);
+                setEstatisticas(totais.data);
+            } catch (error) {
+                if (cancelado || identificador !== requisicaoAtualRef.current) return;
+                console.error("Erro ao carregar hobbies:", error);
+                setHobbies([]);
+                setTotalElementos(0);
+                setTotalPaginas(0);
+                setErro(error.response?.data?.message || "Não foi possível carregar os hobbies.");
+            } finally {
+                if (!cancelado && identificador === requisicaoAtualRef.current) setCarregando(false);
+            }
         }
-    }, []);
-
-    useEffect(() => { carregarHobbies(); }, [carregarHobbies]);
+        carregar();
+        return () => { cancelado = true; };
+    }, [buscaAplicada, filtroStatus, pagina, tamanhoPagina, ordenacao, revisao]);
 
     useEffect(() => {
         if (!modalAberto) return;
@@ -257,9 +298,12 @@ export default function AdminHobbies() {
                 await api.post("/hobbies", payload, { headers: headers() });
             }
             setModalAberto(false);
-            if (!hobbyEmEdicao) setBusca("");
+            if (!hobbyEmEdicao) {
+                setBusca("");
+                setPagina(0);
+            }
             setSucesso(hobbyEmEdicao ? "Hobby atualizado com sucesso!" : "Hobby cadastrado com sucesso!");
-            await carregarHobbies();
+            atualizarLista();
             requestAnimationFrame(() => botaoOrigemRef.current?.focus());
         } catch (error) {
             console.error("Erro ao salvar hobby:", error);
@@ -311,7 +355,7 @@ export default function AdminHobbies() {
                 );
             }
 
-            await carregarHobbies();
+            atualizarLista();
 
             setSucesso(
                 hobby.ativo
@@ -344,47 +388,10 @@ export default function AdminHobbies() {
         }
     }
 
-    const totalHobbies = hobbies.length;
-    const totalAtivos = hobbies.filter((hobby) => hobby.ativo).length;
-    const totalInativos = totalHobbies - totalAtivos;
-
-    const hobbiesFiltrados = hobbies
-        .filter((hobby) => {
-            const correspondeNome = hobby.nome
-                ?.toLowerCase()
-                .includes(busca.trim().toLowerCase());
-
-            const correspondeStatus =
-                filtroStatus === "TODOS" ||
-                (filtroStatus === "ATIVOS" && hobby.ativo) ||
-                (filtroStatus === "INATIVOS" && !hobby.ativo);
-
-            return correspondeNome && correspondeStatus;
-        })
-        .sort((a, b) => {
-            switch (ordenacao) {
-                case "NOME_ASC":
-                    return (a.nome ?? "").localeCompare(
-                        b.nome ?? "",
-                        "pt-BR",
-                        { sensitivity: "base" }
-                    );
-
-                case "NOME_DESC":
-                    return (b.nome ?? "").localeCompare(
-                        a.nome ?? "",
-                        "pt-BR",
-                        { sensitivity: "base" }
-                    );
-
-                case "ANTIGOS":
-                    return a.id - b.id;
-
-                case "RECENTES":
-                default:
-                    return b.id - a.id;
-            }
-        });
+    const totalHobbies = estatisticas.total;
+    const totalAtivos = estatisticas.ativos;
+    const totalInativos = estatisticas.inativos;
+    const hobbiesFiltrados = hobbies; // A API já aplica os filtros e a ordenação.
 
     function formatarMoeda(valor) {
         if (valor == null) return "Não informado";
@@ -400,10 +407,10 @@ export default function AdminHobbies() {
 
             <div className="admin-hobbies-toolbar">
                 <input type="search" placeholder="Buscar hobby pelo nome..."
-                       value={busca} onChange={(event) => setBusca(event.target.value)}
+                       value={busca} onChange={(event) => { setBusca(event.target.value); setPagina(0); }}
                        aria-label="Buscar hobby pelo nome" />
                 <button type="button" className="admin-refresh-button"
-                        onClick={carregarHobbies} disabled={carregando}>Atualizar lista</button>
+                        onClick={atualizarLista} disabled={carregando}>Atualizar lista</button>
                 <button type="button" className="admin-hobby-new-button"
                         ref={botaoNovoRef} onClick={abrirModal}>+ Novo hobby</button>
             </div>
@@ -420,7 +427,7 @@ export default function AdminHobbies() {
                         className={`admin-hobbies-filter-button ${
                             filtroStatus === opcao.valor ? "active" : ""
                         }`}
-                        onClick={() => setFiltroStatus(opcao.valor)}
+                        onClick={() => { setFiltroStatus(opcao.valor); setPagina(0); }}
                         aria-pressed={filtroStatus === opcao.valor}
                     >
                         {opcao.rotulo} ({opcao.total})
@@ -436,7 +443,7 @@ export default function AdminHobbies() {
                 <select
                     id="ordenacao-hobbies"
                     value={ordenacao}
-                    onChange={(event) => setOrdenacao(event.target.value)}
+                    onChange={(event) => { setOrdenacao(event.target.value); setPagina(0); }}
                 >
                     <option value="RECENTES">Mais recentes</option>
                     <option value="ANTIGOS">Mais antigos</option>
@@ -446,7 +453,17 @@ export default function AdminHobbies() {
             </div>
 
             {sucesso && <p className="admin-hobby-success" role="status">{sucesso}</p>}
-            {!carregando && !erro && <p className="admin-hobbies-count">{hobbiesFiltrados.length} hobby(s) encontrado(s)</p>}
+            <div className="admin-hobbies-page-size">
+                <label htmlFor="tamanho-pagina-hobbies">Hobbies por página:</label>
+                <select id="tamanho-pagina-hobbies" value={tamanhoPagina}
+                        onChange={(event) => { setTamanhoPagina(Number(event.target.value)); setPagina(0); }}>
+                    {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+            </div>
+            {!carregando && !erro && <p className="admin-hobbies-count">
+                {totalElementos === 0 ? "0 hobbies encontrados" :
+                    `Exibindo ${pagina * tamanhoPagina + 1}–${pagina * tamanhoPagina + hobbies.length} de ${totalElementos} hobbies`}
+            </p>}
             {carregando && <p className="admin-loading">Carregando hobbies...</p>}
             {erro && <p className="admin-error" role="alert">{erro}</p>}
             {!carregando && !erro && hobbiesFiltrados.length === 0 && (
@@ -521,6 +538,16 @@ export default function AdminHobbies() {
                         </article>
                     ))}
                 </div>
+            )}
+
+            {!carregando && !erro && totalPaginas > 1 && (
+                <nav className="admin-hobbies-pagination" aria-label="Paginação dos hobbies">
+                    <button type="button" disabled={pagina === 0}
+                            onClick={() => setPagina((atual) => Math.max(0, atual - 1))}>Anterior</button>
+                    <span>Página {pagina + 1} de {totalPaginas}</span>
+                    <button type="button" disabled={pagina + 1 >= totalPaginas}
+                            onClick={() => setPagina((atual) => atual + 1)}>Próxima</button>
+                </nav>
             )}
 
             {hobbyParaDesativar && (

@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import dev.jamal.projetotcc.DTO.Hobby.HobbyEstatisticasDTO;
 
 import java.util.List;
 
@@ -28,6 +30,17 @@ public class HobbyController {
     private final HobbyService hobbyService;
 
     @Operation(
+            summary = "Estatísticas do catálogo",
+            description = "Retorna a quantidade total de hobbies ativos e inativos."
+    )
+    @GetMapping("/estatisticas")
+    public ResponseEntity<HobbyEstatisticasDTO> obterEstatisticas() {
+        return ResponseEntity.ok(
+                hobbyService.obterEstatisticas()
+        );
+    }
+
+    @Operation(
             summary = "Listar hobbies",
             description = "Retorna todos os hobbies cadastrados no sistema."
     )
@@ -40,12 +53,39 @@ public class HobbyController {
     }
 
     @Operation(
+            summary = "Listar hobbies com paginação",
+            description = "Retorna hobbies paginados, com busca, filtros e ordenação."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Página de hobbies retornada com sucesso"
+    )
+    @GetMapping("/paginados")
+    public ResponseEntity<Page<HobbyResponseDTO>> listarPaginados(
+            @RequestParam(required = false) String nome,
+            @RequestParam(defaultValue = "TODOS") String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "RECENTES") String ordenacao
+    ) {
+        return ResponseEntity.ok(
+                hobbyService.listarPaginado(
+                        nome,
+                        status,
+                        page,
+                        size,
+                        ordenacao
+                )
+        );
+    }
+
+    @Operation(
             summary = "Buscar hobby por ID",
             description = "Retorna os dados de um hobby específico."
     )
     @ApiResponse(responseCode = "200", description = "Hobby encontrado")
     @ApiResponse(responseCode = "404", description = "Hobby não encontrado")
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<HobbyResponseDTO> buscarPorId(
             @PathVariable Long id
     ) {

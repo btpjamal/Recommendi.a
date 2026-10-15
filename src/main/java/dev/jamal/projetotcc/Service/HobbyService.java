@@ -12,6 +12,11 @@ import dev.jamal.projetotcc.Repository.HobbyRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
+import dev.jamal.projetotcc.DTO.Hobby.HobbyEstatisticasDTO;
 
 import java.util.List;
 
@@ -24,6 +29,17 @@ public class HobbyService {
     private final HobbyCategoryRepository categoryRepository;
     private final HobbyMapper hobbyMapper;
 
+    public HobbyEstatisticasDTO obterEstatisticas() {
+        long total = hobbyRepository.count();
+        long ativos = hobbyRepository.countByAtivoTrue();
+        long inativos = hobbyRepository.countByAtivoFalse();
+
+        return new HobbyEstatisticasDTO(
+                total,
+                ativos,
+                inativos
+        );
+    }
 
     @Transactional
     public List<HobbyResponseDTO> listarTodos() {
@@ -31,6 +47,52 @@ public class HobbyService {
                 .stream()
                 .map(hobbyMapper::toResponseDTO)
                 .toList();
+    }
+
+    @Transactional
+    public Page<HobbyResponseDTO> listarPaginado(
+            String nome,
+            String status,
+            int page,
+            int size,
+            String ordenacao
+    ) {
+
+        Sort sort = switch (ordenacao.toUpperCase()) {
+            case "NOME_ASC" -> Sort.by(
+                    Sort.Order.asc("nome").ignoreCase(),
+                    Sort.Order.asc("id")
+            );
+
+            case "NOME_DESC" -> Sort.by(
+                    Sort.Order.desc("nome").ignoreCase(),
+                    Sort.Order.asc("id")
+            );
+
+            case "ANTIGOS" -> Sort.by("id").ascending();
+
+            default -> Sort.by("id").descending();
+        };
+
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.max(1, Math.min(size, 100)),
+                sort
+        );
+
+        String nomeNormalizado =
+                nome == null ? "" : nome.trim();
+
+        String statusNormalizado =
+                status == null ? "TODOS" : status.toUpperCase();
+
+        return hobbyRepository
+                .buscarPaginado(
+                        nomeNormalizado,
+                        statusNormalizado,
+                        pageable
+                )
+                .map(hobbyMapper::toResponseDTO);
     }
 
     @Transactional

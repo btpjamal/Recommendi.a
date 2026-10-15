@@ -68,34 +68,48 @@ public class SecurityConfig {
                                 // Rotas administrativas
                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
-                                // Alterações no catálogo: somente administradores
+                                // =====================================================
+                                // CATÁLOGO DE HOBBIES
+                                // =====================================================
+
+                                // Consultas administrativas
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/v1/hobbies/paginados",
+                                        "/api/v1/hobbies/estatisticas"
+                                ).hasRole("ADMIN")
+
+                                // Cadastro de hobbies
                                 .requestMatchers(
                                         HttpMethod.POST,
                                         "/api/v1/hobbies",
                                         "/api/v1/hobbies/"
                                 ).hasRole("ADMIN")
 
+                                // Atualização de hobbies
                                 .requestMatchers(
                                         HttpMethod.PUT,
                                         "/api/v1/hobbies/*"
                                 ).hasRole("ADMIN")
 
+                                // Desativação de hobbies
                                 .requestMatchers(
                                         HttpMethod.DELETE,
                                         "/api/v1/hobbies/*"
                                 ).hasRole("ADMIN")
 
-                                // Consulta ao catálogo: usuários autenticados
+                                // Reativação de hobbies
+                                .requestMatchers(
+                                        HttpMethod.PATCH,
+                                        "/api/v1/hobbies/*/reativar"
+                                ).hasRole("ADMIN")
+
+                                // Consultas gerais do catálogo
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/v1/hobbies",
                                         "/api/v1/hobbies/*"
                                 ).authenticated()
-
-                                .requestMatchers(
-                                        HttpMethod.PATCH,
-                                        "/api/v1/hobbies/*/reativar"
-                                ).hasRole("ADMIN")
 
                                 // Demais endpoints exigem autenticação
                                 .anyRequest().authenticated()
