@@ -37,6 +37,7 @@ export default function AdminHobbies() {
     const botaoOrigemRef = useRef(null);
     const [alterandoStatusId, setAlterandoStatusId] = useState(null);
     const [filtroStatus, setFiltroStatus] = useState("TODOS");
+    const [ordenacao, setOrdenacao] = useState("RECENTES");
     const [hobbyParaDesativar, setHobbyParaDesativar] = useState(null);
     const [erroDesativacao, setErroDesativacao] = useState("");
     const modalConfirmacaoRef = useRef(null);
@@ -347,18 +348,43 @@ export default function AdminHobbies() {
     const totalAtivos = hobbies.filter((hobby) => hobby.ativo).length;
     const totalInativos = totalHobbies - totalAtivos;
 
-    const hobbiesFiltrados = hobbies.filter((hobby) => {
-        const correspondeNome = hobby.nome
-            ?.toLowerCase()
-            .includes(busca.trim().toLowerCase());
+    const hobbiesFiltrados = hobbies
+        .filter((hobby) => {
+            const correspondeNome = hobby.nome
+                ?.toLowerCase()
+                .includes(busca.trim().toLowerCase());
 
-        const correspondeStatus =
-            filtroStatus === "TODOS" ||
-            (filtroStatus === "ATIVOS" && hobby.ativo) ||
-            (filtroStatus === "INATIVOS" && !hobby.ativo);
+            const correspondeStatus =
+                filtroStatus === "TODOS" ||
+                (filtroStatus === "ATIVOS" && hobby.ativo) ||
+                (filtroStatus === "INATIVOS" && !hobby.ativo);
 
-        return correspondeNome && correspondeStatus;
-    });
+            return correspondeNome && correspondeStatus;
+        })
+        .sort((a, b) => {
+            switch (ordenacao) {
+                case "NOME_ASC":
+                    return (a.nome ?? "").localeCompare(
+                        b.nome ?? "",
+                        "pt-BR",
+                        { sensitivity: "base" }
+                    );
+
+                case "NOME_DESC":
+                    return (b.nome ?? "").localeCompare(
+                        a.nome ?? "",
+                        "pt-BR",
+                        { sensitivity: "base" }
+                    );
+
+                case "ANTIGOS":
+                    return a.id - b.id;
+
+                case "RECENTES":
+                default:
+                    return b.id - a.id;
+            }
+        });
 
     function formatarMoeda(valor) {
         if (valor == null) return "Não informado";
@@ -400,6 +426,23 @@ export default function AdminHobbies() {
                         {opcao.rotulo} ({opcao.total})
                     </button>
                 ))}
+            </div>
+
+            <div className="admin-hobbies-sort">
+                <label htmlFor="ordenacao-hobbies">
+                    Ordenar por:
+                </label>
+
+                <select
+                    id="ordenacao-hobbies"
+                    value={ordenacao}
+                    onChange={(event) => setOrdenacao(event.target.value)}
+                >
+                    <option value="RECENTES">Mais recentes</option>
+                    <option value="ANTIGOS">Mais antigos</option>
+                    <option value="NOME_ASC">Nome (A–Z)</option>
+                    <option value="NOME_DESC">Nome (Z–A)</option>
+                </select>
             </div>
 
             {sucesso && <p className="admin-hobby-success" role="status">{sucesso}</p>}
