@@ -36,6 +36,13 @@ export default function AdminHobbies() {
     const botaoNovoRef = useRef(null);
     const botaoOrigemRef = useRef(null);
     const [alterandoStatusId, setAlterandoStatusId] = useState(null);
+    const [filtroStatus, setFiltroStatus] = useState("TODOS");
+    const [hobbyParaDesativar, setHobbyParaDesativar] = useState(null);
+    const [erroDesativacao, setErroDesativacao] = useState("");
+    const modalConfirmacaoRef = useRef(null);
+    const botaoCancelarRef = useRef(null);
+    const botaoDesativarOrigemRef = useRef(null);
+    const processandoDesativacaoRef = useRef(false);
 
     const headers = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` });
 
@@ -100,6 +107,70 @@ export default function AdminHobbies() {
         document.addEventListener("keydown", aoTeclar);
         return () => document.removeEventListener("keydown", aoTeclar);
     }, [modalAberto]);
+
+    useEffect(() => {
+        if (!hobbyParaDesativar) return;
+
+        const modal = modalConfirmacaoRef.current;
+        const focoAnterior = document.activeElement;
+
+        botaoCancelarRef.current?.focus();
+
+        function aoTeclar(event) {
+            if (event.key === "Escape") {
+                event.preventDefault();
+
+                if (!processandoDesativacaoRef.current) {
+                    fecharConfirmacao();
+                }
+                return;
+            }
+
+            if (event.key !== "Tab" || !modal) return;
+
+            const elementos = Array.from(
+                modal.querySelectorAll(
+                    'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+                )
+            ).filter((elemento) => elemento.getClientRects().length > 0);
+
+            if (!elementos.length) {
+                event.preventDefault();
+                modal.focus();
+                return;
+            }
+
+            const primeiro = elementos[0];
+            const ultimo = elementos[elementos.length - 1];
+
+            if (event.shiftKey) {
+                if (
+                    document.activeElement === primeiro ||
+                    !modal.contains(document.activeElement)
+                ) {
+                    event.preventDefault();
+                    ultimo.focus();
+                }
+            } else if (
+                document.activeElement === ultimo ||
+                !modal.contains(document.activeElement)
+            ) {
+                event.preventDefault();
+                primeiro.focus();
+            }
+        }
+
+        document.addEventListener("keydown", aoTeclar);
+
+        return () => {
+            document.removeEventListener("keydown", aoTeclar);
+
+            if (focoAnterior?.isConnected) {
+                // O retorno ao botão de origem é controlado
+                // pelas funções de fechamento.
+            }
+        };
+    }, [hobbyParaDesativar]);
 
     function abrirModal() {
         botaoOrigemRef.current = botaoNovoRef.current;
@@ -198,27 +269,36 @@ export default function AdminHobbies() {
         }
     }
 
+    function abrirConfirmacao(hobby, botaoOrigem) {
+        botaoDesativarOrigemRef.current = botaoOrigem;
+        setErroDesativacao("");
+        setHobbyParaDesativar(hobby);
+    }
+
+    function fecharConfirmacao() {
+        if (processandoDesativacaoRef.current) return;
+
+        setHobbyParaDesativar(null);
+        setErroDesativacao("");
+
+        requestAnimationFrame(() => {
+            botaoDesativarOrigemRef.current?.focus();
+        });
+    }
+
     async function alternarStatus(hobby) {
-        if (alterandoStatusId !== null) return;
-
-        const desativar = hobby.ativo;
-
-        if (desativar) {
-            const confirmado = window.confirm(
-                `Deseja realmente desativar o hobby "${hobby.nome}"?\n\n` +
-                "Ele deixará de aparecer nas recomendações, " +
-                "mas os históricos dos usuários serão preservados."
-            );
-
-            if (!confirmado) return;
+        if (alterandoStatusId !== null || processandoDesativacaoRef.current) {
+            return;
         }
 
+        processandoDesativacaoRef.current = true;
         setAlterandoStatusId(hobby.id);
         setErro("");
+        setErroDesativacao("");
         setSucesso("");
 
         try {
-            if (desativar) {
+            if (hobby.ativo) {
                 await api.delete(`/hobbies/${hobby.id}`, {
                     headers: headers()
                 });
@@ -233,25 +313,52 @@ export default function AdminHobbies() {
             await carregarHobbies();
 
             setSucesso(
-                desativar
+                hobby.ativo
                     ? `Hobby "${hobby.nome}" desativado com sucesso!`
                     : `Hobby "${hobby.nome}" reativado com sucesso!`
             );
+
+            if (hobby.ativo) {
+                setHobbyParaDesativar(null);
+
+                requestAnimationFrame(() => {
+                    botaoDesativarOrigemRef.current?.focus();
+                });
+            }
         } catch (error) {
             console.error("Erro ao alterar status do hobby:", error);
 
-            setErro(
+            const mensagem =
                 error.response?.data?.message ||
-                "Não foi possível alterar o status do hobby."
-            );
+                "Não foi possível alterar o status do hobby.";
+
+            if (hobby.ativo) {
+                setErroDesativacao(mensagem);
+            } else {
+                setErro(mensagem);
+            }
         } finally {
+            processandoDesativacaoRef.current = false;
             setAlterandoStatusId(null);
         }
     }
 
-    const hobbiesFiltrados = hobbies.filter((hobby) =>
-        hobby.nome?.toLowerCase().includes(busca.trim().toLowerCase())
-    );
+    const totalHobbies = hobbies.length;
+    const totalAtivos = hobbies.filter((hobby) => hobby.ativo).length;
+    const totalInativos = totalHobbies - totalAtivos;
+
+    const hobbiesFiltrados = hobbies.filter((hobby) => {
+        const correspondeNome = hobby.nome
+            ?.toLowerCase()
+            .includes(busca.trim().toLowerCase());
+
+        const correspondeStatus =
+            filtroStatus === "TODOS" ||
+            (filtroStatus === "ATIVOS" && hobby.ativo) ||
+            (filtroStatus === "INATIVOS" && !hobby.ativo);
+
+        return correspondeNome && correspondeStatus;
+    });
 
     function formatarMoeda(valor) {
         if (valor == null) return "Não informado";
@@ -273,6 +380,26 @@ export default function AdminHobbies() {
                         onClick={carregarHobbies} disabled={carregando}>Atualizar lista</button>
                 <button type="button" className="admin-hobby-new-button"
                         ref={botaoNovoRef} onClick={abrirModal}>+ Novo hobby</button>
+            </div>
+
+            <div className="admin-hobbies-filters" role="group" aria-label="Filtrar hobbies por status">
+                {[
+                    { valor: "TODOS", rotulo: "Todos", total: totalHobbies },
+                    { valor: "ATIVOS", rotulo: "Ativos", total: totalAtivos },
+                    { valor: "INATIVOS", rotulo: "Inativos", total: totalInativos }
+                ].map((opcao) => (
+                    <button
+                        key={opcao.valor}
+                        type="button"
+                        className={`admin-hobbies-filter-button ${
+                            filtroStatus === opcao.valor ? "active" : ""
+                        }`}
+                        onClick={() => setFiltroStatus(opcao.valor)}
+                        aria-pressed={filtroStatus === opcao.valor}
+                    >
+                        {opcao.rotulo} ({opcao.total})
+                    </button>
+                ))}
             </div>
 
             {sucesso && <p className="admin-hobby-success" role="status">{sucesso}</p>}
@@ -324,7 +451,13 @@ export default function AdminHobbies() {
                                                 ? "admin-hobby-deactivate-button"
                                                 : "admin-hobby-reactivate-button"
                                         }
-                                        onClick={() => alternarStatus(hobby)}
+                                        onClick={(event) => {
+                                            if (hobby.ativo) {
+                                                abrirConfirmacao(hobby, event.currentTarget);
+                                            } else {
+                                                alternarStatus(hobby);
+                                            }
+                                        }}
                                         disabled={alterandoStatusId !== null}
                                     >
                                         {alterandoStatusId === hobby.id
@@ -344,6 +477,68 @@ export default function AdminHobbies() {
                             </div>
                         </article>
                     ))}
+                </div>
+            )}
+
+            {hobbyParaDesativar && (
+                <div className="admin-hobby-confirm-overlay">
+                    <div
+                        ref={modalConfirmacaoRef}
+                        className="admin-hobby-confirm-modal"
+                        role="alertdialog"
+                        aria-modal="true"
+                        aria-labelledby="titulo-confirmacao-hobby"
+                        aria-describedby="descricao-confirmacao-hobby"
+                        tabIndex={-1}
+                    >
+                        <div className="admin-hobby-confirm-icon">
+                            !
+                        </div>
+
+                        <h2 id="titulo-confirmacao-hobby">
+                            Desativar hobby?
+                        </h2>
+
+                        <p id="descricao-confirmacao-hobby">
+                            Você está prestes a desativar o hobby{" "}
+                            <strong>{hobbyParaDesativar.nome}</strong>.
+                        </p>
+
+                        <p>
+                            Ele deixará de aparecer nas novas recomendações,
+                            mas os históricos e relacionamentos dos usuários
+                            serão preservados.
+                        </p>
+
+                        {erroDesativacao && (
+                            <p className="admin-error" role="alert">
+                                {erroDesativacao}
+                            </p>
+                        )}
+
+                        <div className="admin-hobby-confirm-actions">
+                            <button
+                                ref={botaoCancelarRef}
+                                type="button"
+                                className="admin-hobby-confirm-cancel"
+                                disabled={alterandoStatusId !== null}
+                                onClick={fecharConfirmacao}
+                            >
+                                Cancelar
+                            </button>
+
+                            <button
+                                type="button"
+                                className="admin-hobby-confirm-submit"
+                                disabled={alterandoStatusId !== null}
+                                onClick={() => alternarStatus(hobbyParaDesativar)}
+                            >
+                                {alterandoStatusId !== null
+                                    ? "Desativando..."
+                                    : "Confirmar desativação"}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
