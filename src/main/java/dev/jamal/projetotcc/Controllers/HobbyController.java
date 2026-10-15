@@ -103,4 +103,25 @@ public class HobbyController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(
+            summary = "Reativar hobby",
+            description = "Reativa um hobby anteriormente desativado."
+    )
+    @ApiResponse(
+            responseCode = "204",
+            description = "Hobby reativado com sucesso"
+    )
+    @ApiResponse(
+            responseCode = "404",
+            description = "Hobby não encontrado"
+    )
+    @PatchMapping("/{id}/reativar")
+    public ResponseEntity<Void> reativar(
+            @PathVariable Long id
+    ) {
+        hobbyService.reativar(id);
+
+        return ResponseEntity.noContent().build();
+    }
 }

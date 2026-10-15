@@ -22,4 +22,14 @@ public interface HobbyRepository extends JpaRepository<Hobby, Long> {
     boolean existsByNomeIgnoreCase(String nome);
 
     Optional<Hobby> findByNomeIgnoreCase(String nome);
+
+    @Query("""
+    SELECT h
+    FROM Hobby h
+    JOIN FETCH h.category
+    WHERE h.ativo = true
+""")
+    List<Hobby> findAllActiveWithCategory();
+
+    Optional<Hobby> findByIdAndAtivoTrue(Long id);
 }

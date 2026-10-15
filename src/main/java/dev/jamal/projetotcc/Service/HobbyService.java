@@ -90,11 +90,23 @@ public class HobbyService {
 
 
     public void deletar(Long id) {
-        if (!hobbyRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Hobby não encontrado");
-        }
+        Hobby hobby = hobbyRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Hobby não encontrado.")
+                );
 
-        hobbyRepository.deleteById(id);
+        hobby.setAtivo(false);
+        hobbyRepository.save(hobby);
+    }
+
+    public void reativar(Long id) {
+        Hobby hobby = hobbyRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Hobby não encontrado.")
+                );
+
+        hobby.setAtivo(true);
+        hobbyRepository.save(hobby);
     }
 
     // para uso interno da aplicação, não deve ser consumido por controllers

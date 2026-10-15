@@ -22,4 +22,5 @@ public class HobbyResponseDTO {
     private AmbientePreferido ambiente;
     private boolean requerEquipamento;
     private HobbyCategoryResponseDTO category;
+    private boolean ativo;
 }

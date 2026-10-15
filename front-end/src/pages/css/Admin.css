@@ -892,3 +892,49 @@
 }
 .admin-hobby-edit-button:hover { background: #eef2ff; }
 .admin-hobby-edit-button:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+
+.admin-hobby-status {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.admin-hobby-status-active {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.admin-hobby-status-inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.admin-hobby-deactivate-button,
+.admin-hobby-reactivate-button {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid;
+}
+
+.admin-hobby-deactivate-button {
+    background: #fff1f2;
+    color: #be123c;
+    border-color: #fecdd3;
+}
+
+.admin-hobby-reactivate-button {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.admin-hobby-deactivate-button:disabled,
+.admin-hobby-reactivate-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

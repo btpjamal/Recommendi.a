@@ -92,6 +92,11 @@ public class SecurityConfig {
                                         "/api/v1/hobbies/*"
                                 ).authenticated()
 
+                                .requestMatchers(
+                                        HttpMethod.PATCH,
+                                        "/api/v1/hobbies/*/reativar"
+                                ).hasRole("ADMIN")
+
                                 // Demais endpoints exigem autenticação
                                 .anyRequest().authenticated()
                 )

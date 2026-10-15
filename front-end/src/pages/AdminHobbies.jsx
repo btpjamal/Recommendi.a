@@ -35,6 +35,7 @@ export default function AdminHobbies() {
     const modalRef = useRef(null);
     const botaoNovoRef = useRef(null);
     const botaoOrigemRef = useRef(null);
+    const [alterandoStatusId, setAlterandoStatusId] = useState(null);
 
     const headers = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` });
 
@@ -197,6 +198,57 @@ export default function AdminHobbies() {
         }
     }
 
+    async function alternarStatus(hobby) {
+        if (alterandoStatusId !== null) return;
+
+        const desativar = hobby.ativo;
+
+        if (desativar) {
+            const confirmado = window.confirm(
+                `Deseja realmente desativar o hobby "${hobby.nome}"?\n\n` +
+                "Ele deixará de aparecer nas recomendações, " +
+                "mas os históricos dos usuários serão preservados."
+            );
+
+            if (!confirmado) return;
+        }
+
+        setAlterandoStatusId(hobby.id);
+        setErro("");
+        setSucesso("");
+
+        try {
+            if (desativar) {
+                await api.delete(`/hobbies/${hobby.id}`, {
+                    headers: headers()
+                });
+            } else {
+                await api.patch(
+                    `/hobbies/${hobby.id}/reativar`,
+                    {},
+                    { headers: headers() }
+                );
+            }
+
+            await carregarHobbies();
+
+            setSucesso(
+                desativar
+                    ? `Hobby "${hobby.nome}" desativado com sucesso!`
+                    : `Hobby "${hobby.nome}" reativado com sucesso!`
+            );
+        } catch (error) {
+            console.error("Erro ao alterar status do hobby:", error);
+
+            setErro(
+                error.response?.data?.message ||
+                "Não foi possível alterar o status do hobby."
+            );
+        } finally {
+            setAlterandoStatusId(null);
+        }
+    }
+
     const hobbiesFiltrados = hobbies.filter((hobby) =>
         hobby.nome?.toLowerCase().includes(busca.trim().toLowerCase())
     );
@@ -241,11 +293,46 @@ export default function AdminHobbies() {
                                 <div>
                                     <h2>{hobby.nome}</h2>
                                     <span className="admin-suggestion-category">{hobby.category?.nome || "Sem categoria"}</span>
+                                    <span
+                                        className={`admin-hobby-status ${
+                                            hobby.ativo
+                                                ? "admin-hobby-status-active"
+                                                : "admin-hobby-status-inactive"
+                                        }`}
+                                    >
+                                        {hobby.ativo ? "Ativo" : "Inativo"}
+                                    </span>
                                 </div>
                                 <div className="admin-hobby-card-controls">
                                     <span className="admin-hobby-id">#{hobby.id}</span>
-                                    <button type="button" className="admin-hobby-edit-button"
-                                            onClick={(event) => abrirEdicao(hobby, event.currentTarget)}>Editar</button>
+
+                                    <button
+                                        type="button"
+                                        className="admin-hobby-edit-button"
+                                        onClick={(event) =>
+                                            abrirEdicao(hobby, event.currentTarget)
+                                        }
+                                        disabled={alterandoStatusId !== null}
+                                    >
+                                        Editar
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className={
+                                            hobby.ativo
+                                                ? "admin-hobby-deactivate-button"
+                                                : "admin-hobby-reactivate-button"
+                                        }
+                                        onClick={() => alternarStatus(hobby)}
+                                        disabled={alterandoStatusId !== null}
+                                    >
+                                        {alterandoStatusId === hobby.id
+                                            ? "Processando..."
+                                            : hobby.ativo
+                                                ? "Desativar"
+                                                : "Reativar"}
+                                    </button>
                                 </div>
                             </div>
                             <p className="admin-suggestion-description">{hobby.descricao}</p>
