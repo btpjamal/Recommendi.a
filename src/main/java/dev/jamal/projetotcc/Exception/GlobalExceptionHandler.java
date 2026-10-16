@@ -11,6 +11,10 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import java.sql.SQLException;
+import org.springframework.core.NestedExceptionUtils;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -46,6 +50,46 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(error);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrity(
+            DataIntegrityViolationException ex,
+            HttpServletRequest request
+    ) {
+        Throwable causa = ex;
+
+        while (causa != null) {
+
+            if (causa instanceof SQLException sqlException) {
+
+                if ("23505".equals(sqlException.getSQLState())) {
+
+                    String mensagem =
+                            "Já existe um registro com esses dados.";
+
+                    return ResponseEntity
+                            .status(HttpStatus.CONFLICT)
+                            .body(new ApiErrorResponse(
+                                    LocalDateTime.now(),
+                                    HttpStatus.CONFLICT.value(),
+                                    mensagem,
+                                    request.getRequestURI()
+                            ));
+                }
+            }
+
+            causa = causa.getCause();
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ApiErrorResponse(
+                        LocalDateTime.now(),
+                        HttpStatus.CONFLICT.value(),
+                        "Não foi possível concluir a operação devido a uma restrição de integridade dos dados.",
+                        request.getRequestURI()
+                ));
     }
 
     @ExceptionHandler(RuntimeException.class)

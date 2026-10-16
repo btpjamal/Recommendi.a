@@ -20,6 +20,8 @@ import dev.jamal.projetotcc.DTO.Hobby.HobbyEstatisticasDTO;
 
 import java.util.List;
 
+import dev.jamal.projetotcc.Exception.BusinessException;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -105,12 +107,23 @@ public class HobbyService {
 
     public HobbyResponseDTO salvar(HobbyCreateRequestDTO dto) {
 
+        String nome = dto.getNome().trim().replaceAll("\\s+", " ");
+
+        if (hobbyRepository.existsByNomeNormalizado(nome)) {
+            throw new BusinessException(
+                    "Já existe um hobby com esse nome no catálogo."
+            );
+        }
+
         HobbyCategory category = categoryRepository.findById(dto.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Categoria não encontrada.")
+                );
 
         Hobby hobby = hobbyMapper.toEntity(dto, category);
+        hobby.setNome(nome);
 
-        Hobby salvo = hobbyRepository.save(hobby);
+        Hobby salvo = hobbyRepository.saveAndFlush(hobby);
 
         return hobbyMapper.toResponseDTO(salvo);
     }
@@ -123,12 +136,20 @@ public class HobbyService {
                         new ResourceNotFoundException("Hobby não encontrado.")
                 );
 
+        String nome = dto.getNome().trim().replaceAll("\\s+", " ");
+
+        if (hobbyRepository.existsByNomeNormalizadoAndIdNot(nome, id)) {
+            throw new BusinessException(
+                    "Já existe outro hobby com esse nome no catálogo."
+            );
+        }
+
         HobbyCategory category = categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Categoria não encontrada.")
                 );
 
-        hobby.setNome(dto.getNome());
+        hobby.setNome(nome);
         hobby.setDescricao(dto.getDescricao());
         hobby.setImagemUrl(dto.getImagemUrl());
 

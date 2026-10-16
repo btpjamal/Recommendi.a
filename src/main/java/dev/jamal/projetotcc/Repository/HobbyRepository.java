@@ -74,4 +74,30 @@ public interface HobbyRepository extends JpaRepository<Hobby, Long> {
     long countByAtivoTrue();
 
     long countByAtivoFalse();
+
+    @Query(value = """
+    SELECT EXISTS (
+        SELECT 1
+        FROM hobby h
+        WHERE normalizar_nome_hobby(h.nome) =
+              normalizar_nome_hobby(:nome)
+    )
+    """, nativeQuery = true)
+    boolean existsByNomeNormalizado(
+            @Param("nome") String nome
+    );
+
+    @Query(value = """
+    SELECT EXISTS (
+        SELECT 1
+        FROM hobby h
+        WHERE normalizar_nome_hobby(h.nome) =
+              normalizar_nome_hobby(:nome)
+          AND h.id <> :id
+    )
+    """, nativeQuery = true)
+    boolean existsByNomeNormalizadoAndIdNot(
+            @Param("nome") String nome,
+            @Param("id") Long id
+    );
 }
