@@ -19,6 +19,7 @@ import AdminSuggestions from "./pages/AdminSuggestions";
 import SuggestHobby from "./pages/SuggestHobby";
 import MySuggestions from "./pages/MySuggestions";
 import AdminHobbies from "./pages/AdminHobbies";
+import AdminLocationRules from "./pages/AdminLocationRules";
 
 export default function App() {
   return (
@@ -53,7 +54,7 @@ export default function App() {
 
                         <Route
                             path="location-rules"
-                            element={<h2>Regras geográficas em desenvolvimento</h2>}
+                            element={<AdminLocationRules />}
                         />
 
                   </Route>
