@@ -53,32 +53,17 @@ public class HobbySuggestionService {
         String nome = dto.getNome().trim()
                 .replaceAll("\\s+", " ");
 
-        String nomeNormalizado = normalizarNome(nome);
 
-        boolean hobbyExistente = hobbyRepository.findAll()
-                .stream()
-                .anyMatch(h ->
-                        normalizarNome(h.getNome())
-                                .equals(nomeNormalizado)
-                );
-
-        if (hobbyExistente) {
+        if (hobbyRepository.existsByNomeNormalizado(nome)) {
             throw new BusinessException(
                     "Este hobby já existe no catálogo."
             );
         }
 
-        boolean sugestaoPendente = suggestionRepository
-                .findByStatusOrderByCreatedAtAsc(
-                        HobbySuggestionStatus.PENDENTE
-                )
-                .stream()
-                .anyMatch(s ->
-                        normalizarNome(s.getNome())
-                                .equals(nomeNormalizado)
-                );
-
-        if (sugestaoPendente) {
+        if (suggestionRepository.existsByNomeNormalizadoAndStatus(
+                nome,
+                HobbySuggestionStatus.PENDENTE.name()
+        )) {
             throw new BusinessException(
                     "Já existe uma sugestão pendente para este hobby."
             );
@@ -315,20 +300,13 @@ public class HobbySuggestionService {
             );
         }
 
-        String nomeNormalizado = normalizarNome(dto.getNome());
 
-        boolean hobbyExistente = hobbyRepository.findAll()
-                .stream()
-                .anyMatch(h ->
-                        normalizarNome(h.getNome())
-                                .equals(nomeNormalizado)
-                );
-
-        if (hobbyExistente) {
+        if (hobbyRepository.existsByNomeNormalizado(dto.getNome())) {
             throw new BusinessException(
                     "Já existe um hobby com esse nome no catálogo."
             );
         }
+
 
         HobbyCategory category = categoryRepository
                 .findById(dto.getCategoryId())

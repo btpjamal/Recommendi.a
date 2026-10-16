@@ -12,8 +12,15 @@ import dev.jamal.projetotcc.Repository.HobbyRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
+import dev.jamal.projetotcc.DTO.Hobby.HobbyEstatisticasDTO;
 
 import java.util.List;
+
+import dev.jamal.projetotcc.Exception.BusinessException;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +31,17 @@ public class HobbyService {
     private final HobbyCategoryRepository categoryRepository;
     private final HobbyMapper hobbyMapper;
 
+    public HobbyEstatisticasDTO obterEstatisticas() {
+        long total = hobbyRepository.count();
+        long ativos = hobbyRepository.countByAtivoTrue();
+        long inativos = hobbyRepository.countByAtivoFalse();
+
+        return new HobbyEstatisticasDTO(
+                total,
+                ativos,
+                inativos
+        );
+    }
 
     @Transactional
     public List<HobbyResponseDTO> listarTodos() {
@@ -31,6 +49,52 @@ public class HobbyService {
                 .stream()
                 .map(hobbyMapper::toResponseDTO)
                 .toList();
+    }
+
+    @Transactional
+    public Page<HobbyResponseDTO> listarPaginado(
+            String nome,
+            String status,
+            int page,
+            int size,
+            String ordenacao
+    ) {
+
+        Sort sort = switch (ordenacao.toUpperCase()) {
+            case "NOME_ASC" -> Sort.by(
+                    Sort.Order.asc("nome").ignoreCase(),
+                    Sort.Order.asc("id")
+            );
+
+            case "NOME_DESC" -> Sort.by(
+                    Sort.Order.desc("nome").ignoreCase(),
+                    Sort.Order.asc("id")
+            );
+
+            case "ANTIGOS" -> Sort.by("id").ascending();
+
+            default -> Sort.by("id").descending();
+        };
+
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.max(1, Math.min(size, 100)),
+                sort
+        );
+
+        String nomeNormalizado =
+                nome == null ? "" : nome.trim();
+
+        String statusNormalizado =
+                status == null ? "TODOS" : status.toUpperCase();
+
+        return hobbyRepository
+                .buscarPaginado(
+                        nomeNormalizado,
+                        statusNormalizado,
+                        pageable
+                )
+                .map(hobbyMapper::toResponseDTO);
     }
 
     @Transactional
@@ -43,29 +107,63 @@ public class HobbyService {
 
     public HobbyResponseDTO salvar(HobbyCreateRequestDTO dto) {
 
+        String nome = dto.getNome().trim().replaceAll("\\s+", " ");
+
+        if (hobbyRepository.existsByNomeNormalizado(nome)) {
+            throw new BusinessException(
+                    "Já existe um hobby com esse nome no catálogo."
+            );
+        }
+
         HobbyCategory category = categoryRepository.findById(dto.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Categoria não encontrada.")
+                );
 
         Hobby hobby = hobbyMapper.toEntity(dto, category);
+        hobby.setNome(nome);
 
-        Hobby salvo = hobbyRepository.save(hobby);
+        Hobby salvo = hobbyRepository.saveAndFlush(hobby);
 
         return hobbyMapper.toResponseDTO(salvo);
     }
 
+
     public HobbyResponseDTO atualizar(Long id, HobbyCreateRequestDTO dto) {
+
         Hobby hobby = hobbyRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Hobby não encontrado."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Hobby não encontrado.")
+                );
+
+        String nome = dto.getNome().trim().replaceAll("\\s+", " ");
+
+        if (hobbyRepository.existsByNomeNormalizadoAndIdNot(nome, id)) {
+            throw new BusinessException(
+                    "Já existe outro hobby com esse nome no catálogo."
+            );
+        }
 
         HobbyCategory category = categoryRepository.findById(dto.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Categoria não encontrada.")
+                );
 
-        hobby.setNome(dto.getNome());
+        hobby.setNome(nome);
         hobby.setDescricao(dto.getDescricao());
+        hobby.setImagemUrl(dto.getImagemUrl());
+
         hobby.setCustoEstimado(dto.getCustoEstimado());
+        hobby.setCustoRecorrenteEstimado(dto.getCustoRecorrenteEstimado());
+
         hobby.setNivelDificuldade(dto.getNivelDificuldade());
         hobby.setTempoNecessario(dto.getTempoNecessario());
+
         hobby.setTipoSocializacao(dto.getTipoSocializacao());
+        hobby.setNivelAtividadeFisica(dto.getNivelAtividadeFisica());
+        hobby.setAmbiente(dto.getAmbiente());
+
+        hobby.setRequerEquipamento(dto.isRequerEquipamento());
         hobby.setCategory(category);
 
         Hobby atualizado = hobbyRepository.save(hobby);
@@ -73,12 +171,25 @@ public class HobbyService {
         return hobbyMapper.toResponseDTO(atualizado);
     }
 
-    public void deletar(Long id) {
-        if (!hobbyRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Hobby não encontrado");
-        }
 
-        hobbyRepository.deleteById(id);
+    public void deletar(Long id) {
+        Hobby hobby = hobbyRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Hobby não encontrado.")
+                );
+
+        hobby.setAtivo(false);
+        hobbyRepository.save(hobby);
+    }
+
+    public void reativar(Long id) {
+        Hobby hobby = hobbyRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Hobby não encontrado.")
+                );
+
+        hobby.setAtivo(true);
+        hobbyRepository.save(hobby);
     }
 
     // para uso interno da aplicação, não deve ser consumido por controllers

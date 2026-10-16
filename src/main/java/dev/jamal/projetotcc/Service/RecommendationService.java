@@ -46,7 +46,7 @@ public class RecommendationService {
                 .map(feedback -> feedback.getHobby().getId())
                 .collect(Collectors.toSet());
 
-        return hobbyRepository.findAllWithCategory()
+        return hobbyRepository.findAllActiveWithCategory()
                 .stream()
                 .filter(h -> !avaliados.contains(h.getId()))
                 .filter(h -> !hobbiesDecididos.contains(h.getId()))
@@ -83,7 +83,7 @@ public class RecommendationService {
 
         Hobby hobby =
                 hobbyRepository
-                        .findById(hobbyId)
+                        .findByIdAndAtivoTrue(hobbyId)
                         .orElseThrow(() ->
                                 new BusinessException(
                                         "Hobby não encontrado."

@@ -28,7 +28,7 @@ public class HobbyMapper {
     }
 
     public HobbyResponseDTO toResponseDTO(Hobby h) {
-        return new HobbyResponseDTO(h.getId(), h.getNome(), h.getDescricao(), h.getImagemUrl(), h.getCustoEstimado(), h.getCustoRecorrenteEstimado(), h.getNivelDificuldade(), h.getTempoNecessario(), h.getTipoSocializacao(), h.getNivelAtividadeFisica(), h.getAmbiente(), h.isRequerEquipamento(), categoryMapper.toResponseDTO(h.getCategory()));
+        return new HobbyResponseDTO(h.getId(), h.getNome(), h.getDescricao(), h.getImagemUrl(), h.getCustoEstimado(), h.getCustoRecorrenteEstimado(), h.getNivelDificuldade(), h.getTempoNecessario(), h.getTipoSocializacao(), h.getNivelAtividadeFisica(), h.getAmbiente(), h.isRequerEquipamento(), categoryMapper.toResponseDTO(h.getCategory()), h.isAtivo());
     }
 
     public HobbySummaryDTO toSummaryDTO(Hobby h) {

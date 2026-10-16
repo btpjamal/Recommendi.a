@@ -763,3 +763,375 @@
         flex-direction: column;
     }
 }
+
+
+/* CATÁLOGO ADMINISTRATIVO DE HOBBIES */
+
+.admin-hobbies-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.admin-hobbies-toolbar input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #1e293b;
+    font: inherit;
+    font-size: 14px;
+}
+
+.admin-hobbies-toolbar input:focus {
+    outline: none;
+    border-color: #6366f1;
+}
+
+.admin-hobbies-count {
+    margin-bottom: 18px;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.admin-hobbies-list {
+    display: grid;
+    gap: 20px;
+}
+
+.admin-hobby-card {
+    padding: 26px;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+}
+
+.admin-hobby-id {
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+@media (max-width: 600px) {
+    .admin-hobbies-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-hobby-card {
+        padding: 18px;
+    }
+}
+
+.admin-hobby-new-button {
+    border: 0; border-radius: 10px; padding: 12px 18px;
+    background: #4f46e5; color: #fff; font: inherit; font-weight: 600;
+    cursor: pointer;
+}
+.admin-hobby-new-button:disabled { opacity: .55; cursor: not-allowed; }
+.admin-hobby-success { color: #166534; font-weight: 600; margin-bottom: 16px; }
+.admin-hobby-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(15,23,42,.65); display: flex;
+    justify-content: center; align-items: center; padding: 20px;
+}
+.admin-hobby-modal {
+    width: min(100%, 700px); max-height: 90vh; overflow-y: auto;
+    border-radius: 16px; background: #fff; padding: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.admin-hobby-modal-heading, .admin-hobby-actions {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.admin-hobby-modal-heading { margin-bottom: 18px; }
+.admin-hobby-modal-heading h2 { margin: 0; }
+.admin-hobby-modal-heading > button {
+    border: 0; background: transparent; font-size: 28px; cursor: pointer;
+}
+.admin-hobby-form { display: grid; gap: 16px; }
+.admin-hobby-form label { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
+.admin-hobby-form input:not([type="checkbox"]),
+.admin-hobby-form select, .admin-hobby-form textarea {
+    width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px;
+    border: 1px solid #cbd5e1; border-radius: 8px;
+    font: inherit; color: #1e293b; background: #fff;
+}
+.admin-hobby-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.admin-hobby-form .admin-hobby-checkbox { display: flex; align-items: center; gap: 8px; }
+.admin-hobby-actions { justify-content: flex-end; margin-top: 8px; }
+.admin-hobby-actions > button:first-child {
+    border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 18px;
+    background: #fff; cursor: pointer;
+}
+@media (max-width: 600px) {
+    .admin-hobby-form-grid { grid-template-columns: 1fr; }
+    .admin-hobby-modal { padding: 18px; }
+}
+
+/* Controles de edição no catálogo administrativo */
+.admin-hobby-card-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.admin-hobby-edit-button {
+    padding: 8px 14px;
+    border: 1px solid #6366f1;
+    border-radius: 9px;
+    background: #fff;
+    color: #4f46e5;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+.admin-hobby-edit-button:hover { background: #eef2ff; }
+.admin-hobby-edit-button:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+
+.admin-hobby-status {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.admin-hobby-status-active {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.admin-hobby-status-inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.admin-hobby-deactivate-button,
+.admin-hobby-reactivate-button {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid;
+}
+
+.admin-hobby-deactivate-button {
+    background: #fff1f2;
+    color: #be123c;
+    border-color: #fecdd3;
+}
+
+.admin-hobby-reactivate-button {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.admin-hobby-deactivate-button:disabled,
+.admin-hobby-reactivate-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.admin-hobbies-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0;
+}
+
+.admin-hobbies-filter-button {
+    padding: 9px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    color: #374151;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.admin-hobbies-filter-button:hover {
+    background: #f3f4f6;
+}
+
+.admin-hobbies-filter-button.active {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
+.admin-hobbies-filter-button:focus-visible {
+    outline: 3px solid #93c5fd;
+    outline-offset: 2px;
+}
+
+/* Modal de confirmação de desativação */
+
+.admin-hobby-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.65);
+}
+
+.admin-hobby-confirm-modal {
+    width: min(100%, 440px);
+    box-sizing: border-box;
+    padding: 30px;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+    text-align: center;
+}
+
+.admin-hobby-confirm-icon {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: #fff1f2;
+    color: #be123c;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.admin-hobby-confirm-modal h2 {
+    margin: 0 0 14px;
+    color: #1e293b;
+    font-size: 23px;
+}
+
+.admin-hobby-confirm-modal p {
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.admin-hobby-confirm-modal strong {
+    color: #1e293b;
+}
+
+.admin-hobby-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 26px;
+}
+
+.admin-hobby-confirm-cancel,
+.admin-hobby-confirm-submit {
+    padding: 12px 18px;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-hobby-confirm-cancel {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+}
+
+.admin-hobby-confirm-submit {
+    border: none;
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.admin-hobby-confirm-submit:hover {
+    background: #b91c1c;
+}
+
+.admin-hobby-confirm-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 500px) {
+    .admin-hobby-confirm-modal {
+        padding: 22px;
+    }
+
+    .admin-hobby-confirm-actions {
+        flex-direction: column;
+    }
+}
+
+/* Ordenação do catálogo administrativo */
+
+.admin-hobbies-sort {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.admin-hobbies-sort label {
+    color: #475569;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.admin-hobbies-sort select {
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #334155;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.admin-hobbies-sort select:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+}
+
+@media (max-width: 500px) {
+    .admin-hobbies-sort {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .admin-hobbies-sort select {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+/* Paginação do catálogo */
+.admin-hobbies-page-size, .admin-hobbies-pagination {
+    display: flex; align-items: center; justify-content: flex-end;
+    flex-wrap: wrap; gap: 12px; margin: 16px 0;
+    color: #475569; font-size: 13px; font-weight: 600;
+}
+.admin-hobbies-page-size select, .admin-hobbies-pagination button {
+    padding: 9px 14px; border: 1px solid #cbd5e1; border-radius: 9px;
+    background: #fff; color: #334155; font: inherit;
+}
+.admin-hobbies-pagination button { cursor: pointer; }
+.admin-hobbies-pagination button:disabled { opacity: .5; cursor: not-allowed; }
+.admin-hobbies-pagination button:focus-visible,
+.admin-hobbies-page-size select:focus-visible {
+    outline: 2px solid #6366f1; outline-offset: 2px;
+}
+@media (max-width: 500px) {
+    .admin-hobbies-pagination { justify-content: space-between; }
+}

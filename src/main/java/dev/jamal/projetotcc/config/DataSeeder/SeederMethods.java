@@ -64,25 +64,37 @@ public class SeederMethods{
     }
 
 
-    public Hobby criarOuAtualizarHobby(String nome, String descricao, Double custoEstimado, Integer nivelDificuldade,
-                                        Double tempoNecessario, TipoSocializacao tipoSocializacao, HobbyCategory category,
-                                        NivelAtividadeFisica atividadeFisica, AmbientePreferido ambiente
+    public Hobby criarOuAtualizarHobby(
+            String nome,
+            String descricao,
+            Double custoEstimado,
+            Integer nivelDificuldade,
+            Double tempoNecessario,
+            TipoSocializacao tipoSocializacao,
+            HobbyCategory category,
+            NivelAtividadeFisica atividadeFisica,
+            AmbientePreferido ambiente
     ) {
-        Hobby hobby = hobbyRepository.findByNomeIgnoreCase(nome)
-                .orElseGet(Hobby::new);
+        return hobbyRepository.findByNomeIgnoreCase(nome)
+                .orElseGet(() -> {
+                    Hobby hobby = new Hobby();
 
-        hobby.setNome(nome);
-        hobby.setDescricao(descricao);
-        hobby.setCustoEstimado(custoEstimado);
-        hobby.setNivelDificuldade(nivelDificuldade);
-        hobby.setTempoNecessario(tempoNecessario);
-        hobby.setTipoSocializacao(tipoSocializacao);
-        hobby.setCategory(category);
-        hobby.setNivelAtividadeFisica(atividadeFisica);
-        hobby.setAmbiente(ambiente);
-        hobby.setRequerEquipamento(hobby.getCustoEstimado() != null && hobby.getCustoEstimado() > 0);
+                    hobby.setNome(nome);
+                    hobby.setDescricao(descricao);
+                    hobby.setCustoEstimado(custoEstimado);
+                    hobby.setNivelDificuldade(nivelDificuldade);
+                    hobby.setTempoNecessario(tempoNecessario);
+                    hobby.setTipoSocializacao(tipoSocializacao);
+                    hobby.setCategory(category);
+                    hobby.setNivelAtividadeFisica(atividadeFisica);
+                    hobby.setAmbiente(ambiente);
 
-        return hobbyRepository.save(hobby);
+                    hobby.setRequerEquipamento(
+                            custoEstimado != null && custoEstimado > 0
+                    );
+
+                    return hobbyRepository.save(hobby);
+                });
     }
 
     public Objective obterOuCriarObjetivo(
