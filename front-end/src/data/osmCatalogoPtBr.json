@@ -1,0 +1,282 @@
+[
+  {
+    "id": "leisure/park",
+    "categoria": "Lazer",
+    "nome": "Parque",
+    "osmKey": "leisure",
+    "osmValue": "park",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "leisure/garden",
+    "categoria": "Lazer",
+    "nome": "Jardim",
+    "osmKey": "leisure",
+    "osmValue": "garden",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "leisure/playground",
+    "categoria": "Lazer",
+    "nome": "Área de recreação",
+    "osmKey": "leisure",
+    "osmValue": "playground",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "tourism/picnic_site",
+    "categoria": "Lazer",
+    "nome": "Área de piquenique",
+    "osmKey": "tourism",
+    "osmValue": "picnic_site",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "leisure/pitch",
+    "categoria": "Esportes",
+    "nome": "Campo ou quadra esportiva",
+    "osmKey": "leisure",
+    "osmValue": "pitch",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "leisure/sports_centre",
+    "categoria": "Esportes",
+    "nome": "Centro esportivo",
+    "osmKey": "leisure",
+    "osmValue": "sports_centre",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "leisure/fitness_centre",
+    "categoria": "Esportes",
+    "nome": "Academia",
+    "osmKey": "leisure",
+    "osmValue": "fitness_centre",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "leisure/swimming_pool",
+    "categoria": "Esportes",
+    "nome": "Piscina",
+    "osmKey": "leisure",
+    "osmValue": "swimming_pool",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "leisure/track",
+    "categoria": "Esportes",
+    "nome": "Pista de corrida",
+    "osmKey": "leisure",
+    "osmValue": "track",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "leisure/stadium",
+    "categoria": "Esportes",
+    "nome": "Estádio",
+    "osmKey": "leisure",
+    "osmValue": "stadium",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "leisure/golf_course",
+    "categoria": "Esportes",
+    "nome": "Campo de golfe",
+    "osmKey": "leisure",
+    "osmValue": "golf_course",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "leisure/skate_park",
+    "categoria": "Esportes",
+    "nome": "Pista de skate",
+    "osmKey": "leisure",
+    "osmValue": "skate_park",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "sport/soccer",
+    "categoria": "Esportes",
+    "nome": "Futebol (modalidade)",
+    "osmKey": "sport",
+    "osmValue": "soccer",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "sport/basketball",
+    "categoria": "Esportes",
+    "nome": "Basquete (modalidade)",
+    "osmKey": "sport",
+    "osmValue": "basketball",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "sport/tennis",
+    "categoria": "Esportes",
+    "nome": "Tênis (modalidade)",
+    "osmKey": "sport",
+    "osmValue": "tennis",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "sport/volleyball",
+    "categoria": "Esportes",
+    "nome": "Vôlei (modalidade)",
+    "osmKey": "sport",
+    "osmValue": "volleyball",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "sport/running",
+    "categoria": "Esportes",
+    "nome": "Corrida (modalidade)",
+    "osmKey": "sport",
+    "osmValue": "running",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "sport/climbing",
+    "categoria": "Esportes",
+    "nome": "Escalada (modalidade)",
+    "osmKey": "sport",
+    "osmValue": "climbing",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "sport/cycling",
+    "categoria": "Esportes",
+    "nome": "Ciclismo (modalidade)",
+    "osmKey": "sport",
+    "osmValue": "cycling",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "natural/wood",
+    "categoria": "Natureza",
+    "nome": "Floresta",
+    "osmKey": "natural",
+    "osmValue": "wood",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "natural/beach",
+    "categoria": "Natureza",
+    "nome": "Praia",
+    "osmKey": "natural",
+    "osmValue": "beach",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "natural/water",
+    "categoria": "Natureza",
+    "nome": "Lago",
+    "osmKey": "natural",
+    "osmValue": "water",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "natural/peak",
+    "categoria": "Natureza",
+    "nome": "Pico",
+    "osmKey": "natural",
+    "osmValue": "peak",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "natural/cliff",
+    "categoria": "Natureza",
+    "nome": "Penhasco",
+    "osmKey": "natural",
+    "osmValue": "cliff",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "leisure/nature_reserve",
+    "categoria": "Natureza",
+    "nome": "Reserva natural",
+    "osmKey": "leisure",
+    "osmValue": "nature_reserve",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "highway/cycleway",
+    "categoria": "Mobilidade",
+    "nome": "Ciclovia",
+    "osmKey": "highway",
+    "osmValue": "cycleway",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "highway/path",
+    "categoria": "Mobilidade",
+    "nome": "Caminho ou trilha",
+    "osmKey": "highway",
+    "osmValue": "path",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "highway/footway",
+    "categoria": "Mobilidade",
+    "nome": "Trilha para pedestres",
+    "osmKey": "highway",
+    "osmValue": "footway",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "amenity/library",
+    "categoria": "Cultura",
+    "nome": "Biblioteca",
+    "osmKey": "amenity",
+    "osmValue": "library",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "amenity/theatre",
+    "categoria": "Cultura",
+    "nome": "Teatro",
+    "osmKey": "amenity",
+    "osmValue": "theatre",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "tourism/museum",
+    "categoria": "Cultura",
+    "nome": "Museu",
+    "osmKey": "tourism",
+    "osmValue": "museum",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "amenity/community_centre",
+    "categoria": "Cultura",
+    "nome": "Centro comunitário",
+    "osmKey": "amenity",
+    "osmValue": "community_centre",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "amenity/music_school",
+    "categoria": "Cultura",
+    "nome": "Escola de música",
+    "osmKey": "amenity",
+    "osmValue": "music_school",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "amenity/school",
+    "categoria": "Educação",
+    "nome": "Escola",
+    "osmKey": "amenity",
+    "osmValue": "school",
+    "matchType": "IGUAL"
+  },
+  {
+    "id": "amenity/university",
+    "categoria": "Educação",
+    "nome": "Universidade",
+    "osmKey": "amenity",
+    "osmValue": "university",
+    "matchType": "IGUAL"
+  }
+]
