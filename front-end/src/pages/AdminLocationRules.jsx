@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/api";
+import catalogoOSM from "../data/osmCatalogoPtBr.json";
 
 const headers = () => ({
     Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -38,6 +39,12 @@ export default function AdminLocationRules() {
     const [erroCadastro, setErroCadastro] = useState("");
     const [sucesso, setSucesso] = useState("");
     const [versaoListagem, setVersaoListagem] = useState(0);
+    const [regraEmEdicao, setRegraEmEdicao] = useState(null);
+    const [operacaoId, setOperacaoId] = useState(null);
+    const [erroOperacao, setErroOperacao] = useState("");
+    const [buscaCatalogo, setBuscaCatalogo] = useState("");
+    const [categoriaCatalogo, setCategoriaCatalogo] = useState("Todas");
+    const [catalogoAberto, setCatalogoAberto] = useState(true);
 
     useEffect(() => {
         let ativo = true;
@@ -103,6 +110,79 @@ export default function AdminLocationRules() {
         setFormulario(formularioInicial());
         setErroCadastro("");
         setSucesso("");
+        setRegraEmEdicao(null);
+        setErroOperacao("");
+    }
+
+    function abrirCadastro() {
+        setRegraEmEdicao(null);
+        setFormulario(formularioInicial());
+        setErroCadastro("");
+        setErroOperacao("");
+        setSucesso("");
+        setFormularioAberto(true);
+    }
+
+    function abrirEdicao(regra) {
+        setRegraEmEdicao(regra.id);
+        setFormulario({
+            relevancia: regra.relevancia,
+            ativo: regra.ativo,
+            conditions: regra.conditions.map((condicao) => ({
+                osmKey: condicao.osmKey,
+                osmValue: condicao.osmValue ?? "",
+                matchType: condicao.matchType
+            }))
+        });
+        setErroCadastro("");
+        setErroOperacao("");
+        setSucesso("");
+        setFormularioAberto(true);
+    }
+
+    async function alterarStatus(regra) {
+        if (operacaoId !== null || salvando) return;
+        setOperacaoId(regra.id);
+        setErroOperacao("");
+        setSucesso("");
+        try {
+            await api.patch(
+                `/admin/hobbies/${hobbyId}/location-rules/${regra.id}/status`,
+                { ativo: !regra.ativo },
+                { headers: headers() }
+            );
+            setSucesso(`Regra #${regra.id} ${regra.ativo ? "desativada" : "ativada"} com sucesso.`);
+            setVersaoListagem((versao) => versao + 1);
+        } catch (error) {
+            setErroOperacao(mensagemErro(error, "Não foi possível alterar o status da regra."));
+        } finally {
+            setOperacaoId(null);
+        }
+    }
+
+    async function excluirRegra(regra) {
+        if (operacaoId !== null || salvando) return;
+        if (!window.confirm(`Excluir definitivamente a regra #${regra.id}?`)) return;
+        setOperacaoId(regra.id);
+        setErroOperacao("");
+        setSucesso("");
+        try {
+            await api.delete(
+                `/admin/hobbies/${hobbyId}/location-rules/${regra.id}`,
+                { headers: headers() }
+            );
+            if (regraEmEdicao === regra.id) {
+                setRegraEmEdicao(null);
+                setFormularioAberto(false);
+                setFormulario(formularioInicial());
+            }
+            setSucesso(`Regra #${regra.id} excluída com sucesso.`);
+            setVersaoListagem((versao) => versao + 1);
+        } catch (error) {
+            setErroOperacao(mensagemErro(error, "Não foi possível excluir a regra."));
+        } finally {
+            setOperacaoId(null);
+        }
     }
 
     function alterarCondicao(indice, campo, valor) {
@@ -122,6 +202,28 @@ export default function AdminLocationRules() {
         }));
     }
 
+    const categoriasCatalogo = ["Todas", ...new Set(catalogoOSM.map((item) => item.categoria))];
+    const resultadosCatalogo = catalogoOSM.filter((item) => {
+        const categoriaCorresponde = categoriaCatalogo === "Todas" || item.categoria === categoriaCatalogo;
+        const termo = buscaCatalogo.trim().toLocaleLowerCase("pt-BR");
+        const texto = `${item.nome} ${item.categoria} ${item.osmKey} ${item.osmValue}`.toLocaleLowerCase("pt-BR");
+        return categoriaCorresponde && texto.includes(termo);
+    });
+
+    function adicionarDoCatalogo(item) {
+        const nova = { osmKey: item.osmKey, osmValue: item.osmValue, matchType: item.matchType };
+        setErroCadastro("");
+        setFormulario((atual) => {
+            const jaExiste = atual.conditions.some((condicao) =>
+                condicao.osmKey === nova.osmKey && condicao.osmValue === nova.osmValue && condicao.matchType === nova.matchType
+            );
+            if (jaExiste) return atual;
+            const somenteVazia = atual.conditions.length === 1 &&
+                !atual.conditions[0].osmKey.trim() && !atual.conditions[0].osmValue.trim();
+            return { ...atual, conditions: somenteVazia ? [nova] : [...atual.conditions, nova] };
+        });
+    }
+
     function adicionarCondicao() {
         setFormulario((atual) => ({
             ...atual,
@@ -136,7 +238,7 @@ export default function AdminLocationRules() {
         }));
     }
 
-    async function cadastrarRegra(event) {
+    async function salvarRegra(event) {
         event.preventDefault();
         if (!hobbyId || salvando) return;
 
@@ -174,19 +276,24 @@ export default function AdminLocationRules() {
         const hobbyDoEnvio = hobbyId;
         setSalvando(true);
         try {
-            await api.post(
-                `/admin/hobbies/${hobbyDoEnvio}/location-rules`,
-                { relevancia: formulario.relevancia, ativo: formulario.ativo, conditions },
-                { headers: headers() }
-            );
+            const url = `/admin/hobbies/${hobbyDoEnvio}/location-rules`;
+            const dados = { relevancia: formulario.relevancia, ativo: formulario.ativo, conditions };
+            if (regraEmEdicao !== null) {
+                await api.put(`${url}/${regraEmEdicao}`, dados, { headers: headers() });
+            } else {
+                await api.post(url, dados, { headers: headers() });
+            }
 
-            // Evita exibir uma confirmação do hobby anterior após trocar a seleção.
+            // Fecha o formulário e atualiza as regras após a gravação.
             setFormularioAberto(false);
             setFormulario(formularioInicial());
-            setSucesso("Regra geográfica cadastrada com sucesso.");
+            setSucesso(regraEmEdicao !== null
+                ? "Regra geográfica atualizada com sucesso."
+                : "Regra geográfica cadastrada com sucesso.");
+            setRegraEmEdicao(null);
             setVersaoListagem((versao) => versao + 1);
         } catch (error) {
-            setErroCadastro(mensagemErro(error, "Não foi possível cadastrar a regra."));
+            setErroCadastro(mensagemErro(error, "Não foi possível salvar a regra."));
         } finally {
             setSalvando(false);
         }
@@ -220,17 +327,13 @@ export default function AdminLocationRules() {
             {hobbyId && (
                 <>
                     <section className="admin-card">
-                        <h2>Cadastrar regra geográfica</h2>
+                        <h2>{regraEmEdicao !== null ? `Editar regra #${regraEmEdicao}` : "Cadastrar regra geográfica"}</h2>
                         {!formularioAberto ? (
-                            <button type="button" onClick={() => {
-                                setFormularioAberto(true);
-                                setErroCadastro("");
-                                setSucesso("");
-                            }}>
+                            <button type="button" disabled={operacaoId !== null} onClick={abrirCadastro}>
                                 Nova regra
                             </button>
                         ) : (
-                            <form onSubmit={cadastrarRegra}>
+                            <form onSubmit={salvarRegra}>
                                 <div>
                                     <label htmlFor="regra-relevancia">Relevância</label>
                                     <select
@@ -262,7 +365,50 @@ export default function AdminLocationRules() {
                                     </label>
                                 </div>
 
-                                <h3>Condições OSM</h3>
+                                <section className="osm-catalogo" aria-label="Biblioteca de tags OSM">
+                                    <h3>Biblioteca de locais em português</h3>
+                                    <p>Encontre tags conhecidas e adicione-as às condições da regra. Cada item corresponde a uma condição técnica.</p>
+                                    <button type="button" disabled={salvando} onClick={() => setCatalogoAberto((atual) => !atual)}>
+                                        {catalogoAberto ? "Ocultar biblioteca" : "Mostrar biblioteca"}
+                                    </button>
+                                    {catalogoAberto && (
+                                        <div>
+                                            <label htmlFor="osm-catalogo-busca">Pesquisar por nome ou tag</label>
+                                            <input id="osm-catalogo-busca" type="search" value={buscaCatalogo}
+                                                   disabled={salvando} placeholder="Ex.: parque, piscina, sport..."
+                                                   onChange={(e) => setBuscaCatalogo(e.target.value)} />
+                                            <label htmlFor="osm-catalogo-categoria">Categoria</label>
+                                            <select id="osm-catalogo-categoria" value={categoriaCatalogo}
+                                                    disabled={salvando} onChange={(e) => setCategoriaCatalogo(e.target.value)}>
+                                                {categoriasCatalogo.map((categoria) => (
+                                                    <option key={categoria} value={categoria}>{categoria}</option>
+                                                ))}
+                                            </select>
+                                            <p>{resultadosCatalogo.length} opção(ões) encontrada(s).</p>
+                                            <div className="osm-catalogo-resultados" style={{ maxHeight: 300, overflowY: "auto" }}>
+                                                {resultadosCatalogo.map((item) => {
+                                                    const adicionado = formulario.conditions.some((condicao) =>
+                                                        condicao.osmKey === item.osmKey && condicao.osmValue === item.osmValue && condicao.matchType === item.matchType
+                                                    );
+                                                    return (
+                                                        <div key={item.id} className="osm-catalogo-item" style={{ padding: "0.65rem 0", borderBottom: "1px solid #8884" }}>
+                                                            <strong>{item.nome}</strong> <small>({item.categoria})</small>
+                                                            <div><code>{item.osmKey}={item.osmValue}</code></div>
+                                                            <button type="button" disabled={salvando || adicionado}
+                                                                    onClick={() => adicionarDoCatalogo(item)}>
+                                                                {adicionado ? "Adicionada" : "Adicionar condição"}
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                                {resultadosCatalogo.length === 0 && <p>Nenhuma opção encontrada. Use os campos técnicos abaixo.</p>}
+                                            </div>
+                                        </div>
+                                    )}
+                                    <p><small>Atenção: condições na mesma regra são combinadas conforme a lógica do backend. Para locais alternativos, cadastre regras separadas.</small></p>
+                                </section>
+
+                                <h3>Condições OSM (edição técnica)</h3>
                                 {formulario.conditions.map((condicao, indice) => (
                                     <fieldset key={indice} disabled={salvando}>
                                         <legend>Condição {indice + 1}</legend>
@@ -317,7 +463,7 @@ export default function AdminLocationRules() {
                                 {erroCadastro && <p role="alert">{erroCadastro}</p>}
                                 <div>
                                     <button type="submit" disabled={salvando}>
-                                        {salvando ? "Salvando..." : "Salvar regra"}
+                                        {salvando ? "Salvando..." : regraEmEdicao !== null ? "Salvar alterações" : "Salvar regra"}
                                     </button>
                                     <button
                                         type="button"
@@ -325,6 +471,7 @@ export default function AdminLocationRules() {
                                         onClick={() => {
                                             setFormularioAberto(false);
                                             setFormulario(formularioInicial());
+                                            setRegraEmEdicao(null);
                                             setErroCadastro("");
                                         }}
                                     >
@@ -334,6 +481,7 @@ export default function AdminLocationRules() {
                             </form>
                         )}
                         {sucesso && <p role="status">{sucesso}</p>}
+                        {erroOperacao && <p role="alert">{erroOperacao}</p>}
                     </section>
 
                     <section className="admin-location-rules-list">
@@ -360,6 +508,29 @@ export default function AdminLocationRules() {
                                         </li>
                                     ))}
                                 </ul>
+                                <div className="admin-rule-actions">
+                                    <button
+                                        type="button"
+                                        disabled={salvando || operacaoId !== null}
+                                        onClick={() => abrirEdicao(regra)}
+                                    >
+                                        Editar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={salvando || operacaoId !== null}
+                                        onClick={() => alterarStatus(regra)}
+                                    >
+                                        {operacaoId === regra.id ? "Processando..." : regra.ativo ? "Desativar" : "Ativar"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={salvando || operacaoId !== null}
+                                        onClick={() => excluirRegra(regra)}
+                                    >
+                                        Excluir
+                                    </button>
+                                </div>
                             </article>
                         ))}
                     </section>
