@@ -4,6 +4,8 @@ import dev.jamal.projetotcc.DTO.Location.HobbyLocationDTO;
 import dev.jamal.projetotcc.Entities.HobbyLocationRule;
 import dev.jamal.projetotcc.Repository.HobbyLocationRuleRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import org.springframework.http.MediaType;
@@ -35,6 +37,9 @@ public class OverpassService {
 
     private final List<RestClient> servidores;
 
+    @Value("${app.overpass.user-agent:Recommendi.a/1.0 (academic hobby recommendation project)}")
+    private String userAgent;
+
     private final HobbyLocationRankingService rankingService;
 
     private final HobbyLocationQuery hobbyLocationQuery;
@@ -53,7 +58,7 @@ public class OverpassService {
         JdkClientHttpRequestFactory requestFactory =
                 new JdkClientHttpRequestFactory(httpClient);
 
-        requestFactory.setReadTimeout(Duration.ofSeconds(12));
+        requestFactory.setReadTimeout(Duration.ofSeconds(35));
 
         this.servidores = List.of(
                 criarCliente("https://overpass-api.de", requestFactory),
@@ -93,6 +98,8 @@ public class OverpassService {
                                 + " de " + maxTentativasPorServidor
                 );
 
+                long inicio = System.nanoTime();
+
                 try {
                     MultiValueMap<String, String> form =
                             new LinkedMultiValueMap<>();
@@ -107,6 +114,7 @@ public class OverpassService {
 
                     JsonNode response = cliente.post()
                             .uri("/api/interpreter")
+                            .header(HttpHeaders.USER_AGENT, userAgent)
                             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                             .body(form)
                             .retrieve()
@@ -122,24 +130,39 @@ public class OverpassService {
                                     + servidor
                     );
 
+                    long duracaoMs =
+                            (System.nanoTime() - inicio) / 1_000_000;
+
+                    System.out.println(
+                            "Tempo de resposta: " + duracaoMs + " ms"
+                    );
+
                     return response;
 
                 } catch (RestClientException e) {
 
                     boolean erroTransitorio =
                             e instanceof ResourceAccessException;
+                    boolean limiteDeRequisicoes = false;
 
 
                     if (e instanceof RestClientResponseException responseError) {
 
                         int status = responseError.getStatusCode().value();
 
+                        limiteDeRequisicoes = status == 429;
                         erroTransitorio =
-                                status == 429 ||
-                                        status == 502 ||
+                                status == 502 ||
                                         status == 503 ||
                                         status == 504;
                     }
+
+                    long duracaoMs =
+                            (System.nanoTime() - inicio) / 1_000_000;
+
+                    System.out.println(
+                            "Tempo até falha: " + duracaoMs + " ms"
+                    );
 
                     System.out.println(
                             "Falha na Overpass " + servidor
@@ -150,6 +173,11 @@ public class OverpassService {
                             "O servidor " + servidor.toLowerCase()
                                     + " não conseguiu concluir a consulta."
                     );
+
+                    // 429: não insistir imediatamente no mesmo servidor.
+                    if (limiteDeRequisicoes) {
+                        break;
+                    }
 
                     if (!erroTransitorio) {
                         throw new OverpassUnavailableException();
@@ -207,6 +235,13 @@ public class OverpassService {
         if (query == null) {
             return List.of();
         }
+
+        System.out.println("\n========== OVERPASS QUERY ==========");
+        System.out.println("Hobby ID: " + hobbyId);
+        System.out.println("Latitude: " + latitude);
+        System.out.println("Longitude: " + longitude);
+        System.out.println(query);
+        System.out.println("====================================\n");
 
         JsonNode response = consultarOverpass(query);
 

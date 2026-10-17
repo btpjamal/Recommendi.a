@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/api";
 import catalogoOSM from "../data/osmCatalogoAmpliadoPtBr.json";
+import HobbyLocations from "../components/HobbyLocations";
 
 const headers = () => ({
     Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -32,6 +33,7 @@ function mensagemErro(error, alternativa) {
 export default function AdminLocationRules() {
     const [hobbies, setHobbies] = useState([]);
     const [hobbyId, setHobbyId] = useState("");
+    const [testeAberto, setTesteAberto] = useState(false);
     const [regras, setRegras] = useState([]);
 
     const [carregandoHobbies, setCarregandoHobbies] = useState(true);
@@ -341,6 +343,22 @@ export default function AdminLocationRules() {
 
             {hobbyId && (
                 <>
+                    <section className="admin-card" aria-label="Testar busca de locais">
+                        <h2>Testar busca de locais</h2>
+                        <p>Execute a busca real de locais para o hobby selecionado usando as regras já salvas e ativas. O resultado utiliza a localização disponível para o usuário autenticado.</p>
+                        <button type="button" onClick={() => setTesteAberto((aberto) => !aberto)} aria-expanded={testeAberto}>
+                            {testeAberto ? "Ocultar teste" : "Abrir teste de locais"}
+                        </button>
+                        {testeAberto && (
+                            <div style={{ marginTop: "1rem" }}>
+                                <HobbyLocations
+                                    key={hobbyId}
+                                    hobbyId={hobbyId}
+                                    hobbyNome={hobbies.find((hobby) => String(hobby.id) === String(hobbyId))?.nome ?? "este hobby"}
+                                />
+                            </div>
+                        )}
+                    </section>
                     <section className="admin-card">
                         <h2>{regraEmEdicao !== null ? `Editar regra #${regraEmEdicao}` : "Cadastrar regra geográfica"}</h2>
                         {!formularioAberto ? (
