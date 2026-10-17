@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/api";
-import catalogoOSM from "../data/osmCatalogoPtBr.json";
+import catalogoOSM from "../data/osmCatalogoAmpliadoPtBr.json";
 
 const headers = () => ({
     Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -9,6 +9,12 @@ const headers = () => ({
 const rotulo = (valor) =>
     valor?.replaceAll("_", " ").toLowerCase()
         .replace(/^./, (letra) => letra.toUpperCase()) || "—";
+
+const TAMANHO_PAGINA_CATALOGO = 25;
+const normalizarBusca = (valor) => String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR");
 
 const condicaoVazia = () => ({ osmKey: "", osmValue: "", matchType: "IGUAL" });
 
@@ -45,6 +51,7 @@ export default function AdminLocationRules() {
     const [buscaCatalogo, setBuscaCatalogo] = useState("");
     const [categoriaCatalogo, setCategoriaCatalogo] = useState("Todas");
     const [catalogoAberto, setCatalogoAberto] = useState(true);
+    const [paginaCatalogo, setPaginaCatalogo] = useState(1);
 
     useEffect(() => {
         let ativo = true;
@@ -202,13 +209,21 @@ export default function AdminLocationRules() {
         }));
     }
 
-    const categoriasCatalogo = ["Todas", ...new Set(catalogoOSM.map((item) => item.categoria))];
+    const categoriasCatalogo = ["Todas", ...Array.from(new Set(catalogoOSM.map((item) => item.categoria))).sort((a, b) => a.localeCompare(b, "pt-BR"))];
     const resultadosCatalogo = catalogoOSM.filter((item) => {
-        const categoriaCorresponde = categoriaCatalogo === "Todas" || item.categoria === categoriaCatalogo;
-        const termo = buscaCatalogo.trim().toLocaleLowerCase("pt-BR");
-        const texto = `${item.nome} ${item.categoria} ${item.osmKey} ${item.osmValue}`.toLocaleLowerCase("pt-BR");
-        return categoriaCorresponde && texto.includes(termo);
+        if (categoriaCatalogo !== "Todas" && item.categoria !== categoriaCatalogo) return false;
+        const termo = normalizarBusca(buscaCatalogo.trim());
+        if (!termo) return true;
+        const texto = [item.nome, item.categoria, item.osmKey, item.osmValue,
+            ...(item.termosBusca || [])].join(" ");
+        return normalizarBusca(texto).includes(termo);
     });
+    const totalPaginasCatalogo = Math.max(1, Math.ceil(resultadosCatalogo.length / TAMANHO_PAGINA_CATALOGO));
+    const paginaAtualCatalogo = Math.min(paginaCatalogo, totalPaginasCatalogo);
+    const resultadosPaginaCatalogo = resultadosCatalogo.slice(
+        (paginaAtualCatalogo - 1) * TAMANHO_PAGINA_CATALOGO,
+        paginaAtualCatalogo * TAMANHO_PAGINA_CATALOGO
+    );
 
     function adicionarDoCatalogo(item) {
         const nova = { osmKey: item.osmKey, osmValue: item.osmValue, matchType: item.matchType };
@@ -373,27 +388,27 @@ export default function AdminLocationRules() {
                                     </button>
                                     {catalogoAberto && (
                                         <div>
-                                            <label htmlFor="osm-catalogo-busca">Pesquisar por nome ou tag</label>
+                                            <label htmlFor="osm-catalogo-busca">Pesquisar por nome, sinônimo ou tag</label>
                                             <input id="osm-catalogo-busca" type="search" value={buscaCatalogo}
-                                                   disabled={salvando} placeholder="Ex.: parque, piscina, sport..."
-                                                   onChange={(e) => setBuscaCatalogo(e.target.value)} />
+                                                   disabled={salvando} placeholder="Ex.: praça, natação, leisure=park..."
+                                                   onChange={(e) => { setBuscaCatalogo(e.target.value); setPaginaCatalogo(1); }} />
                                             <label htmlFor="osm-catalogo-categoria">Categoria</label>
                                             <select id="osm-catalogo-categoria" value={categoriaCatalogo}
-                                                    disabled={salvando} onChange={(e) => setCategoriaCatalogo(e.target.value)}>
+                                                    disabled={salvando} onChange={(e) => { setCategoriaCatalogo(e.target.value); setPaginaCatalogo(1); }}>
                                                 {categoriasCatalogo.map((categoria) => (
                                                     <option key={categoria} value={categoria}>{categoria}</option>
                                                 ))}
                                             </select>
-                                            <p>{resultadosCatalogo.length} opção(ões) encontrada(s).</p>
+                                            <p>{resultadosCatalogo.length} de {catalogoOSM.length} opções encontradas. Página {paginaAtualCatalogo} de {totalPaginasCatalogo}.</p>
                                             <div className="osm-catalogo-resultados" style={{ maxHeight: 300, overflowY: "auto" }}>
-                                                {resultadosCatalogo.map((item) => {
+                                                {resultadosPaginaCatalogo.map((item) => {
                                                     const adicionado = formulario.conditions.some((condicao) =>
                                                         condicao.osmKey === item.osmKey && condicao.osmValue === item.osmValue && condicao.matchType === item.matchType
                                                     );
                                                     return (
                                                         <div key={item.id} className="osm-catalogo-item" style={{ padding: "0.65rem 0", borderBottom: "1px solid #8884" }}>
                                                             <strong>{item.nome}</strong> <small>({item.categoria})</small>
-                                                            <div><code>{item.osmKey}={item.osmValue}</code></div>
+                                                            <div><code>{item.matchType === "EXISTE" ? `${item.osmKey} (chave existente)` : `${item.osmKey}=${item.osmValue}`}</code></div>
                                                             <button type="button" disabled={salvando || adicionado}
                                                                     onClick={() => adicionarDoCatalogo(item)}>
                                                                 {adicionado ? "Adicionada" : "Adicionar condição"}
@@ -403,6 +418,15 @@ export default function AdminLocationRules() {
                                                 })}
                                                 {resultadosCatalogo.length === 0 && <p>Nenhuma opção encontrada. Use os campos técnicos abaixo.</p>}
                                             </div>
+                                            {totalPaginasCatalogo > 1 && (
+                                                <div className="osm-catalogo-paginacao" style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginTop: "0.75rem" }}>
+                                                    <button type="button" disabled={salvando || paginaAtualCatalogo === 1}
+                                                            onClick={() => setPaginaCatalogo((atual) => Math.max(1, atual - 1))}>Anterior</button>
+                                                    <span>Página {paginaAtualCatalogo} de {totalPaginasCatalogo}</span>
+                                                    <button type="button" disabled={salvando || paginaAtualCatalogo === totalPaginasCatalogo}
+                                                            onClick={() => setPaginaCatalogo((atual) => Math.min(totalPaginasCatalogo, atual + 1))}>Próxima</button>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                     <p><small>Atenção: condições na mesma regra são combinadas conforme a lógica do backend. Para locais alternativos, cadastre regras separadas.</small></p>
