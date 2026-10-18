@@ -354,6 +354,7 @@ export default function AdminLocationRules() {
                                 <HobbyLocations
                                     key={hobbyId}
                                     hobbyId={hobbyId}
+                                    modoAdministrador
                                     hobbyNome={hobbies.find((hobby) => String(hobby.id) === String(hobbyId))?.nome ?? "este hobby"}
                                 />
                             </div>

@@ -77,142 +77,72 @@ public class OverpassService {
     }
 
     private JsonNode consultarOverpass(String query) {
-
-        final int maxTentativasPorServidor = 2;
-
+        // Uma tentativa por servidor evita sobrecarregar as instâncias públicas.
         for (int i = 0; i < servidores.size(); i++) {
-
             RestClient cliente = servidores.get(i);
+            String servidor = i == 0 ? "principal" : "secundário";
 
-            String servidor = i == 0
-                    ? "Principal"
-                    : "Secundário";
+            informarProgresso("Consultando servidor " + servidor + "...");
+            long inicio = System.nanoTime();
 
-            for (int tentativa = 1;
-                 tentativa <= maxTentativasPorServidor;
-                 tentativa++) {
+            try {
+                MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+                form.add("data", query);
 
-                informarProgresso(
-                        "Consultando servidor " + servidor.toLowerCase()
-                                + " — tentativa " + tentativa
-                                + " de " + maxTentativasPorServidor
-                );
+                JsonNode response = cliente.post()
+                        .uri("/api/interpreter")
+                        .header(HttpHeaders.USER_AGENT, userAgent)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .body(form)
+                        .retrieve()
+                        .body(JsonNode.class);
 
-                long inicio = System.nanoTime();
-
-                try {
-                    MultiValueMap<String, String> form =
-                            new LinkedMultiValueMap<>();
-
-                    form.add("data", query);
-
-                    System.out.println(
-                            "Overpass " + servidor
-                                    + " - tentativa " + tentativa
-                                    + "/" + maxTentativasPorServidor
-                    );
-
-                    JsonNode response = cliente.post()
-                            .uri("/api/interpreter")
-                            .header(HttpHeaders.USER_AGENT, userAgent)
-                            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                            .body(form)
-                            .retrieve()
-                            .body(JsonNode.class);
-
-                    if (response == null
-                            || !response.path("elements").isArray()) {
-                        throw new OverpassUnavailableException();
-                    }
-
-                    System.out.println(
-                            "Consulta realizada com sucesso - "
-                                    + servidor
-                    );
-
-                    long duracaoMs =
-                            (System.nanoTime() - inicio) / 1_000_000;
-
-                    System.out.println(
-                            "Tempo de resposta: " + duracaoMs + " ms"
-                    );
-
-                    return response;
-
-                } catch (RestClientException e) {
-
-                    boolean erroTransitorio =
-                            e instanceof ResourceAccessException;
-                    boolean limiteDeRequisicoes = false;
-
-
-                    if (e instanceof RestClientResponseException responseError) {
-
-                        int status = responseError.getStatusCode().value();
-
-                        limiteDeRequisicoes = status == 429;
-                        erroTransitorio =
-                                status == 502 ||
-                                        status == 503 ||
-                                        status == 504;
-                    }
-
-                    long duracaoMs =
-                            (System.nanoTime() - inicio) / 1_000_000;
-
-                    System.out.println(
-                            "Tempo até falha: " + duracaoMs + " ms"
-                    );
-
-                    System.out.println(
-                            "Falha na Overpass " + servidor
-                                    + ": " + e.getMessage()
-                    );
-
-                    informarProgresso(
-                            "O servidor " + servidor.toLowerCase()
-                                    + " não conseguiu concluir a consulta."
-                    );
-
-                    // 429: não insistir imediatamente no mesmo servidor.
-                    if (limiteDeRequisicoes) {
-                        break;
-                    }
-
-                    if (!erroTransitorio) {
-                        throw new OverpassUnavailableException();
-                    }
-
-                } catch (OverpassUnavailableException e) {
-
-                    System.out.println(
-                            "Resposta inválida da Overpass - "
-                                    + servidor
-                    );
-
-                    informarProgresso(
-                            "O servidor " + servidor.toLowerCase()
-                                    + " retornou uma resposta inválida."
-                    );
+                if (response == null || !response.path("elements").isArray()) {
+                    System.out.println("Overpass " + servidor + ": resposta inválida.");
+                    informarProgresso("Resposta inválida do servidor " + servidor + ".");
+                    continue;
                 }
 
-                // Aguarda somente entre tentativas do mesmo servidor.
-                if (tentativa < maxTentativasPorServidor) {
+                long duracaoMs = (System.nanoTime() - inicio) / 1_000_000;
+                System.out.println("Overpass " + servidor + ": sucesso em " + duracaoMs + " ms.");
+                return response;
 
-                    try {
-                        Thread.sleep(1500);
+            } catch (RestClientResponseException e) {
+                int status = e.getStatusCode().value();
+                long duracaoMs = (System.nanoTime() - inicio) / 1_000_000;
+                System.out.println("Overpass " + servidor + ": HTTP " + status
+                        + " após " + duracaoMs + " ms.");
 
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new OverpassUnavailableException();
-                    }
+                if (status == 429) {
+                    informarProgresso("Servidor " + servidor
+                            + " com limite de requisições. Tentando alternativa...");
+                } else if (status >= 500) {
+                    informarProgresso("Servidor " + servidor
+                            + " indisponível. Tentando alternativa...");
+                } else {
+                    // Outros 4xx geralmente indicam requisição inválida:
+                    // repetir em outro servidor não corrige a consulta.
+                    informarProgresso("A consulta foi rejeitada pelo servidor Overpass.");
+                    throw new OverpassUnavailableException();
                 }
+
+            } catch (ResourceAccessException e) {
+                long duracaoMs = (System.nanoTime() - inicio) / 1_000_000;
+                System.out.println("Overpass " + servidor
+                        + ": falha de conexão ou timeout após " + duracaoMs + " ms.");
+                informarProgresso("Sem resposta do servidor " + servidor
+                        + ". Tentando alternativa...");
+
+            } catch (RestClientException e) {
+                long duracaoMs = (System.nanoTime() - inicio) / 1_000_000;
+                System.out.println("Overpass " + servidor
+                        + ": erro de comunicação após " + duracaoMs + " ms ("
+                        + e.getClass().getSimpleName() + ").");
+                informarProgresso("Falha na comunicação com o servidor " + servidor + ".");
             }
         }
-        informarProgresso(
-                "Consulta concluída! Preparando os locais encontrados..."
-        );
 
+        informarProgresso("Não foi possível consultar os servidores de locais neste momento.");
         throw new OverpassUnavailableException();
     }
 
@@ -236,13 +166,6 @@ public class OverpassService {
             return List.of();
         }
 
-        System.out.println("\n========== OVERPASS QUERY ==========");
-        System.out.println("Hobby ID: " + hobbyId);
-        System.out.println("Latitude: " + latitude);
-        System.out.println("Longitude: " + longitude);
-        System.out.println(query);
-        System.out.println("====================================\n");
-
         JsonNode response = consultarOverpass(query);
 
         List<HobbyLocationDTO> locais = new ArrayList<>();
@@ -252,10 +175,6 @@ public class OverpassService {
         }
 
         JsonNode elementos = response.path("elements");
-
-        System.out.println(
-                "Locais válidos após filtragem: " + locais.size()
-        );
 
         List<HobbyLocationRule> regras =
                 ruleRepository.findActiveWithConditions(hobbyId);

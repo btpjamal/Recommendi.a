@@ -3,7 +3,7 @@ import { api } from "../api/api.js";
 import HobbyMap from "./HobbyMap";
 import "./HobbyLocations.css";
 
-export default function HobbyLocations({ hobbyId, hobbyNome }) {
+export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador = false }) {
     const [locais, setLocais] = useState([]);
     const [carregando, setCarregando] = useState(false);
     const [erro, setErro] = useState("");
@@ -118,7 +118,7 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
 
                     if (conteudo.includes("tentativa")) {
                         setTentativaAtual((atual) =>
-                            Math.min(atual + 1, 4)
+                            Math.min(atual + 1, 2)
                         );
                     }
                 }
@@ -253,6 +253,12 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
     };
 
     const informacaoStatus = mensagensStatus[statusBusca];
+    const resumoRelevancia = locais.reduce((total, local) => {
+        if (Object.prototype.hasOwnProperty.call(total, local.relevancia)) {
+            total[local.relevancia] += 1;
+        }
+        return total;
+    }, { ALTA: 0, MEDIA: 0, COMPLEMENTAR: 0 });
 
 
     return (
@@ -289,7 +295,7 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
 
                     {tentativaAtual > 0 && (
                         <small>
-                            Tentativa {tentativaAtual} de até 4
+                            Tentativa {tentativaAtual} de até 2
                         </small>
                     )}
 
@@ -297,7 +303,7 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
                         <div
                             className="hobby-locations-progress-fill"
                             style={{
-                                width: `${(tentativaAtual / 4) * 100}%`
+                                width: `${(tentativaAtual / 2) * 100}%`
                             }}
                         />
                     </div>
@@ -306,13 +312,19 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
 
             {erro && <p className="hobby-locations-error">{erro}</p>}
 
+            {modoAdministrador && buscaRealizada && (
+                <button type="button" className="plan-action-button" onClick={buscarLocais} disabled={carregando}>
+                    Repetir teste de locais
+                </button>
+            )}
+
             {buscaRealizada && (
                 <>
-                {informacaoStatus ? (
-                    <div
-                        className="hobby-locations-status"
-                        role="status"
-                    >
+                    {informacaoStatus ? (
+                        <div
+                            className="hobby-locations-status"
+                            role="status"
+                        >
                 <span
                     className="hobby-locations-status-icon"
                     aria-hidden="true"
@@ -320,77 +332,84 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
                     📍
                 </span>
 
-                        <h3>{informacaoStatus.titulo}</h3>
+                            <h3>{informacaoStatus.titulo}</h3>
 
-                        <p>
-                            {mensagemBusca || informacaoStatus.descricao}
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                        <p className="hobby-locations-count">
-                            {locais.length} locais encontrados
-                        </p>
+                            <p>
+                                {mensagemBusca || informacaoStatus.descricao}
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            <p className="hobby-locations-count">
+                                {locais.length} locais encontrados
+                            </p>
+                            {modoAdministrador && (
+                                <div className="hobby-locations-summary" aria-label="Resumo de relevância" style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: "1rem" }}>
+                                    <span><strong>Alta:</strong> {resumoRelevancia.ALTA}</span>
+                                    <span><strong>Média:</strong> {resumoRelevancia.MEDIA}</span>
+                                    <span><strong>Complementar:</strong> {resumoRelevancia.COMPLEMENTAR}</span>
+                                </div>
+                            )}
 
-                        {locais.length > 0 ? (
-                            <>
-                                {cidade && estado && (
-                                    <p className="hobby-locations-description">
-                                        Locais encontrados em {cidade} - {estado} e arredores.
-                                    </p>
-                                )}
-                                {centro && (
-                                    <HobbyMap
-                                        key={`${centro.latitude}-${centro.longitude}`}
-                                        latitude={centro.latitude}
-                                        longitude={centro.longitude}
-                                        locais={locais}
-                                    />
-                                )}
+                            {locais.length > 0 ? (
+                                <>
+                                    {cidade && estado && (
+                                        <p className="hobby-locations-description">
+                                            Locais encontrados em {cidade} - {estado} e arredores.
+                                        </p>
+                                    )}
+                                    {centro && (
+                                        <HobbyMap
+                                            key={`${centro.latitude}-${centro.longitude}`}
+                                            latitude={centro.latitude}
+                                            longitude={centro.longitude}
+                                            locais={locais}
+                                        />
+                                    )}
 
 
-                                <div className="hobby-locations-list">
-                                    {locais.map((local) => {
-                                        const relevancia = local.relevancia;
+                                    <div className="hobby-locations-list">
+                                        {locais.map((local) => {
+                                            const relevancia = local.relevancia;
 
-                                        const relevanciaTexto = {
-                                            ALTA: "Alta relevância",
-                                            MEDIA: "Relevância média",
-                                            COMPLEMENTAR: "Local complementar"
-                                        }[relevancia];
+                                            const relevanciaTexto = {
+                                                ALTA: "Alta relevância",
+                                                MEDIA: "Relevância média",
+                                                COMPLEMENTAR: "Local complementar"
+                                            }[relevancia];
 
-                                        const distanciaValida =
-                                            local.distanciaKm !== null &&
-                                            local.distanciaKm !== undefined &&
-                                            Number.isFinite(Number(local.distanciaKm));
+                                            const distanciaValida =
+                                                local.distanciaKm !== null &&
+                                                local.distanciaKm !== undefined &&
+                                                Number.isFinite(Number(local.distanciaKm));
 
-                                        return (
-                                            <div
-                                                className="hobby-location-item"
-                                                key={local.id}
-                                            >
-                                                <div className="hobby-location-header">
-                                                    <strong>{local.nome}</strong>
+                                            return (
+                                                <div
+                                                    className="hobby-location-item"
+                                                    key={local.id}
+                                                >
+                                                    <div className="hobby-location-header">
+                                                        <strong>{local.nome}</strong>
 
-                                                    {relevanciaTexto && (
-                                                        <span
-                                                            className={`hobby-location-badge ${
-                                                                relevancia === "ALTA"
-                                                                    ? "hobby-location-badge-high"
-                                                                    : relevancia === "MEDIA"
-                                                                        ? "hobby-location-badge-medium"
-                                                                        : "hobby-location-badge-complementary"
-                                                            }`}
-                                                        >
+                                                        {relevanciaTexto && (
+                                                            <span
+                                                                className={`hobby-location-badge ${
+                                                                    relevancia === "ALTA"
+                                                                        ? "hobby-location-badge-high"
+                                                                        : relevancia === "MEDIA"
+                                                                            ? "hobby-location-badge-medium"
+                                                                            : "hobby-location-badge-complementary"
+                                                                }`}
+                                                            >
                             {relevanciaTexto}
                         </span>
-                                                    )}
-                                                </div>
+                                                        )}
+                                                    </div>
 
-                                                {distanciaValida && (
-                                                    <div className="hobby-location-distance">
-                                                        <span aria-hidden="true">📍</span>
-                                                        <span>
+                                                    {distanciaValida && (
+                                                        <div className="hobby-location-distance">
+                                                            <span aria-hidden="true">📍</span>
+                                                            <span>
                             {Number(local.distanciaKm).toLocaleString(
                                 "pt-BR",
                                 {
@@ -399,32 +418,32 @@ export default function HobbyLocations({ hobbyId, hobbyNome }) {
                                 }
                             )} km do centro da cidade
                         </span>
-                                                    </div>
-                                                )}
+                                                        </div>
+                                                    )}
 
-                                                <p className="hobby-location-address">
-                                                    {local.endereco ||
-                                                        "Endereço não informado"}
-                                                </p>
+                                                    <p className="hobby-location-address">
+                                                        {local.endereco ||
+                                                            "Endereço não informado"}
+                                                    </p>
 
-                                                <a
-                                                    href={`https://www.google.com/maps/search/?api=1&query=${local.latitude}%2C${local.longitude}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                >
-                                                    Ver no Google Maps ↗
-                                                </a>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                                    <a
+                                                        href={`https://www.google.com/maps/search/?api=1&query=${local.latitude}%2C${local.longitude}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                    >
+                                                        Ver no Google Maps ↗
+                                                    </a>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
 
-                            </>
-                        ) : (
-                            <p>Nenhum local encontrado para este hobby.</p>
-                        )}
-                    </>
-                )}
+                                </>
+                            ) : (
+                                <p>Nenhum local encontrado para este hobby.</p>
+                            )}
+                        </>
+                    )}
                 </>
             )}
         </div>

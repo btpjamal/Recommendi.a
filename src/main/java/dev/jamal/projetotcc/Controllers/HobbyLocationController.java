@@ -7,6 +7,7 @@ import dev.jamal.projetotcc.Repository.HobbyRepository;
 import dev.jamal.projetotcc.Repository.RecommendationProfileRepository;
 import dev.jamal.projetotcc.Service.Location.GeocodingService;
 import dev.jamal.projetotcc.Service.Location.OverpassService;
+import dev.jamal.projetotcc.Exception.OverpassUnavailableException;
 import dev.jamal.projetotcc.Repository.HobbyLocationRuleRepository;
 import dev.jamal.projetotcc.Enum.HobbyLocationSearchStatus;
 import dev.jamal.projetotcc.Entities.HobbyLocationRule;
@@ -223,15 +224,16 @@ public class HobbyLocationController {
                 emitter.complete();
 
             } catch (Exception e) {
+                // Não expõe mensagens internas de serviços externos ao frontend.
+                String mensagem = mensagemErroBusca(e);
+                System.err.println("Falha na busca geográfica (hobby "
+                        + hobbyId + "): " + e.getClass().getSimpleName()
+                        + " - " + e.getMessage());
                 try {
-                    enviarEvento(
-                            emitter,
-                            "erro",
-                            "Não foi possível concluir a busca. Tente novamente."
-                    );
+                    enviarEvento(emitter, "erro", mensagem);
                     emitter.complete();
-                } catch (Exception ignored) {
-                    emitter.completeWithError(e);
+                } catch (Exception falhaEnvio) {
+                    emitter.completeWithError(falhaEnvio);
                 }
             } finally {
                 overpassService.limparProgresso();
@@ -239,6 +241,26 @@ public class HobbyLocationController {
         });
 
         return emitter;
+    }
+
+    private String mensagemErroBusca(Exception erro) {
+        if (erro instanceof OverpassUnavailableException) {
+            return "O serviço de busca de locais está temporariamente indisponível. Tente novamente mais tarde.";
+        }
+
+        if (erro instanceof ResponseStatusException resposta) {
+            if (resposta.getStatusCode().value() == 404) {
+                return "Não foi possível encontrar o hobby ou o perfil necessário para a busca.";
+            }
+            if (resposta.getStatusCode().value() == 400) {
+                return "Confira se sua cidade e seu estado estão cadastrados no perfil.";
+            }
+            if (resposta.getStatusCode().value() == 401 || resposta.getStatusCode().value() == 403) {
+                return "Sua sessão não está autorizada. Entre novamente e tente realizar a busca.";
+            }
+        }
+
+        return "Não foi possível concluir a busca de locais. Tente novamente.";
     }
 
     private void enviarEvento(
