@@ -1,0 +1,12 @@
+{
+  "versaoGit": "5b05b7cb (referência fornecida; confira se seu clone mudou)",
+  "analisados": 1742,
+  "importados": 632,
+  "duplicados": 30,
+  "semTraducao": 47,
+  "naoCompativeis": 1033,
+  "mantidosDoCatalogoInicial": 35,
+  "total": 667,
+  "fonte": "D:\\idea projects\\front-end\\id-tagging-schema",
+  "observacao": "Revisar manualmente a relevância e a semântica dos presets importados antes de disponibilizar aos administradores."
+}
