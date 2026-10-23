@@ -11,6 +11,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import dev.jamal.projetotcc.Entities.User;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @Tag(
         name = "Perfis",
@@ -19,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/users/{userId}/profile")
 @RequiredArgsConstructor
-@CrossOrigin("*")
 public class UserProfileController {
 
     private final UserProfileService userProfileService;
@@ -34,8 +36,15 @@ public class UserProfileController {
     @Transactional
     @GetMapping
     public ResponseEntity<UserProfileResponseDTO> buscarPerfil(
-        @PathVariable Long userId
+            @PathVariable Long userId,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .build();
+        }
+
         return ResponseEntity.ok(
                 userProfileService.buscarPorUsuario(userId)
         );
@@ -51,8 +60,17 @@ public class UserProfileController {
     @PutMapping
     public ResponseEntity<UserProfileResponseDTO> criarOuAtualizarPerfil(
             @PathVariable Long userId,
-            @RequestBody @Valid UserProfileCreateRequestDTO dto
+            @RequestBody @Valid UserProfileCreateRequestDTO dto,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
-        return ResponseEntity.ok(userProfileService.criarOuAtualizar(userId, dto));
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .build();
+        }
+
+        return ResponseEntity.ok(
+                userProfileService.criarOuAtualizar(userId, dto)
+        );
     }
 }
