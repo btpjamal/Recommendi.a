@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -32,8 +33,15 @@ public class RecommendationController {
     @ApiResponse(responseCode = "404", description = "Perfil do usuário não encontrado")
     @GetMapping("/{userId}")
     public ResponseEntity<List<HobbyRecommendationDTO>> recomendar(
-            @PathVariable Long userId
+            @PathVariable Long userId,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .build();
+        }
+
         return ResponseEntity.ok(
                 recommendationService.recomendar(userId)
         );

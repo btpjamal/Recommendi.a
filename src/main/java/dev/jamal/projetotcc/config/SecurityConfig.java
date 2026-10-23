@@ -2,6 +2,7 @@ package dev.jamal.projetotcc.config;
 
 import dev.jamal.projetotcc.Service.JwtAuthenticationFilter;
 import dev.jamal.projetotcc.Service.UserDetailsServiceImpl;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 import org.springframework.http.HttpMethod;
 import jakarta.servlet.DispatcherType;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
 @Configuration
 @EnableMethodSecurity
@@ -113,6 +116,17 @@ public class SecurityConfig {
 
                                 // Demais endpoints exigem autenticação
                                 .anyRequest().authenticated()
+                )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(
+                                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+                        )
+                        .accessDeniedHandler(
+                                (request, response, exception) ->
+                                        response.sendError(
+                                                HttpServletResponse.SC_FORBIDDEN
+                                        )
+                        )
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
