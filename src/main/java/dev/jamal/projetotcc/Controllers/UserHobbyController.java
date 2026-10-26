@@ -8,6 +8,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import dev.jamal.projetotcc.Entities.User;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequestMapping("/api/v1/user-hobbies")
@@ -18,13 +21,16 @@ public class UserHobbyController {
 
     @PatchMapping("/{userId}/{hobbyId}/nivel")
     public ResponseEntity<UserHobbyResponseDTO> atualizarNivel(
-            @PathVariable
-            Long userId,
-            @PathVariable
-            Long hobbyId,
-            @Valid @RequestBody
-            UserHobbyLevelRequestDTO dto
+            @PathVariable Long userId,
+            @PathVariable Long hobbyId,
+            @Valid @RequestBody UserHobbyLevelRequestDTO dto,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .build();
+        }
 
         return ResponseEntity.ok(
                 service.atualizarNivel(
@@ -39,16 +45,21 @@ public class UserHobbyController {
     public ResponseEntity<UserHobbyResponseDTO> atualizarStatus(
             @PathVariable Long userId,
             @PathVariable Long hobbyId,
-            @RequestBody UserHobbyStatusRequestDTO dto
+            @RequestBody UserHobbyStatusRequestDTO dto,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .build();
+        }
 
-        UserHobbyResponseDTO response =
+        return ResponseEntity.ok(
                 service.atualizarStatus(
                         userId,
                         hobbyId,
                         dto.statusAtual()
-                );
-
-        return ResponseEntity.ok(response);
+                )
+        );
     }
 }
