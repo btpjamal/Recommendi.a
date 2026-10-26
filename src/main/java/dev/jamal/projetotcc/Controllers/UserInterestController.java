@@ -9,6 +9,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import dev.jamal.projetotcc.Entities.User;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 
@@ -16,7 +19,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/users/{userId}/interests")
 @RequiredArgsConstructor
-@CrossOrigin("*")
 public class UserInterestController {
 
     private final UserInterestService userInterestService;
@@ -26,8 +28,15 @@ public class UserInterestController {
     @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
     @GetMapping
     public ResponseEntity<List<UserInterestResponseDTO>> listar(
-            @PathVariable Long userId
+            @PathVariable Long userId,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .build();
+        }
+
         return ResponseEntity.ok(
                 userInterestService.listarPorUsuario(userId)
         );
@@ -40,8 +49,15 @@ public class UserInterestController {
     @PostMapping
     public ResponseEntity<UserInterestResponseDTO> adicionarOuAtualizar(
             @PathVariable Long userId,
-            @RequestBody UserInterestCreateRequestDTO dto
+            @RequestBody UserInterestCreateRequestDTO dto,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .build();
+        }
+
         return ResponseEntity.ok(
                 userInterestService.adicionarOuAtualizar(userId, dto)
         );
