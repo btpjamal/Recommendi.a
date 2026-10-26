@@ -7,6 +7,9 @@ import dev.jamal.projetotcc.Service.RecommendationFeedbackService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import dev.jamal.projetotcc.Entities.User;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 
@@ -21,13 +24,14 @@ public class RecommendationFeedbackController {
     public ResponseEntity<Void> registrar(
             @PathVariable Long userId,
             @PathVariable Long hobbyId,
-            @RequestBody RecommendationFeedbackRequestDTO dto
+            @RequestBody RecommendationFeedbackRequestDTO dto,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
-        service.registrar(
-                userId,
-                hobbyId,
-                dto.getTipo()
-        );
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        service.registrar(userId, hobbyId, dto.getTipo());
 
         return ResponseEntity.noContent().build();
     }
@@ -35,8 +39,12 @@ public class RecommendationFeedbackController {
     @GetMapping("/{userId}")
     public ResponseEntity<List<RecommendationFeedbackResponseDTO>> listar(
             @PathVariable Long userId,
-            @RequestParam RecommendationFeedbackType tipo
+            @RequestParam RecommendationFeedbackType tipo,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         return ResponseEntity.ok(
                 service.listarPorTipo(userId, tipo)
@@ -46,8 +54,13 @@ public class RecommendationFeedbackController {
     @DeleteMapping("/{userId}/{hobbyId}")
     public ResponseEntity<Void> removerDecisao(
             @PathVariable Long userId,
-            @PathVariable Long hobbyId
+            @PathVariable Long hobbyId,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         service.removerDecisao(userId, hobbyId);
 
         return ResponseEntity.noContent().build();
