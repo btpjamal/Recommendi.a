@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import dev.jamal.projetotcc.Entities.User;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequestMapping("/api/v1/recommendation-profiles")
@@ -16,15 +18,17 @@ public class RecommendationProfileControler {
             recommendationProfileService;
 
     @PostMapping("/{userId}")
-    public ResponseEntity<RecommendationProfileResponseDTO>
-    salvarQuestionario(
+    public ResponseEntity<RecommendationProfileResponseDTO> salvarQuestionario(
             @PathVariable Long userId,
-            @Valid @RequestBody
-            RecommendationProfileCreateRequestDTO dto
+            @Valid @RequestBody RecommendationProfileCreateRequestDTO dto,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         RecommendationProfileResponseDTO response =
-                recommendationProfileService
-                        .salvarQuestionario(userId, dto);
+                recommendationProfileService.salvarQuestionario(userId, dto);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -32,23 +36,30 @@ public class RecommendationProfileControler {
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<RecommendationProfileResponseDTO>
-    buscarPorUsuario(
-            @PathVariable Long userId
+    public ResponseEntity<RecommendationProfileResponseDTO> buscarPorUsuario(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         return ResponseEntity.ok(
-                recommendationProfileService
-                        .buscarPorUsuario(userId)
+                recommendationProfileService.buscarPorUsuario(userId)
         );
     }
 
     @GetMapping("/{userId}/status")
     public ResponseEntity<Boolean> verificarQuestionario(
-            @PathVariable Long userId
+            @PathVariable Long userId,
+            @AuthenticationPrincipal User usuarioAutenticado
     ) {
+        if (!usuarioAutenticado.getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         return ResponseEntity.ok(
-                recommendationProfileService
-                        .questionarioConcluido(userId)
+                recommendationProfileService.questionarioConcluido(userId)
         );
     }
 }
