@@ -1,3 +1,4 @@
+import { session } from "../auth/session.js";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { api } from "../api/api";
@@ -28,8 +29,8 @@ export default function Profile() {
     if (selected === undefined || selected === "") { setErro("Escolha uma resposta para continuar."); return; }
     if (step < steps.length - 1) { setStep(step + 1); return; }
     try {
-      const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("userId");
+      const token = session.getItem("token");
+      const userId = session.getItem("userId");
       await api.put(`/users/${userId}/profile`, form, { headers: { Authorization: `Bearer ${token}` } });
       navigate("/recommendations");
     } catch (e) { setErro(e.response?.data?.message || "Não foi possível salvar seu perfil."); }

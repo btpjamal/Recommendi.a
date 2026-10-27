@@ -12,6 +12,17 @@ import java.util.Optional;
 public interface CommunityRepository
         extends JpaRepository<Community, Long> {
 
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(value = """
+        INSERT INTO communities(hobby_id, tipo, estado, cidade, data_criacao)
+        VALUES (:hobbyId, :tipo, :estado, :cidade, CURRENT_TIMESTAMP)
+        ON CONFLICT DO NOTHING
+        """, nativeQuery = true)
+    int insertIfAbsent(@org.springframework.data.repository.query.Param("hobbyId") Long hobbyId,
+                       @org.springframework.data.repository.query.Param("tipo") String tipo,
+                       @org.springframework.data.repository.query.Param("estado") String estado,
+                       @org.springframework.data.repository.query.Param("cidade") String cidade);
+
     List<Community> findByTipo(
             CommunityType tipo
     );

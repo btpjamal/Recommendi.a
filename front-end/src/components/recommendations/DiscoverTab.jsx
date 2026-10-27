@@ -1,3 +1,4 @@
+import { session } from "../../auth/session.js";
 import { useEffect, useState } from "react";
 import { api } from "../../api/api";
 import { useNavigate } from "react-router";
@@ -14,8 +15,8 @@ export default function DiscoverTab() {
 
     async function registrarFeedback(hobbyId, tipo) {
                 try {
-                    const userId = localStorage.getItem("userId");
-                    const token = localStorage.getItem("token");
+                    const userId = session.getItem("userId");
+                    const token = session.getItem("token");
 
                     await api.post(
                         `/recommendation-feedbacks/${userId}/${hobbyId}`,
@@ -31,9 +32,9 @@ export default function DiscoverTab() {
                         atuais.filter((recommendation) => recommendation.hobbyId !== hobbyId)
                     );
 
-                } catch (error) {
-                    console.error("Erro ao registrar feedback:", error);
-                }
+                } catch {
+                // Não registrar erros de requisição, pois podem conter credenciais.
+            }
             }
 
     useEffect(() => {
@@ -41,11 +42,11 @@ export default function DiscoverTab() {
           try {
             setLoading(true);
 
-            const token = localStorage.getItem("token");
-            const userId = localStorage.getItem("userId");
+            const token = session.getItem("token");
+            const userId = session.getItem("userId");
 
             if (!token || !userId) {
-                localStorage.clear();
+                session.clear();
                 navigate("/login");
                 return;
             }
@@ -57,15 +58,13 @@ export default function DiscoverTab() {
               },
             );
 
-            console.log("Recomendações recebidas:", response.data);
+
             setRecommendations(response.data);
           } catch (error) {
-            console.error(error);
-            console.error("status:", error.response?.status);
-            console.error("Resposta:", error.response?.data);
+
 
               if (error.response?.status === 401 || error.response?.status === 403) {
-                  localStorage.clear();
+                  session.clear();
                   navigate("/login");
                   return;
               }

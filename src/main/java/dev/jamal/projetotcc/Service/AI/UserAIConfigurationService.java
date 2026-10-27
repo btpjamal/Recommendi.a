@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@org.springframework.security.access.prepost.PreAuthorize("isAuthenticated() and #p0 == authentication.principal.id")
 @Service
 @RequiredArgsConstructor
 public class UserAIConfigurationService {
@@ -104,7 +105,7 @@ public class UserAIConfigurationService {
         String chave = apiKey.trim();
 
 
-        if (chave.length() > 500) {
+        if (chave.length() > 500 || chave.chars().anyMatch(c -> c <= 32 || c >= 127)) {
             throw new IllegalArgumentException(
                     "Chave de API inválida."
             );

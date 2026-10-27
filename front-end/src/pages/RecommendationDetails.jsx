@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import {api} from "../api/api.js";
-import ReactMarkdown from "react-markdown";
+import SafeMarkdown from "../components/SafeMarkdown.jsx";
 import "../pages/css/RecommendationsDetails.css";
 import { useNavigate, useParams } from "react-router-dom";
 import HobbyLocations from "../components/HobbyLocations";
@@ -27,8 +27,8 @@ function RecommendationDetails() {
 
             setDetalhes(response.data);
 
-            } catch (error) {
-                console.error(error);
+            } catch {
+
                 setErro(
                     "Não foi possível carregar os detalhes do hobby."
                 );
@@ -54,7 +54,7 @@ function RecommendationDetails() {
                 await carregarDetalhes();
 
             } catch (error) {
-                console.error(error);
+
 
                 setErroPlano(
                     error.response?.data?.error ??
@@ -77,7 +77,7 @@ function RecommendationDetails() {
                 await carregarDetalhes();
 
             } catch (error) {
-                console.error(error);
+
 
                 setErroPlano(
                     error.response?.data?.error ??
@@ -99,7 +99,6 @@ function RecommendationDetails() {
     if (!detalhes) {
         return <p>Hobby não encontrado.</p>;
     }
-
 
 
     return (
@@ -279,9 +278,9 @@ function RecommendationDetails() {
                         )}
 
                         <div className="personalized-plan-content">
-                            <ReactMarkdown>
+                            <SafeMarkdown>
                                 {detalhes.plano.conteudo}
-                            </ReactMarkdown>
+                            </SafeMarkdown>
                         </div>
                     </>
                 )}

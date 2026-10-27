@@ -18,7 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/users/{userId}/feedbacks")
 @RequiredArgsConstructor
-@CrossOrigin("*")
+@org.springframework.security.access.prepost.PreAuthorize("#p0 == authentication.principal.id")
 public class FeedbackController {
 
     private final FeedbackService feedbackService;

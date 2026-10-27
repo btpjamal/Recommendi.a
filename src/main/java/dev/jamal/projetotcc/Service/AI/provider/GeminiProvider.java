@@ -31,13 +31,21 @@ public class GeminiProvider implements AIProvider {
                 .baseUrl(
                         "https://generativelanguage.googleapis.com/v1beta"
                 )
+                .requestFactory(requestFactory())
                 .build();
+    }
+
+    private static org.springframework.http.client.JdkClientHttpRequestFactory requestFactory() {
+        var factory = new org.springframework.http.client.JdkClientHttpRequestFactory(
+                java.net.http.HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(5)).build());
+        factory.setReadTimeout(java.time.Duration.ofSeconds(30));
+        return factory;
     }
 
     @Override
     public String generate(String prompt, String apiKey) {
 
-        int maxTentativas = 3;
+        int maxTentativas = 2;
 
         for (int tentativa = 1;
              tentativa <= maxTentativas;
@@ -47,12 +55,12 @@ public class GeminiProvider implements AIProvider {
 
                 JsonNode response =
                         chamarGemini(prompt, apiKey);
-                System.out.println(
-                        response.path("usageMetadata").toPrettyString()
-                );
 
 
-                return extrairTexto(response);
+
+                String text = extrairTexto(response);
+                if (text.isBlank() || text.length() > 40000) throw new AIProviderException("Resposta de IA inválida.", 502);
+                return text;
 
             } catch (RestClientResponseException e) {
 
@@ -153,7 +161,7 @@ public class GeminiProvider implements AIProvider {
                 Map.of("parts", List.of(part));
 
         Map<String, Object> body =
-                Map.of("contents", List.of(content));
+                Map.of("contents", List.of(content), "generationConfig", Map.of("maxOutputTokens", 4096));
 
         return restClient.post()
                 .uri("/models/{model}:generateContent", model)

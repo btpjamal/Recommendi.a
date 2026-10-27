@@ -1,3 +1,4 @@
+import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -12,10 +13,10 @@ export default function Recommendations() {
 
     const navigate = useNavigate();
     const [abaAtiva, setAbaAtiva] = useState("descobrir");
-    const nome = localStorage.getItem("nome");
+    const nome = session.getItem("nome");
 
-    function logout() {
-              localStorage.clear();
+    async function logout() {
+              await revokeSession();
               navigate("/login");
           }
 

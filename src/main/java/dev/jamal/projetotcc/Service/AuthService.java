@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -25,13 +24,17 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final PasswordPolicyService passwordPolicy;
+    private final LoginRateLimitService loginRateLimit;
 
+    @Transactional
     public UserResponseDTO register(UserCreateRequestDTO dto) {
 
         if (userRepository.existsByEmail(dto.getEmail())) {
             throw new BusinessException("Email já cadastrado");
         }
 
+        passwordPolicy.validar(dto.getSenha());
         User user = userMapper.toEntity(dto);
         user.setSenha(passwordEncoder.encode(dto.getSenha()));
 
@@ -42,6 +45,7 @@ public class AuthService {
 
     public AuthResponseDTO login(AuthRequestDTO dto) {
 
+        loginRateLimit.check(dto.getEmail());
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         dto.getEmail(),

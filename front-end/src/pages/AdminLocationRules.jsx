@@ -1,10 +1,11 @@
+import { session } from "../auth/session.js";
 import { useEffect, useState } from "react";
 import { api } from "../api/api";
 import catalogoOSM from "../data/osmCatalogoAmpliadoPtBr.json";
 import HobbyLocations from "../components/HobbyLocations";
 
 const headers = () => ({
-    Authorization: `Bearer ${localStorage.getItem("token")}`
+    Authorization: `Bearer ${session.getItem("token")}`
 });
 
 const rotulo = (valor) =>

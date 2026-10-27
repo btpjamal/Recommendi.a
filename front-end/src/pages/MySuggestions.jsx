@@ -1,3 +1,4 @@
+import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { api } from "../api/api";
@@ -19,7 +20,7 @@ export default function MySuggestions() {
     const [erro, setErro] = useState("");
     const [filtro, setFiltro] = useState("TODAS");
 
-    const nome = localStorage.getItem("nome");
+    const nome = session.getItem("nome");
 
     useEffect(() => {
         async function carregarSugestoes() {
@@ -31,7 +32,7 @@ export default function MySuggestions() {
                     "/hobby-suggestions/mine",
                     {
                         headers: {
-                            Authorization: `Bearer ${localStorage.getItem("token")}`
+                            Authorization: `Bearer ${session.getItem("token")}`
                         }
                     }
                 );
@@ -39,8 +40,8 @@ export default function MySuggestions() {
                 setSugestoes(
                     Array.isArray(response.data) ? response.data : []
                 );
-            } catch (error) {
-                console.error(error);
+            } catch {
+
                 setErro("Não foi possível carregar suas sugestões.");
             } finally {
                 setCarregando(false);
@@ -65,8 +66,8 @@ export default function MySuggestions() {
             : dataFormatada.toLocaleDateString("pt-BR");
     }
 
-    function logout() {
-        localStorage.clear();
+    async function logout() {
+        await revokeSession();
         navigate("/login");
     }
 

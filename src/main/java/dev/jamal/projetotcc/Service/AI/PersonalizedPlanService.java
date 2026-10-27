@@ -2,169 +2,83 @@ package dev.jamal.projetotcc.Service.AI;
 
 import dev.jamal.projetotcc.DTO.AI.AIUserContext;
 import dev.jamal.projetotcc.DTO.AI.PersonalizedPlanResponseDTO;
-import dev.jamal.projetotcc.Entities.Hobby;
 import dev.jamal.projetotcc.Entities.PersonalizedPlan;
-import dev.jamal.projetotcc.Entities.User;
 import dev.jamal.projetotcc.Exception.BusinessException;
-import dev.jamal.projetotcc.Repository.HobbyRepository;
-import dev.jamal.projetotcc.Repository.PersonalizedPlanRepository;
-import dev.jamal.projetotcc.Repository.UserRepository;
+import dev.jamal.projetotcc.Repository.*;
 import dev.jamal.projetotcc.Service.AI.provider.AIProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated() and #p0 == authentication.principal.id")
 public class PersonalizedPlanService {
-
     private final AIContextService aiContextService;
     private final PromptBuilderService promptBuilderService;
     private final AIProvider aiProvider;
-
     private final PersonalizedPlanRepository personalizedPlanRepository;
     private final UserRepository userRepository;
     private final HobbyRepository hobbyRepository;
     private final AIContextHashService aiContextHashService;
-
     private final UserAIConfigurationService userAIConfigurationService;
+    private final PlanGenerationGuard generationGuard;
+    private final TransactionTemplate planTransactions;
 
-    @Transactional
+    private record Input(String prompt, String hash, long tokenVersion) {}
+
     public String gerarPlano(Long userId, Long hobbyId) {
+        return generate(userId, hobbyId, false);
+    }
 
-        if (personalizedPlanRepository
-                .existsByUser_IdAndHobby_Id(userId, hobbyId)) {
+    public String regenerarPlano(Long userId, Long hobbyId) {
+        return generate(userId, hobbyId, true);
+    }
 
-            throw new BusinessException(
-                    "Já existe um plano personalizado para este hobby."
-            );
-        }
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new RuntimeException("Usuário não encontrado.")
-                );
-
-        Hobby hobby = hobbyRepository.findById(hobbyId)
-                .orElseThrow(() ->
-                        new RuntimeException("Hobby não encontrado.")
-                );
-
-        AIUserContext contexto =
-                aiContextService.construirContexto(
-                        userId,
-                        hobbyId
-                );
-
-        String contextHash =
-                aiContextHashService.calcular(contexto);
-
-        String prompt =
-                promptBuilderService
-                        .construirPromptPlanoInicial(contexto);
-
-        String apiKey =
-                userAIConfigurationService.obterApiKey(userId);
-
-        String conteudo =
-                aiProvider.generate(prompt, apiKey);
-
-        PersonalizedPlan plano =
-                personalizedPlanRepository
-                        .findByUser_IdAndHobby_Id(
-                                userId,
-                                hobbyId
-                        )
-                        .orElseGet(PersonalizedPlan::new);
-
-        plano.setUser(user);
-        plano.setHobby(hobby);
-        plano.setConteudo(conteudo);
-        plano.setContextHash(contextHash);
-
-        personalizedPlanRepository.save(plano);
-
-        return conteudo;
+    private String generate(Long userId, Long hobbyId, boolean regenerate) {
+        return generationGuard.run(userId, () -> {
+            Input input = planTransactions.execute(status -> {
+                boolean exists = personalizedPlanRepository.existsByUser_IdAndHobby_Id(userId, hobbyId);
+                if (exists != regenerate) throw new BusinessException(exists
+                        ? "Já existe um plano personalizado para este hobby."
+                        : "Não existe plano personalizado para atualizar.");
+                AIUserContext context = aiContextService.construirContexto(userId, hobbyId);
+                long version = SessionVersionGuard.snapshot(userRepository, userId);
+                return new Input(promptBuilderService.construirPromptPlanoInicial(context),
+                        aiContextHashService.calcular(context), version);
+            });
+            String key = userAIConfigurationService.obterApiKey(userId);
+            String content = aiProvider.generate(input.prompt(), key);
+            planTransactions.executeWithoutResult(status -> {
+                SessionVersionGuard.lockAndValidate(userRepository, userId, input.tokenVersion());
+                var user = userRepository.findById(userId).orElseThrow();
+                PersonalizedPlan plan;
+                if (regenerate) plan = personalizedPlanRepository.findByUser_IdAndHobby_Id(userId, hobbyId)
+                        .orElseThrow(() -> new BusinessException("Plano não encontrado."));
+                else {
+                    if (personalizedPlanRepository.existsByUser_IdAndHobby_Id(userId, hobbyId))
+                        throw new BusinessException("Já existe um plano para este hobby.");
+                    plan = new PersonalizedPlan();
+                    plan.setUser(user);
+                    plan.setHobby(hobbyRepository.findById(hobbyId).orElseThrow());
+                }
+                plan.setConteudo(content);
+                plan.setContextHash(input.hash());
+                personalizedPlanRepository.save(plan);
+            });
+            return content;
+        });
     }
 
     @Transactional(readOnly = true)
     public PersonalizedPlanResponseDTO buscarPlano(Long userId, Long hobbyId) {
-
-        PersonalizedPlan plano =
-                personalizedPlanRepository
-                        .findByUser_IdAndHobby_Id(
-                                userId,
-                                hobbyId
-                        )
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Plano personalizado ainda não foi gerado."
-                                )
-                        );
-
-        AIUserContext contextoAtual =
-                aiContextService.construirContexto(
-                        userId,
-                        hobbyId
-                );
-
-        String contextHashAtual =
-                aiContextHashService.calcular(contextoAtual);
-
-        boolean stale =
-                !plano.getContextHash()
-                        .equals(contextHashAtual);
-
-        return new PersonalizedPlanResponseDTO(
-                plano.getId(),
-                plano.getHobby().getId(),
-                plano.getHobby().getNome(),
-                plano.getConteudo(),
-                plano.getDataCriacao(),
-                plano.getDataAtualizacao(),
-                stale
-        );
-    }
-
-    @Transactional
-    public String regenerarPlano(
-            Long userId,
-            Long hobbyId
-    ) {
-
-        PersonalizedPlan plano =
-                personalizedPlanRepository
-                        .findByUser_IdAndHobby_Id(userId, hobbyId)
-                        .orElseThrow(() ->
-                                new BusinessException(
-                                        "Não existe plano personalizado para atualizar."
-                                )
-                        );
-
-        AIUserContext contexto =
-                aiContextService.construirContexto(
-                        userId,
-                        hobbyId
-                );
-
-        String prompt =
-                promptBuilderService
-                        .construirPromptPlanoInicial(contexto);
-
-        String apiKey =
-                userAIConfigurationService.obterApiKey(userId);
-
-        String conteudo =
-                aiProvider.generate(prompt, apiKey);
-
-        String contextHash =
-                aiContextHashService.calcular(contexto);
-
-        plano.setConteudo(conteudo);
-        plano.setContextHash(contextHash);
-
-        personalizedPlanRepository.save(plano);
-
-        return conteudo;
+        PersonalizedPlan plan = personalizedPlanRepository.findByUser_IdAndHobby_Id(userId, hobbyId)
+                .orElseThrow(() -> new BusinessException("Plano personalizado ainda não foi gerado."));
+        String hash = aiContextHashService.calcular(aiContextService.construirContexto(userId, hobbyId));
+        return new PersonalizedPlanResponseDTO(plan.getId(), plan.getHobby().getId(),
+                plan.getHobby().getNome(), plan.getConteudo(), plan.getDataCriacao(),
+                plan.getDataAtualizacao(), !plan.getContextHash().equals(hash));
     }
 }

@@ -37,8 +37,8 @@ public class HobbyLocationController {
     private final GeocodingService geocodingService;
     private final RecommendationProfileRepository profileRepository;
     private final HobbyRepository hobbyRepository;
-    private final ExecutorService executor =
-            Executors.newFixedThreadPool(4);
+    private final ExecutorService locationExecutor;
+    private final java.util.Set<Long> activeSearches = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final HobbyLocationRuleRepository ruleRepository;
 
     @GetMapping("/{hobbyId}/locations")
@@ -127,7 +127,11 @@ public class HobbyLocationController {
 
         SseEmitter emitter = new SseEmitter(120_000L);
 
-        executor.execute(() -> {
+        if (!activeSearches.add(user.getId())) {
+            throw new dev.jamal.projetotcc.Exception.TooManyRequestsException();
+        }
+        try {
+        locationExecutor.execute(() -> {
             try {
                 enviarEvento(
                         emitter,
@@ -237,8 +241,14 @@ public class HobbyLocationController {
                 }
             } finally {
                 overpassService.limparProgresso();
+                activeSearches.remove(user.getId());
             }
         });
+        } catch (java.util.concurrent.RejectedExecutionException ex) {
+            activeSearches.remove(user.getId());
+            emitter.complete();
+            throw new dev.jamal.projetotcc.Exception.TooManyRequestsException();
+        }
 
         return emitter;
     }

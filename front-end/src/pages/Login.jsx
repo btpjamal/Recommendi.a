@@ -1,3 +1,4 @@
+import { session } from "../auth/session.js";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { api } from "../api/api";
@@ -21,15 +22,14 @@ export default function Login() {
         senha,
       });
 
-      console.log("Resposta do login:", response.data);
 
       const { token, userId, nome, email: emailUsuario, role } = response.data;
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("userId", userId);
-      localStorage.setItem("nome", nome);
-      localStorage.setItem("email", emailUsuario);
-      localStorage.setItem("role", role);
+      session.setItem("token", token);
+      session.setItem("userId", userId);
+      session.setItem("nome", nome);
+      session.setItem("email", emailUsuario);
+      session.setItem("role", role);
 
 
       const statusResponse = await api.get(
@@ -53,10 +53,10 @@ export default function Login() {
       }
 
     } catch (error) {
-      console.error(error);
+
 
       setErro(
-          error.response?.data?.message ||
+          error.response?.data?.error ||
           "Não foi possível realizar o login."
       );
     }

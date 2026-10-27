@@ -14,7 +14,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/interests")
 @RequiredArgsConstructor
-@CrossOrigin("*")
 public class InterestController {
 
     private final InterestService interestService;

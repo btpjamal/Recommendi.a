@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "../api/config.js";
+import { session } from "../auth/session.js";
 import { useEffect, useRef , useState } from "react";
 import { api } from "../api/api.js";
 import HobbyMap from "./HobbyMap";
@@ -64,10 +66,10 @@ export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador =
         }, 115000);
 
         try {
-            const token = localStorage.getItem("token");
+            const token = session.getItem("token");
 
             const response = await fetch(
-                `http://localhost:8080/api/v1/hobbies/${hobbyId}/locations/stream`,
+                `${API_BASE_URL}/hobbies/${hobbyId}/locations/stream`,
                 {
                     method: "GET",
                     headers: {
@@ -197,7 +199,7 @@ export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador =
             }
 
         } catch (error) {
-            console.error("Erro ao buscar locais:", error);
+
 
             if (controller.signal.aborted) {
                 setErro(

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
+import SafeMarkdown from "../components/SafeMarkdown.jsx";
 
 import "./css/GeneralPlan.css";
 
@@ -183,9 +183,9 @@ function GeneralPlan() {
 
                     <section className="general-plan-content">
 
-                        <ReactMarkdown>
+                        <SafeMarkdown>
                             {plano.conteudo}
-                        </ReactMarkdown>
+                        </SafeMarkdown>
 
                     </section>
                 </>

@@ -22,17 +22,26 @@ public class GeocodingService {
                     "User-Agent",
                     "RecommendiA-TCC/1.0 (contato: recommendia.dev@gmail.com)"
             )
+            .requestFactory(requestFactory())
             .build();
 
-    private final Map<String, Coordinates> cache =
-            new ConcurrentHashMap<>();
+    private static org.springframework.http.client.JdkClientHttpRequestFactory requestFactory() {
+        var factory = new org.springframework.http.client.JdkClientHttpRequestFactory(
+                java.net.http.HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(5)).build());
+        factory.setReadTimeout(java.time.Duration.ofSeconds(10));
+        return factory;
+    }
+
+    private final com.github.benmanes.caffeine.cache.Cache<String, Coordinates> cache =
+            com.github.benmanes.caffeine.cache.Caffeine.newBuilder().maximumSize(1000)
+                    .expireAfterWrite(java.time.Duration.ofHours(24)).build();
 
     public Coordinates buscarCoordenadas(String cidade, String estado) {
 
         String chave = cidade.trim().toLowerCase() + "|" +
                 estado.trim().toUpperCase();
 
-        Coordinates existente = cache.get(chave);
+        Coordinates existente = cache.getIfPresent(chave);
 
         if (existente != null) {
             return existente;
@@ -40,7 +49,7 @@ public class GeocodingService {
 
         synchronized (this) {
 
-            existente = cache.get(chave);
+            existente = cache.getIfPresent(chave);
 
             if (existente != null) {
                 return existente;

@@ -25,6 +25,7 @@ public class AIContextController {
     private final AIProvider aiProvider;
     private final GeneralPersonalizedPlanService generalPersonalizedPlanService;
 
+    @org.springframework.security.access.prepost.PreAuthorize("#p0 == authentication.principal.id")
     @GetMapping("/context/{userId}/{hobbyId}")
     public ResponseEntity<AIUserContext> obterContexto(
             @PathVariable Long userId,
@@ -40,6 +41,7 @@ public class AIContextController {
         return ResponseEntity.ok(contexto);
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("#p0 == authentication.principal.id")
     @GetMapping("/prompt/{userId}/{hobbyId}")
     public ResponseEntity<String> obterPrompt(
             @PathVariable Long userId,
@@ -65,7 +67,7 @@ public class AIContextController {
         @PathVariable Long hobbyId
     ) {
 
-        System.out.println(">>> ENTROU NO ENDPOINT DE PLANO");
+
 
         String plano =
                 personalizedPlanService

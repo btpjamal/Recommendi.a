@@ -1,3 +1,4 @@
+import { session } from "../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { api } from "../api/api";
@@ -115,8 +116,8 @@ export default function Onboarding() {
     useEffect(() => {
         async function carregarDados() {
             try {
-                const token = localStorage.getItem("token");
-                const userId = localStorage.getItem("userId");
+                const token = session.getItem("token");
+                const userId = session.getItem("userId");
 
                 if(!token || !userId) {
                     navigate("/login");
@@ -132,26 +133,12 @@ export default function Onboarding() {
                                     }),
 
 
-
                                     api.get("/interests", {
                                         headers: {
                                             Authorization: `Bearer ${token}`,
                                         },
                                     }),
                                 ]);
-
-                            console.log(
-                                "RESPOSTA /objectives:",
-                                JSON.stringify(objetivosResponse.data, null, 2)
-                            );
-
-                            console.log("RESPOSTA COMPLETA /interests:", interessesResponse);
-                            console.log("DATA:", interessesResponse.data);
-                            console.log("TIPO:", typeof interessesResponse.data);
-                            console.log(
-                                "JSON:",
-                                JSON.stringify(interessesResponse.data, null, 2)
-                            );
 
 
                             setObjetivos(objetivosResponse.data);
@@ -207,11 +194,8 @@ export default function Onboarding() {
                                 );
                             }
 
-            } catch (error) {
-                console.error(
-                    "Erro ao carregar dados do onboarding:",
-                    error
-                );
+            } catch {
+
 
                 setErro(
                     "Não foi possível carregar as suas preferências"
@@ -275,16 +259,14 @@ export default function Onboarding() {
             setEnviando(true);
             setErro("");
 
-            const userId = localStorage.getItem("userId");
-            const token = localStorage.getItem("token");
+            const userId = session.getItem("userId");
+            const token = session.getItem("token");
 
             if (!userId || !token) {
                 navigate("/login");
                 return;
             }
 
-            console.log("Dados enviados: ", dados);
-            console.log("userId: ", userId);
 
             await api.post(
                 `/recommendation-profiles/${userId}`,
@@ -298,9 +280,8 @@ export default function Onboarding() {
 
             navigate("/MyProfile");
         } catch (error) {
-            console.error("Erro completo: ", error);
-            console.error("Status: ", error.response?.status);
-            console.error("Resposta backend: ", error.response?.data);
+
+
             setErro(
                 error.response?.data?.message ||
                 JSON.stringify(error.response?.data) ||

@@ -12,6 +12,8 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 
+@org.springframework.security.access.prepost.PreAuthorize("isAuthenticated() and #p0 == authentication.principal.id")
+@org.springframework.transaction.annotation.Transactional(readOnly = true)
 @Service
 @RequiredArgsConstructor
 public class AIContextService {

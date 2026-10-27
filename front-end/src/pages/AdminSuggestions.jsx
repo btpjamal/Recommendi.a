@@ -1,3 +1,4 @@
+import { session } from "../auth/session.js";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api/api";
@@ -33,7 +34,7 @@ export default function AdminSuggestions() {
 
                     headers: {
                         Authorization:
-                            `Bearer ${localStorage.getItem("token")}`
+                            `Bearer ${session.getItem("token")}`
                     }
                 }
             );
@@ -41,7 +42,7 @@ export default function AdminSuggestions() {
             setSugestoes(response.data);
 
         } catch (error) {
-            console.error("Erro ao carregar sugestões:", error);
+
 
             setErro(
                 error.response?.data?.message ||
@@ -198,7 +199,7 @@ export default function AdminSuggestions() {
                 {
                     headers: {
                         Authorization:
-                            `Bearer ${localStorage.getItem("token")}`
+                            `Bearer ${session.getItem("token")}`
                     }
                 }
             );
@@ -214,7 +215,7 @@ export default function AdminSuggestions() {
             await carregarSugestoes();
 
         } catch (error) {
-            console.error("Erro ao rejeitar sugestão:", error);
+
 
             setErroAnalise(
                 error.response?.data?.message ||
@@ -287,7 +288,7 @@ export default function AdminSuggestions() {
                 payload,
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`
+                        Authorization: `Bearer ${session.getItem("token")}`
                     }
                 }
             );
@@ -304,7 +305,7 @@ export default function AdminSuggestions() {
             await carregarSugestoes();
 
         } catch (error) {
-            console.error("Erro ao aprovar sugestão:", error);
+
 
             setErroAnalise(
                 error.response?.data?.message ||
@@ -324,14 +325,14 @@ export default function AdminSuggestions() {
 
             const response = await api.get("/hobby-categories", {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                    Authorization: `Bearer ${session.getItem("token")}`
                 }
             });
 
             setCategorias(response.data);
 
-        } catch (error) {
-            console.error("Erro ao carregar categorias:", error);
+        } catch {
+
 
             setErroCategorias(
                 "Não foi possível carregar as categorias."

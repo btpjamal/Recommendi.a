@@ -52,7 +52,8 @@ public class CommunityService {
                 community.setEstado(null);
                 community.setCidade(null);
 
-                communityRepository.save(community);
+                communityRepository.insertIfAbsent(community.getHobby().getId(),
+                        community.getTipo().name(), community.getEstado(), community.getCidade());
             }
         }
     }
@@ -243,7 +244,8 @@ public class CommunityService {
                 // somente por estado.
                 community.setCidade(null);
 
-                communityRepository.save(community);
+                communityRepository.insertIfAbsent(community.getHobby().getId(),
+                        community.getTipo().name(), community.getEstado(), community.getCidade());
             }
         }
     }

@@ -1,9 +1,10 @@
+import { session } from "../auth/session.js";
 
 import { Navigate, Outlet } from "react-router";
 
 export default function AdminRoute() {
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
+    const token = session.getItem("token");
+    const role = session.getItem("role");
 
     if (!token) {
         return <Navigate to="/login" replace />;

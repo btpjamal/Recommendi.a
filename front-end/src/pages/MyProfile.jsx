@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "../api/config.js";
+import { session } from "../auth/session.js";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -80,10 +82,10 @@ function MyProfile() {
 
     const carregarPerfil = async () => {
         try {
-            const token = localStorage.getItem("token");
+            const token = session.getItem("token");
 
             const response = await axios.get(
-                "http://localhost:8080/api/v1/profile/me",
+                API_BASE_URL + "/profile/me",
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -93,8 +95,8 @@ function MyProfile() {
 
             setPerfil(response.data);
 
-        } catch (error) {
-            console.error(error);
+        } catch {
+
             setErro("Não foi possível carregar o perfil.");
         } finally {
             setLoading(false);

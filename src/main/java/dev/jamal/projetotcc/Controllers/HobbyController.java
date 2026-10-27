@@ -24,7 +24,6 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/v1/hobbies")
 @RequiredArgsConstructor
-@CrossOrigin("*")
 public class HobbyController {
 
     private final HobbyService hobbyService;

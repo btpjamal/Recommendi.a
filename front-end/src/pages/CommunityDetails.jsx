@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "../api/config.js";
+import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import axios from "axios";
@@ -11,8 +13,8 @@ export default function CommunityDetails() {
     const { communityId } = useParams();
     const navigate = useNavigate();
 
-    const token = localStorage.getItem("token");
-    const nome = localStorage.getItem("nome");
+    const token = session.getItem("token");
+    const nome = session.getItem("nome");
 
     const [mensagens, setMensagens] = useState([]);
     const [conteudo, setConteudo] = useState("");
@@ -39,7 +41,6 @@ export default function CommunityDetails() {
 
             } catch (error) {
 
-                console.error(error);
 
                 setErro(
                     error.response?.data?.error ||
@@ -74,7 +75,7 @@ export default function CommunityDetails() {
         try {
 
             const response = await axios.get(
-                `http://localhost:8080/api/v1/community/communities/${communityId}/messages`,
+                `${API_BASE_URL}/community/communities/${communityId}/messages`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -86,7 +87,6 @@ export default function CommunityDetails() {
 
         } catch (error) {
 
-            console.error(error);
 
             setErro(
                 error.response?.data?.error ||
@@ -101,7 +101,7 @@ export default function CommunityDetails() {
         try {
 
             const response = await axios.get(
-                `http://localhost:8080/api/v1/community/communities/${communityId}/messages`,
+                `${API_BASE_URL}/community/communities/${communityId}/messages`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -126,13 +126,9 @@ export default function CommunityDetails() {
                     : novas;
             });
 
-        } catch (error) {
-
-            console.error(
-                "Erro ao atualizar mensagens:",
-                error
-            );
-        }
+        } catch {
+                // Não registrar erros de requisição, pois podem conter credenciais.
+            }
     }
 
 
@@ -152,7 +148,7 @@ export default function CommunityDetails() {
             setErro("");
 
             const response = await axios.post(
-                `http://localhost:8080/api/v1/community/communities/${communityId}/messages`,
+                `${API_BASE_URL}/community/communities/${communityId}/messages`,
                 {
                     conteudo: mensagem
                 },
@@ -172,7 +168,6 @@ export default function CommunityDetails() {
 
         } catch (error) {
 
-            console.error(error);
 
             setErro(
                 error.response?.data?.error ||
@@ -185,15 +180,15 @@ export default function CommunityDetails() {
     }
 
 
-    function logout() {
-        localStorage.clear();
+    async function logout() {
+        await revokeSession();
         navigate("/login");
     }
 
     async function carregarDetalhes() {
 
         const response = await axios.get(
-            `http://localhost:8080/api/v1/community/communities/${communityId}`,
+            `${API_BASE_URL}/community/communities/${communityId}`,
             {
                 headers: {
                     Authorization: `Bearer ${token}`

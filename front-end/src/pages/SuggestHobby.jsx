@@ -1,3 +1,4 @@
+import { session } from "../auth/session.js";
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
@@ -40,7 +41,7 @@ export default function SuggestHobby() {
                         signal: controller.signal,
                         headers: {
                             Authorization:
-                                `Bearer ${localStorage.getItem("token")}`
+                                `Bearer ${session.getItem("token")}`
                         }
                     }
                 );
@@ -55,7 +56,6 @@ export default function SuggestHobby() {
                     return;
                 }
 
-                console.error("Erro ao carregar categorias:", error);
 
                 setErroCategorias(
                     "Não foi possível carregar as categorias."
@@ -105,7 +105,7 @@ export default function SuggestHobby() {
             await api.post("/hobby-suggestions", payload, {
                 headers: {
                     Authorization:
-                        `Bearer ${localStorage.getItem("token")}`
+                        `Bearer ${session.getItem("token")}`
                 }
             });
 
@@ -117,7 +117,7 @@ export default function SuggestHobby() {
             setForm(estadoInicial);
 
         } catch (error) {
-            console.error("Erro ao enviar sugestão:", error);
+
 
             setErro(
                 error.response?.data?.message ||
