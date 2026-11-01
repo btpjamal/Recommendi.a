@@ -80,12 +80,48 @@ const perguntas = [
     }
 ];
 
+const estados = [
+    { uf: "AC", nome: "Acre" },
+    { uf: "AL", nome: "Alagoas" },
+    { uf: "AP", nome: "Amapá" },
+    { uf: "AM", nome: "Amazonas" },
+    { uf: "BA", nome: "Bahia" },
+    { uf: "CE", nome: "Ceará" },
+    { uf: "DF", nome: "Distrito Federal" },
+    { uf: "ES", nome: "Espírito Santo" },
+    { uf: "GO", nome: "Goiás" },
+    { uf: "MA", nome: "Maranhão" },
+    { uf: "MT", nome: "Mato Grosso" },
+    { uf: "MS", nome: "Mato Grosso do Sul" },
+    { uf: "MG", nome: "Minas Gerais" },
+    { uf: "PA", nome: "Pará" },
+    { uf: "PB", nome: "Paraíba" },
+    { uf: "PR", nome: "Paraná" },
+    { uf: "PE", nome: "Pernambuco" },
+    { uf: "PI", nome: "Piauí" },
+    { uf: "RJ", nome: "Rio de Janeiro" },
+    { uf: "RN", nome: "Rio Grande do Norte" },
+    { uf: "RS", nome: "Rio Grande do Sul" },
+    { uf: "RO", nome: "Rondônia" },
+    { uf: "RR", nome: "Roraima" },
+    { uf: "SC", nome: "Santa Catarina" },
+    { uf: "SP", nome: "São Paulo" },
+    { uf: "SE", nome: "Sergipe" },
+    { uf: "TO", nome: "Tocantins" }
+];
+
+
+
 export default function Onboarding() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
     const modoEdicao =
      searchParams.get("editar") === "true";
+
+    const [cidades, setCidades] = useState([]);
+    const [carregandoCidades, setCarregandoCidades] = useState(false);
+    const [erroCidades, setErroCidades] = useState(false);
 
      //Dados carregados do backend
     const [objetivos, setObjetivos] = useState([]);
@@ -206,6 +242,53 @@ export default function Onboarding() {
         carregarDados();
     }, [modoEdicao, navigate]);
 
+    useEffect(() => {
+        if (!profile.estado) {
+            setCidades([]);
+            setErroCidades(false);
+            return;
+        }
+
+        const controller = new AbortController();
+
+        async function carregarCidades() {
+            setCarregandoCidades(true);
+            setErroCidades(false);
+            setCidades([]);
+
+            try {
+                const response = await fetch(
+                    `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${profile.estado}/municipios`,
+                    { signal: controller.signal }
+                );
+
+                if (!response.ok) {
+                    throw new Error("Falha ao consultar municípios.");
+                }
+
+                const dados = await response.json();
+
+                const municipios = dados
+                    .map((municipio) => municipio.nome)
+                    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+                setCidades(municipios);
+            } catch (error) {
+                if (error.name !== "AbortError") {
+                    setErroCidades(true);
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setCarregandoCidades(false);
+                }
+            }
+        }
+
+        carregarCidades();
+
+        return () => controller.abort();
+    }, [profile.estado]);
+
     function alternarObjetivo(id) {
         setObjetivosSelecionados((atuais) => {
 
@@ -279,15 +362,37 @@ export default function Onboarding() {
             );
 
             navigate("/MyProfile");
+
+
         } catch (error) {
+            const status = error.response?.status;
+            const dados = error.response?.data;
 
+            let mensagem = "Não foi possível salvar suas preferências. Tente novamente.";
 
-            setErro(
-                error.response?.data?.message ||
-                JSON.stringify(error.response?.data) ||
-                "Não foi possível salvar suas preferências."
-            );
-        } finally {
+            if (!error.response) {
+                mensagem = "Não foi possível conectar ao servidor. Verifique sua conexão.";
+            } else if (status === 400) {
+                mensagem = "Algumas informações são inválidas. Revise suas preferências e tente novamente.";
+            } else if (status === 401) {
+                mensagem = "Sua sessão expirou. Faça login novamente.";
+            } else if (status === 403) {
+                mensagem = "Você não tem permissão para realizar esta operação.";
+            } else if (status === 429) {
+                mensagem = "Muitas tentativas em pouco tempo. Aguarde e tente novamente.";
+            } else if (status >= 500) {
+                mensagem = "O servidor apresentou um problema. Tente novamente mais tarde.";
+            } else if (
+                typeof dados?.message === "string" &&
+                dados.message.trim()
+            ) {
+                mensagem = dados.message;
+            }
+
+            setErro(mensagem);
+        }
+
+        finally {
             setEnviando(false);
         }
     }
@@ -473,53 +578,87 @@ export default function Onboarding() {
                     <>
                         <div className="onboarding-location">
                             <label>
-                                Cidade
+                                Estado
 
-                                <input
-                                    type="text"
-                                    value={profile.cidade}
-                                    onChange={(e) =>
+                                <select
+                                    value={profile.estado}
+                                    onChange={(e) => {
                                         setProfile((atual) => ({
                                             ...atual,
-                                            cidade: e.target.value
-                                        }))
-                                    }
-                                    placeholder="Ex.: Franca"
+                                            estado: e.target.value,
+                                            cidade: ""
+                                        }));
+                                        setErro("");
+                                    }}
                                     disabled={enviando}
-                                />
+                                >
+                                    <option value="">Selecione seu estado</option>
+
+                                    {estados.map((estado) => (
+                                        <option key={estado.uf} value={estado.uf}>
+                                            {estado.nome} ({estado.uf})
+                                        </option>
+                                    ))}
+                                </select>
                             </label>
 
                             <label>
-                                Estado
+                                Cidade
 
-                                <input
-                                    type="text"
-                                    maxLength={2}
-                                    value={profile.estado}
-                                    onChange={(e) =>
+                                <select
+                                    value={profile.cidade}
+                                    onChange={(e) => {
                                         setProfile((atual) => ({
                                             ...atual,
-                                            estado:
-                                                e.target.value.toUpperCase()
-                                        }))
+                                            cidade: e.target.value
+                                        }));
+                                        setErro("");
+                                    }}
+                                    disabled={
+                                        enviando ||
+                                        !profile.estado ||
+                                        carregandoCidades ||
+                                        erroCidades
                                     }
-                                    placeholder="SP"
-                                    disabled={enviando}
-                                />
+                                >
+                                    <option value="">
+                                        {carregandoCidades
+                                            ? "Carregando cidades..."
+                                            : "Selecione sua cidade"}
+                                    </option>
+
+                                    {cidades.map((cidade) => (
+                                        <option key={cidade} value={cidade}>
+                                            {cidade}
+                                        </option>
+                                    ))}
+                                </select>
                             </label>
                         </div>
+
+                        {erroCidades && (
+                            <p className="onboarding-error">
+                                Não foi possível carregar as cidades.
+                                Tente selecionar o estado novamente.
+                            </p>
+                        )}
 
                         <button
                             type="button"
                             className="onboarding-continue"
-                            disabled={enviando}
+                            disabled={
+                                enviando ||
+                                carregandoCidades ||
+                                erroCidades
+                            }
                             onClick={() => {
                                 if (
-                                    !profile.cidade.trim() ||
-                                    profile.estado.trim().length !== 2
+                                    !profile.estado ||
+                                    !profile.cidade ||
+                                    !cidades.includes(profile.cidade)
                                 ) {
                                     setErro(
-                                        "Informe sua cidade e a sigla do estado."
+                                        "Selecione um estado e uma cidade válidos."
                                     );
                                     return;
                                 }
