@@ -171,7 +171,7 @@ export default function DiscoverTab() {
                                         {(item.alertas || []).length > 0 && (
                                             <div className="recommendation-alerts">
 
-                                                {(item.alertas || []).slice(0, 1).map((alerta) => (
+                                                {(item.alertas || []).slice(0, 2).map((alerta) => (
                                                     <div
                                                         className="recommendation-alert-item"
                                                         key={alerta}

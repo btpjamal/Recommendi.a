@@ -50,6 +50,12 @@ public class ExperienceAffinityCriterion implements RecommendationCriterion{
 
         double pontos = 0;
 
+        boolean possuiInteressado = false;
+        boolean possuiPausado = false;
+        boolean possuiPraticando = false;
+        UserHobby hobbyMaisRelevante = null;
+        double maiorContribuicao = 0;
+
         for (UserHobby userHobby : hobbiesDoUsuario) {
 
             // não compara o hobby com ele mesmo
@@ -87,7 +93,25 @@ public class ExperienceAffinityCriterion implements RecommendationCriterion{
                             userHobby.getStatusAtual()
                     );
 
-            pontos += quantidadeEmComum * pesoExperiencia * pesoStatus;
+            double contribuicao =
+                    quantidadeEmComum * pesoExperiencia * pesoStatus;
+
+            if (contribuicao <= 0) {
+                continue;
+            }
+
+            pontos += contribuicao;
+
+            if (contribuicao > maiorContribuicao) {
+                maiorContribuicao = contribuicao;
+                hobbyMaisRelevante = userHobby;
+            }
+
+            switch (userHobby.getStatusAtual()) {
+                case INTERESSADO -> possuiInteressado = true;
+                case PAUSADO -> possuiPausado = true;
+                case PRATICANDO -> possuiPraticando = true;
+            }
         }
 
         pontos = Math.min(pontos, 8);
@@ -96,10 +120,28 @@ public class ExperienceAffinityCriterion implements RecommendationCriterion{
             return CriterionResult.of(0, null);
         }
 
-        return CriterionResult.of(
-                pontos,
-                "Combina com hobbies nos quais você já possui experiência e prática atual"
-        );
+
+
+        String nomeHobby = hobbyMaisRelevante.getHobby().getNome();
+
+        String justificativa = switch (hobbyMaisRelevante.getStatusAtual()) {
+
+            case INTERESSADO ->
+                    "Seu interesse por " + nomeHobby
+                            + " sugere afinidade com esta atividade, pois compartilham interesses semelhantes.";
+
+            case PAUSADO ->
+                    "Seu histórico com " + nomeHobby
+                            + " indica interesses em comum com esta atividade.";
+
+            case PRATICANDO ->
+                    "Como você pratica " + nomeHobby
+                            + ", esta atividade também pode combinar com seus interesses.";
+        };
+
+        return CriterionResult.of(pontos, justificativa);
+
+
     }
 
     private double obterPesoExperiencia(

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import dev.jamal.projetotcc.Exception.ResourceNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -62,7 +63,7 @@ public class GeneralPersonalizedPlanService {
     @Transactional(readOnly = true)
     public GeneralPersonalizedPlanResponseDTO buscarPlano(Long userId) {
         var plan = repository.findByUser_Id(userId)
-                .orElseThrow(() -> new BusinessException("Plano geral não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Plano geral não encontrado."));
         String hash = hashService.calcular(contextService.construir(userId));
         return toResponseDTO(plan, !plan.getContextHash().equals(hash));
     }

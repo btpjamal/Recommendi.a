@@ -150,6 +150,7 @@ public class RecommendationFeedbackService {
                 .toList();
     }
 
+
     @Transactional
     public void removerDecisao(
             Long userId,
@@ -165,5 +166,10 @@ public class RecommendationFeedbackService {
                         );
 
         feedbackRepository.delete(feedback);
+
+        userHobbyRepository
+                .findByUser_IdAndHobby_Id(userId, hobbyId)
+                .ifPresent(userHobbyRepository::delete);
     }
+
 }
