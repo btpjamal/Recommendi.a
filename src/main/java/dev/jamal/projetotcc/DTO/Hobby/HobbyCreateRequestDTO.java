@@ -5,6 +5,8 @@ import dev.jamal.projetotcc.Enum.*;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
+import java.util.List;
+import jakarta.validation.Valid;
 
 @Getter
 @Setter
@@ -49,4 +51,12 @@ public class HobbyCreateRequestDTO {
 
  @NotNull(message = "A categoria é obrigatória.")
  private Long categoryId;
+
+
+ @Valid
+ private List<HobbyInterestAssociationDTO> interestAssociations;
+
+ @Valid
+ private List<HobbyObjectiveAssociationDTO> objectiveAssociations;
+
 }
