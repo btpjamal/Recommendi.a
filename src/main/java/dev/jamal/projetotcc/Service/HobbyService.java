@@ -17,6 +17,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Pageable;
 import dev.jamal.projetotcc.DTO.Hobby.HobbyEstatisticasDTO;
+import dev.jamal.projetotcc.DTO.Hobby.HobbyInterestAssociationDTO;
+import dev.jamal.projetotcc.DTO.Hobby.HobbyObjectiveAssociationDTO;
+import dev.jamal.projetotcc.Entities.*;
+import dev.jamal.projetotcc.Repository.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import java.util.List;
 
@@ -30,6 +37,10 @@ public class HobbyService {
     private final HobbyRepository hobbyRepository;
     private final HobbyCategoryRepository categoryRepository;
     private final HobbyMapper hobbyMapper;
+    private final HobbyInterestRepository hobbyInterestRepository;
+    private final HobbyObjectiveRepository hobbyObjectiveRepository;
+    private final InterestRepository interestRepository;
+    private final ObjectiveRepository objectiveRepository;
 
     public HobbyEstatisticasDTO obterEstatisticas() {
         long total = hobbyRepository.count();
@@ -125,6 +136,9 @@ public class HobbyService {
 
         Hobby salvo = hobbyRepository.saveAndFlush(hobby);
 
+        salvarInteresses(salvo, dto.getInterestAssociations());
+        salvarObjetivos(salvo, dto.getObjectiveAssociations());
+
         return hobbyMapper.toResponseDTO(salvo);
     }
 
@@ -198,4 +212,110 @@ public class HobbyService {
         return hobbyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hobby não encontrado."));
     }
+
+
+    private void salvarInteresses(
+            Hobby hobby,
+            List<HobbyInterestAssociationDTO> associacoes
+    ) {
+        if (associacoes == null) {
+            return;
+        }
+
+        Set<Long> ids = new HashSet<>();
+
+        for (HobbyInterestAssociationDTO associacao : associacoes) {
+
+            if (associacao == null
+                    || associacao.interestId() == null
+                    || associacao.peso() == null
+                    || associacao.peso() < 1
+                    || associacao.peso() > 3) {
+                throw new BusinessException(
+                        "Associação de interesse inválida."
+                );
+            }
+
+            if (!ids.add(associacao.interestId())) {
+                throw new BusinessException(
+                        "Interesse duplicado: " + associacao.interestId()
+                );
+            }
+
+            Interest interest = interestRepository
+                    .findById(associacao.interestId())
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException(
+                                    "Interesse não encontrado: "
+                                            + associacao.interestId()
+                            )
+                    );
+
+            HobbyInterestId id = new HobbyInterestId();
+            id.setHobbyId(hobby.getId());
+            id.setInterestId(interest.getId());
+
+            HobbyInterest hobbyInterest = new HobbyInterest();
+            hobbyInterest.setId(id);
+            hobbyInterest.setHobby(hobby);
+            hobbyInterest.setInterest(interest);
+            hobbyInterest.setPeso(associacao.peso());
+
+            hobbyInterestRepository.save(hobbyInterest);
+        }
+    }
+
+
+    private void salvarObjetivos(
+            Hobby hobby,
+            List<HobbyObjectiveAssociationDTO> associacoes
+    ) {
+        if (associacoes == null) {
+            return;
+        }
+
+        Set<Long> ids = new HashSet<>();
+
+        for (HobbyObjectiveAssociationDTO associacao : associacoes) {
+
+            if (associacao == null
+                    || associacao.objectiveId() == null
+                    || associacao.peso() == null
+                    || associacao.peso() < 1
+                    || associacao.peso() > 3) {
+                throw new BusinessException(
+                        "Associação de objetivo inválida."
+                );
+            }
+
+            if (!ids.add(associacao.objectiveId())) {
+                throw new BusinessException(
+                        "Objetivo duplicado: " + associacao.objectiveId()
+                );
+            }
+
+            Objective objective = objectiveRepository
+                    .findById(associacao.objectiveId())
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException(
+                                    "Objetivo não encontrado: "
+                                            + associacao.objectiveId()
+                            )
+                    );
+
+            HobbyObjectiveId id = new HobbyObjectiveId();
+            id.setHobbyId(hobby.getId());
+            id.setObjectiveId(objective.getId());
+
+            HobbyObjective hobbyObjective = new HobbyObjective();
+            hobbyObjective.setId(id);
+            hobbyObjective.setHobby(hobby);
+            hobbyObjective.setObjective(objective);
+            hobbyObjective.setPeso(associacao.peso());
+
+            hobbyObjectiveRepository.save(hobbyObjective);
+        }
+    }
+
+
 }
