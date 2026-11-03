@@ -26,15 +26,20 @@ public class RecommendationProfileCreateRequestDTO {
     @NotNull
     private AmbientePreferido ambientePreferido;
 
-    private List<Long> interestIds;
+    @Size(max = 100)
+    private List<@Positive Long> interestIds;
 
-    private List<Long> objectiveIds;
+    @Size(max = 100)
+    private List<@Positive Long> objectiveIds;
 
     @NotBlank(message = "A cidade é obrigatória.")
+    @Size(max = 100)
+    @Pattern(regexp = "[\\p{L}\\p{M} .’'-]+", message = "Informe apenas o nome da cidade.")
     private String cidade;
 
     @NotBlank(message = "O estado é obrigatório.")
     @Size(min = 2, max = 2, message = "Informe a sigla do estado.")
+    @Pattern(regexp = "(?i)AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO", message = "Estado inválido.")
     private String estado;
 
     public Double getTempoDisponivelSemanal() {

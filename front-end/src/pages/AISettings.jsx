@@ -1,9 +1,11 @@
+import { API_BASE_URL } from "../api/config.js";
+import { session } from "../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./css/AISettings.css";
 
-const API_URL = "http://localhost:8080/api/v1/ai/configuration";
+const API_URL = API_BASE_URL + "/ai/configuration";
 
 export default function AISettings() {
     const navigate = useNavigate();
@@ -19,7 +21,7 @@ export default function AISettings() {
     const [sucesso, setSucesso] = useState("");
 
     const headers = () => ({
-        Authorization: `Bearer ${localStorage.getItem("token")}`
+        Authorization: `Bearer ${session.getItem("token")}`
     });
 
     useEffect(() => {
@@ -35,8 +37,8 @@ export default function AISettings() {
                 if (ativo) {
                     setConfigurada(response.data.configurada);
                 }
-            } catch (error) {
-                console.error("Erro ao carregar configuração:", error);
+            } catch {
+
 
                 if (ativo) {
                     setErro("Não foi possível carregar as configurações de IA.");

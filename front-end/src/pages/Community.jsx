@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "../api/config.js";
+import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import axios from "axios";
@@ -21,8 +23,8 @@ export default function Community() {
     const [comunidadesRegionais, setComunidadesRegionais] = useState([]);
     const [tipoComunidade, setTipoComunidade] = useState("geral");
 
-    const nome = localStorage.getItem("nome");
-    const token = localStorage.getItem("token");
+    const nome = session.getItem("nome");
+    const token = session.getItem("token");
 
 
     useEffect(() => {
@@ -38,7 +40,7 @@ export default function Community() {
             setErro("");
 
             const statusResponse = await axios.get(
-                "http://localhost:8080/api/v1/social/me/status",
+                API_BASE_URL + "/social/me/status",
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -59,7 +61,7 @@ export default function Community() {
                     await Promise.all([
 
                         axios.get(
-                            "http://localhost:8080/api/v1/community/users",
+                            API_BASE_URL + "/community/users",
                             {
                                 headers: {
                                     Authorization: `Bearer ${token}`
@@ -68,7 +70,7 @@ export default function Community() {
                         ),
 
                         axios.get(
-                            "http://localhost:8080/api/v1/community/communities",
+                            API_BASE_URL + "/community/communities",
                             {
                                 headers: {
                                     Authorization: `Bearer ${token}`
@@ -77,7 +79,7 @@ export default function Community() {
                         ),
 
                         axios.get(
-                            "http://localhost:8080/api/v1/community/communities/regional",
+                            API_BASE_URL + "/community/communities/regional",
                             {
                                 headers: {
                                     Authorization: `Bearer ${token}`
@@ -93,7 +95,6 @@ export default function Community() {
 
         } catch (error) {
 
-            console.error(error);
 
             setErro(
                 error.response?.data?.error ||
@@ -114,7 +115,7 @@ export default function Community() {
             setErro("");
 
             await axios.post(
-                "http://localhost:8080/api/v1/social/me/enable",
+                API_BASE_URL + "/social/me/enable",
                 {},
                 {
                     headers: {
@@ -127,7 +128,6 @@ export default function Community() {
 
         } catch (error) {
 
-            console.error(error);
 
             setErro(
                 error.response?.data?.error ||
@@ -153,7 +153,7 @@ export default function Community() {
         try {
 
             await axios.post(
-                "http://localhost:8080/api/v1/social/me/disable",
+                API_BASE_URL + "/social/me/disable",
                 {},
                 {
                     headers: {
@@ -171,7 +171,6 @@ export default function Community() {
 
         } catch (error) {
 
-            console.error(error);
 
             setErro(
                 error.response?.data?.error ||
@@ -181,8 +180,8 @@ export default function Community() {
     }
 
 
-    function logout() {
-        localStorage.clear();
+    async function logout() {
+        await revokeSession();
         navigate("/login");
     }
 
@@ -192,7 +191,7 @@ export default function Community() {
             setAlterandoComunidade(communityId);
 
             const response = await axios.post(
-                `http://localhost:8080/api/v1/community/communities/${communityId}/join`,
+                `${API_BASE_URL}/community/communities/${communityId}/join`,
                 {},
                 {
                     headers: {
@@ -205,7 +204,6 @@ export default function Community() {
 
         } catch (error) {
 
-            console.error(error);
 
             setErro(
                 error.response?.data?.error ||
@@ -224,7 +222,7 @@ export default function Community() {
             setAlterandoComunidade(communityId);
 
             const response = await axios.delete(
-                `http://localhost:8080/api/v1/community/communities/${communityId}/leave`,
+                `${API_BASE_URL}/community/communities/${communityId}/leave`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -236,7 +234,6 @@ export default function Community() {
 
         } catch (error) {
 
-            console.error(error);
 
             setErro(
                 error.response?.data?.error ||

@@ -1,3 +1,4 @@
+import { session } from "../../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { api } from "../../api/api";
@@ -21,8 +22,8 @@ export default function NotInterestedTab() {
                 setLoading(true);
                 setErro("");
 
-                const userId = localStorage.getItem("userId");
-                const token = localStorage.getItem("token");
+                const userId = session.getItem("userId");
+                const token = session.getItem("token");
 
                 const response = await api.get(
                     `/recommendation-feedbacks/${userId}?tipo=NAO_INTERESSADO`,
@@ -35,11 +36,8 @@ export default function NotInterestedTab() {
 
                 setHobbies(response.data);
 
-            } catch (error) {
-                console.error(
-                    "Erro ao carregar hobbies não interessados:",
-                    error
-                );
+            } catch {
+
 
                 setErro(
                     "Não foi possível carregar seus hobbies descartados."
@@ -50,8 +48,8 @@ export default function NotInterestedTab() {
         }
     async function devolverParaDescobrir(hobbyId) {
             try {
-                const userId = localStorage.getItem("userId");
-                const token = localStorage.getItem("token");
+                const userId = session.getItem("userId");
+                const token = session.getItem("token");
 
                 await api.delete(
                     `/recommendation-feedbacks/${userId}/${hobbyId}`,
@@ -68,11 +66,8 @@ export default function NotInterestedTab() {
                     )
                 );
 
-            } catch (error) {
-                console.error(
-                    "Erro ao desfazer decisão:",
-                    error
-                );
+            } catch {
+
 
                 setErro(
                     "Não foi possível desfazer sua escolha."

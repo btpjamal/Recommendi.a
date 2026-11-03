@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@org.springframework.security.access.prepost.PreAuthorize("isAuthenticated() and #p0 == authentication.principal.id")
 @Service
 @RequiredArgsConstructor
 public class RecommendationFeedbackService {
@@ -149,6 +150,7 @@ public class RecommendationFeedbackService {
                 .toList();
     }
 
+
     @Transactional
     public void removerDecisao(
             Long userId,
@@ -164,5 +166,10 @@ public class RecommendationFeedbackService {
                         );
 
         feedbackRepository.delete(feedback);
+
+        userHobbyRepository
+                .findByUser_IdAndHobby_Id(userId, hobbyId)
+                .ifPresent(userHobbyRepository::delete);
     }
+
 }

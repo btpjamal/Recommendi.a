@@ -35,7 +35,16 @@ public class User implements UserDetails {
     private String email;
 
     @Column(nullable = false)
+    @JsonIgnore
     private String senha;
+
+    @JsonIgnore
+    @Column(nullable = false)
+    private long tokenVersion;
+
+    @Version
+    @JsonIgnore
+    private Long version;
 
     private LocalDate dataCadastro;
 
@@ -83,6 +92,7 @@ public class User implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public @Nullable String getPassword() {
         return senha;
     }

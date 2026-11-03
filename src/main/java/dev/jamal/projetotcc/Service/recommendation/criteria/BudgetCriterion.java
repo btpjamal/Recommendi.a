@@ -9,6 +9,7 @@ import java.util.List;
 @Component
 public class BudgetCriterion implements RecommendationCriterion {
 
+
     @Override
     public CriterionResult avaliar(
             Hobby h,
@@ -16,25 +17,34 @@ public class BudgetCriterion implements RecommendationCriterion {
             List<UserInterest> i,
             List<UserHobbyFeedback> f
     ) {
-            if (h.getCustoEstimado() == null
-                    || p.getOrcamentoInicial() == null) {
-                return CriterionResult.of(0, null);
-            }
+        if (h.getCustoEstimado() == null
+                || p.getOrcamentoInicial() == null) {
+            return CriterionResult.of(0, null);
+        }
 
-            double orcamento = p.getOrcamentoInicial();
-            double custo = h.getCustoEstimado();
+        double orcamento = p.getOrcamentoInicial();
+        double custo = h.getCustoEstimado();
+
+        String valorOrcamento = formatarMoeda(orcamento);
+        String valorCusto = formatarMoeda(custo);
 
         if (custo <= orcamento) {
             return CriterionResult.of(
                     15,
-                    "Está dentro do seu orçamento inicial"
+                    "O custo inicial estimado deste hobby é de "
+                            + valorCusto
+                            + ", dentro do seu orçamento de "
+                            + valorOrcamento + "."
             );
         }
 
         if (orcamento <= 0) {
             return CriterionResult.warning(
                     -5,
-                    "Este hobby possui um custo inicial incompatível com seu orçamento atual"
+                    "Este hobby possui um custo inicial estimado de "
+                            + valorCusto
+                            + ", mas você informou um orçamento de "
+                            + valorOrcamento + "."
             );
         }
 
@@ -43,19 +53,39 @@ public class BudgetCriterion implements RecommendationCriterion {
         if (excesso <= 0.25) {
             return CriterionResult.warning(
                     7,
-                    "O custo inicial ultrapassa um pouco o orçamento informado"
+                    "O custo inicial estimado deste hobby é de "
+                            + valorCusto
+                            + ", um pouco acima do seu orçamento de "
+                            + valorOrcamento + "."
             );
         }
 
         if (excesso <= 0.75) {
             return CriterionResult.warning(
                     0,
-                    "O investimento inicial pode ser maior do que você pretende gastar"
+                    "Este hobby exige um investimento inicial estimado de "
+                            + valorCusto
+                            + ", superior ao seu orçamento de "
+                            + valorOrcamento
+                            + ". Talvez seja necessário planejar esse gasto."
             );
         }
 
         return CriterionResult.warning(
                 -5,
-                "O custo inicial é significativamente maior que o seu orçamento");
+                "O custo inicial estimado deste hobby é de "
+                        + valorCusto
+                        + ", significativamente acima do seu orçamento de "
+                        + valorOrcamento + "."
+        );
     }
+
+    private String formatarMoeda(double valor) {
+        return java.text.NumberFormat
+                .getCurrencyInstance(
+                        java.util.Locale.forLanguageTag("pt-BR")
+                )
+                .format(valor);
+    }
+
 }

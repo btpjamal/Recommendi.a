@@ -1,3 +1,4 @@
+import { session } from "../auth/session.js";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/api";
 
@@ -53,7 +54,7 @@ export default function AdminHobbies() {
     const botaoDesativarOrigemRef = useRef(null);
     const processandoDesativacaoRef = useRef(false);
 
-    const headers = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` });
+    const headers = () => ({ Authorization: `Bearer ${session.getItem("token")}` });
 
     // Aguarda a digitação terminar antes de consultar o servidor.
     useEffect(() => {
@@ -92,7 +93,7 @@ export default function AdminHobbies() {
                 setEstatisticas(totais.data);
             } catch (error) {
                 if (cancelado || identificador !== requisicaoAtualRef.current) return;
-                console.error("Erro ao carregar hobbies:", error);
+
                 setHobbies([]);
                 setTotalElementos(0);
                 setTotalPaginas(0);
@@ -114,8 +115,8 @@ export default function AdminHobbies() {
             try {
                 const response = await api.get("/hobby-categories", { headers: headers() });
                 if (ativo) setCategorias(response.data);
-            } catch (error) {
-                console.error("Erro ao carregar categorias:", error);
+            } catch {
+
                 if (ativo) setErroCategorias("Não foi possível carregar as categorias.");
             } finally {
                 if (ativo) setCarregandoCategorias(false);
@@ -306,7 +307,7 @@ export default function AdminHobbies() {
             atualizarLista();
             requestAnimationFrame(() => botaoOrigemRef.current?.focus());
         } catch (error) {
-            console.error("Erro ao salvar hobby:", error);
+
             setErroCadastro(error.response?.data?.message || (hobbyEmEdicao ? "Não foi possível atualizar o hobby." : "Não foi possível cadastrar o hobby."));
         } finally {
             salvandoRef.current = false;
@@ -371,7 +372,7 @@ export default function AdminHobbies() {
                 });
             }
         } catch (error) {
-            console.error("Erro ao alterar status do hobby:", error);
+
 
             const mensagem =
                 error.response?.data?.message ||

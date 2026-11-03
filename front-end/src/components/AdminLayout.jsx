@@ -1,10 +1,11 @@
+import { session, revokeSession } from "../auth/session.js";
 
 import { NavLink, Outlet, useNavigate } from "react-router";
 import "../pages/css/Admin.css";
 
 export default function AdminLayout() {
     const navigate = useNavigate();
-    const nome = localStorage.getItem("nome") || "Administrador";
+    const nome = session.getItem("nome") || "Administrador";
 
     const menu = [
         { caminho: "/admin", nome: "Visão geral", icone: "▦", fim: true },
@@ -13,9 +14,8 @@ export default function AdminLayout() {
         { caminho: "/admin/location-rules", nome: "Regras geográficas", icone: "⌖" }
     ];
 
-    function sair() {
-        ["token", "userId", "nome", "email", "role"]
-            .forEach((campo) => localStorage.removeItem(campo));
+    async function sair() {
+        await revokeSession();
 
         navigate("/login", { replace: true });
     }

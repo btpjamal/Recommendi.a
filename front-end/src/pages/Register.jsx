@@ -31,14 +31,9 @@ export default function Register() {
 
         } catch (err) {
 
-            console.log("Erro completo:", err);
-            console.log(
-                "Resposta backend:",
-                err.response?.data
-            );
 
             setErro(
-                err.response?.data?.message ||
+                err.response?.data?.error ||
                 JSON.stringify(err.response?.data) ||
                 "Não foi possível criar a conta."
             );
@@ -139,7 +134,10 @@ export default function Register() {
                         <input
                             id="senha"
                             type="password"
-                            placeholder="Crie uma senha"
+                            placeholder="Use pelo menos 12 caracteres"
+                            minLength={12}
+                            maxLength={72}
+                            autoComplete="new-password"
                             value={form.senha}
                             onChange={(e) =>
                                 atualizarCampo(

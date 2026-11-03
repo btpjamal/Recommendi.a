@@ -19,6 +19,16 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final dev.jamal.projetotcc.Repository.UserRepository userRepository;
+
+    @PostMapping("/logout")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Void> logout(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal dev.jamal.projetotcc.Entities.User user) {
+        userRepository.revokeTokens(user.getId());
+        return ResponseEntity.noContent().build();
+    }
+
 
     @PostMapping("/register")
     public ResponseEntity<UserResponseDTO> register(

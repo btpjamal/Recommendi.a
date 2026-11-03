@@ -1,3 +1,4 @@
+import { session } from "../../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/api";
@@ -26,8 +27,8 @@ export default function InterestedTab() {
             setLoading(true);
             setErro("");
 
-            const userId = localStorage.getItem("userId");
-            const token = localStorage.getItem("token");
+            const userId = session.getItem("userId");
+            const token = session.getItem("token");
 
             const response = await api.get(
                 `/recommendation-feedbacks/${userId}?tipo=INTERESSADO`,
@@ -40,11 +41,8 @@ export default function InterestedTab() {
 
             setHobbies(response.data);
 
-        } catch (error) {
-            console.error(
-                "Erro ao carregar hobbies interessados:",
-                error
-            );
+        } catch {
+
 
             setErro(
                 "Não foi possível carregar seus hobbies de interesse."
@@ -64,17 +62,14 @@ export default function InterestedTab() {
                 return;
             }
 
-            console.error(
-                "Erro ao verificar plano geral:",
-                error
-            );
+
         }
     }
 
     async function devolverParaDescobrir(hobbyId) {
                 try {
-                    const userId = localStorage.getItem("userId");
-                    const token = localStorage.getItem("token");
+                    const userId = session.getItem("userId");
+                    const token = session.getItem("token");
 
                     await api.delete(
                         `/recommendation-feedbacks/${userId}/${hobbyId}`,
@@ -91,11 +86,8 @@ export default function InterestedTab() {
                         )
                     );
 
-                } catch (error) {
-                    console.error(
-                        "Erro ao desfazer decisão:",
-                        error
-                    );
+                } catch {
+
 
                     setErro(
                         "Não foi possível desfazer sua escolha."
@@ -105,8 +97,8 @@ export default function InterestedTab() {
 
     async function atualizarNivel(hobbyId, nivelAtual) {
         try {
-            const userId = localStorage.getItem("userId");
-            const token = localStorage.getItem("token");
+            const userId = session.getItem("userId");
+            const token = session.getItem("token");
 
             await api.patch(
                 `/user-hobbies/${userId}/${hobbyId}/nivel`,
@@ -133,11 +125,8 @@ export default function InterestedTab() {
                 )
             );
 
-        } catch (error) {
-            console.error(
-                "Erro ao atualizar nível do hobby:",
-                error
-            );
+        } catch {
+
 
             setErro(
                 "Não foi possível atualizar seu nível."
@@ -147,8 +136,8 @@ export default function InterestedTab() {
 
     async function atualizarStatus(hobbyId, statusAtual) {
         try {
-            const userId = localStorage.getItem("userId");
-            const token = localStorage.getItem("token");
+            const userId = session.getItem("userId");
+            const token = session.getItem("token");
 
             await api.patch(
                 `/user-hobbies/${userId}/${hobbyId}/status`,
@@ -173,11 +162,8 @@ export default function InterestedTab() {
                 )
             );
 
-        } catch (error) {
-            console.error(
-                "Erro ao atualizar status do hobby:",
-                error
-            );
+        } catch {
+
 
             setErro(
                 "Não foi possível atualizar a situação do hobby."

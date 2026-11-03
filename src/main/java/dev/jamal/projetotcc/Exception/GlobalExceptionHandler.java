@@ -92,6 +92,44 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<ApiErrorResponse> authentication(HttpServletRequest request) {
+        return safe(HttpStatus.UNAUTHORIZED, "Credenciais inválidas ou sessão expirada.", request);
+    }
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> forbidden(HttpServletRequest request) {
+        return safe(HttpStatus.FORBIDDEN, "Acesso não autorizado.", request);
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ApiErrorResponse> rateLimit(HttpServletRequest request) {
+        return ResponseEntity.status(429).header("Retry-After", "300")
+                .body(new ApiErrorResponse(LocalDateTime.now(), 429, "Muitas solicitações. Tente novamente mais tarde.", request.getRequestURI()));
+    }
+
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse> status(org.springframework.web.server.ResponseStatusException ex, HttpServletRequest request) {
+        return ResponseEntity.status(ex.getStatusCode()).body(new ApiErrorResponse(LocalDateTime.now(),
+                ex.getStatusCode().value(), ex.getStatusCode().is5xxServerError() ? "Serviço temporariamente indisponível." : "Solicitação não permitida.", request.getRequestURI()));
+    }
+
+    @ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ApiErrorResponse> malformed(HttpServletRequest request) {
+        return safe(HttpStatus.BAD_REQUEST, "Dados inválidos na solicitação.", request);
+    }
+
+    private ResponseEntity<ApiErrorResponse> safe(HttpStatus status, String message, HttpServletRequest request) {
+        return ResponseEntity.status(status).body(new ApiErrorResponse(LocalDateTime.now(), status.value(), message, request.getRequestURI()));
+    }
+
+    @ExceptionHandler({org.springframework.dao.OptimisticLockingFailureException.class,
+            jakarta.persistence.OptimisticLockException.class})
+    public ResponseEntity<ApiErrorResponse> optimisticConflict(HttpServletRequest request) {
+        return safe(HttpStatus.CONFLICT, "Os dados foram alterados por outra operação. Entre novamente e tente outra vez.", request);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiErrorResponse> handleRuntime(
             RuntimeException ex,
@@ -100,7 +138,7 @@ public class GlobalExceptionHandler {
         ApiErrorResponse error = new ApiErrorResponse(
                 java.time.LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                ex.getMessage(),
+                "Não foi possível concluir a operação.",
                 request.getRequestURI()
         );
 

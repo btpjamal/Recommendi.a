@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route element={<ProtectedRoute />}>
         <Route path="/profile" element={<Profile />} />
         <Route path="/interests" element={<Interests />} />
         <Route path="/recommendations" element={<Recommendations />} />
@@ -40,6 +42,7 @@ export default function App() {
         <Route path="/ai-settings" element={<AISettings />} />
         <Route path="/suggest-hobby" element={<SuggestHobby />} />
         <Route path="/my-suggestions" element={<MySuggestions />} />
+        </Route>
 
             <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<AdminLayout />}>

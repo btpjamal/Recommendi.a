@@ -24,33 +24,56 @@ public class TimeCriterion implements RecommendationCriterion {
         double disponivel = p.getTempoDisponivelSemanal();
         double necessario = h.getTempoNecessario();
 
+        String tempoDisponivel = formatarHoras(disponivel);
+        String tempoNecessario = formatarHoras(necessario);
+
         if (disponivel >= necessario) {
             return CriterionResult.of(
                     15,
-                    "É compatível com seu tempo disponível semanal"
+                    "Este hobby exige cerca de " + tempoNecessario
+                            + " por semana, dentro das "
+                            + tempoDisponivel
+                            + " que você possui disponíveis."
             );
         }
 
-        double proporcao= disponivel/necessario;
+        double proporcao = disponivel / necessario;
 
         if (proporcao >= 0.75) {
             return CriterionResult.warning(
                     7,
-                    "Pode exigir um pouco a mais do tempo que você informou"
+                    "Este hobby exige cerca de " + tempoNecessario
+                            + " por semana, enquanto você possui "
+                            + tempoDisponivel
+                            + " disponíveis. Talvez seja necessário ajustar sua rotina."
             );
         }
 
         if (proporcao >= 0.5) {
             return CriterionResult.warning(
                     2,
-                    "Pode ser difícil encaixar esse hobby na sua rotina atual"
+                    "Com " + tempoDisponivel
+                            + " disponíveis por semana, pode ser difícil encaixar "
+                            + "uma atividade que exige cerca de "
+                            + tempoNecessario + "."
             );
         }
 
         return CriterionResult.warning(
                 -5,
-                "Exige significativamente mais tempo que você possui disponível"
+                "Este hobby exige cerca de " + tempoNecessario
+                        + " por semana, significativamente mais que as "
+                        + tempoDisponivel
+                        + " que você possui disponíveis."
         );
+    }
 
+    private String formatarHoras(double horas) {
+        return String.format(
+                java.util.Locale.forLanguageTag("pt-BR"),
+                "%.1f %s",
+                horas,
+                horas == 1.0 ? "hora" : "horas"
+        );
     }
 }

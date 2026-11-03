@@ -23,6 +23,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicyService passwordPolicy;
 
 
     // CREATE
@@ -32,20 +33,19 @@ public class UserService {
             throw new BusinessException("Email já cadastrado.");
         }
 
+        passwordPolicy.validar(dto.getSenha());
         User user = userMapper.toEntity(dto);
         user.setRole(Role.USER);
         user.setSenha(passwordEncoder.encode(dto.getSenha()));
         User salvo= userRepository.save(user);
-        System.out.println("ID da entidade salva: " + salvo.getId());
 
-        UserResponseDTO response = userMapper.toResponseDTO(salvo);
-        System.out.println("ID do DTO retornado: "+ response.getId());
 
         return userMapper.toResponseDTO(salvo);
     }
 
     // READ ALL
     @Transactional
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public List<UserResponseDTO> listarTodos(){
         return userRepository.findAll()
                 .stream()
@@ -55,6 +55,7 @@ public class UserService {
 
     // READ BY ID
     @Transactional
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or #p0 == authentication.principal.id")
     public UserResponseDTO buscarPorId(Long id) {
 
         User user = userRepository.findById(id)
@@ -64,6 +65,7 @@ public class UserService {
     }
 
     // UPDATE
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or #p0 == authentication.principal.id")
     public UserResponseDTO atualizar(
         Long id,
         UserCreateRequestDTO dto
@@ -80,6 +82,8 @@ public class UserService {
                     }
                 });
 
+        passwordPolicy.validar(dto.getSenha());
+        user.setTokenVersion(user.getTokenVersion() + 1);
         user.setNome(dto.getNome());
         user.setEmail(dto.getEmail());
         user.setSenha(passwordEncoder.encode(dto.getSenha()));
@@ -91,6 +95,7 @@ public class UserService {
     }
 
     // DELETE
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or #p0 == authentication.principal.id")
     public void deletar(Long id) {
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("Usuário não encontrado.");

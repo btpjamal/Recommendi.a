@@ -1,6 +1,7 @@
 package dev.jamal.projetotcc.Service;
 import dev.jamal.projetotcc.DTO.Profile.*; import dev.jamal.projetotcc.Entities.*; import dev.jamal.projetotcc.Exception.ResourceNotFoundException; import dev.jamal.projetotcc.Mapper.UserProfileMapper; import dev.jamal.projetotcc.Repository.*;
 import jakarta.transaction.Transactional; import lombok.RequiredArgsConstructor; import org.springframework.stereotype.Service;
+@org.springframework.security.access.prepost.PreAuthorize("isAuthenticated() and #p0 == authentication.principal.id")
 @Service @RequiredArgsConstructor @Transactional
 public class UserProfileService {
  private final RecommendationProfileRepository recommendationProfileRepository; private final UserRepository userRepository; private final UserProfileMapper mapper;
