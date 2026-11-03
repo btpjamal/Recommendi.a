@@ -6,6 +6,7 @@ import dev.jamal.projetotcc.DTO.Recommendation.RecommendationDetailsDTO;
 import dev.jamal.projetotcc.Entities.Hobby;
 import dev.jamal.projetotcc.Entities.PersonalizedPlan;
 import dev.jamal.projetotcc.Entities.UserHobby;
+import dev.jamal.projetotcc.Exception.BusinessException;
 import dev.jamal.projetotcc.Repository.HobbyRepository;
 import dev.jamal.projetotcc.Repository.PersonalizedPlanRepository;
 import dev.jamal.projetotcc.Repository.UserHobbyRepository;
@@ -34,9 +35,9 @@ public class RecommendationDetailsService {
             Long hobbyId
     ) {
 
-        Hobby hobby = hobbyRepository.findById(hobbyId)
+        Hobby hobby = hobbyRepository.findEligibleById(hobbyId)
                 .orElseThrow(() ->
-                        new RuntimeException("Hobby não encontrado.")
+                        new BusinessException("Hobby não encontrado ou indisponível para recomendação.")
                 );
 
         HobbyRecommendationDTO recomendacao =

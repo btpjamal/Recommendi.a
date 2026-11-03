@@ -12,4 +12,10 @@ public interface HobbyObjectiveRepository
     List<HobbyObjective> findByHobbyId(Long hobbyId);
 
     void deleteByHobbyId(Long hobbyId);
+
+    boolean existsByHobbyIdAndPesoBetween(
+            Long hobbyId,
+            Integer pesoMinimo,
+            Integer pesoMaximo
+    );
 }
