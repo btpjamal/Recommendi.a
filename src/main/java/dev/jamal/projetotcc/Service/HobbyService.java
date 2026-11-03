@@ -182,6 +182,26 @@ public class HobbyService {
 
         Hobby atualizado = hobbyRepository.save(hobby);
 
+        if (dto.getInterestAssociations() != null) {
+            hobbyInterestRepository.deleteByHobbyId(atualizado.getId());
+            hobbyInterestRepository.flush();
+
+            salvarInteresses(
+                    atualizado,
+                    dto.getInterestAssociations()
+            );
+        }
+
+        if (dto.getObjectiveAssociations() != null) {
+            hobbyObjectiveRepository.deleteByHobbyId(atualizado.getId());
+            hobbyObjectiveRepository.flush();
+
+            salvarObjetivos(
+                    atualizado,
+                    dto.getObjectiveAssociations()
+            );
+        }
+
         return hobbyMapper.toResponseDTO(atualizado);
     }
 
