@@ -10,6 +10,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import dev.jamal.projetotcc.DTO.RecommendationProfile.UserInterestAssociationDTO;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+
 import java.util.List;
 
 @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated() and #p0 == authentication.principal.id")
@@ -65,7 +71,22 @@ public class RecommendationProfileService {
         RecommendationProfile salvo =
                 recommendationProfileRepository.save(profile);
 
-        salvarInteresses(user, dto.getInterestIds());
+
+        if (dto.getInterestIds() != null
+                && dto.getInterestAssociations() != null) {
+
+            throw new BusinessException(
+                    "Informe interestIds ou interestAssociations, " +
+                            "mas não ambos."
+            );
+        }
+
+
+        if (dto.getInterestAssociations() != null) {
+            sincronizarInteresses(user, dto.getInterestAssociations());
+        } else {
+            salvarInteresses(user, dto.getInterestIds());
+        }
         salvarObjetivos(user, dto.getObjectiveIds());
 
         List<Long> interestIds =
@@ -196,4 +217,81 @@ public class RecommendationProfileService {
             userInterestRepository.save(userInterest);
         }
     }
+
+
+    private void sincronizarInteresses(
+            User user,
+            List<UserInterestAssociationDTO> associacoes
+    ) {
+        if (associacoes == null) {
+            return;
+        }
+
+        Set<Long> idsRecebidos = new HashSet<>();
+
+        // Validar antes de alterar os registros
+        for (UserInterestAssociationDTO associacao : associacoes) {
+
+            if (associacao == null
+                    || associacao.interestId() == null
+                    || associacao.peso() == null
+                    || associacao.peso() < 1
+                    || associacao.peso() > 3) {
+
+                throw new BusinessException(
+                        "Associação de interesse inválida."
+                );
+            }
+
+            if (!idsRecebidos.add(associacao.interestId())) {
+                throw new BusinessException(
+                        "Interesse duplicado: " + associacao.interestId()
+                );
+            }
+        }
+
+        List<UserInterest> existentes =
+                userInterestRepository.findByUserIdWithInterest(user.getId());
+
+        // Remover interesses que não foram enviados
+        for (UserInterest existente : existentes) {
+            if (!idsRecebidos.contains(existente.getInterest().getId())) {
+                userInterestRepository.delete(existente);
+            }
+        }
+
+        // Atualizar associações existentes ou criar novas
+        for (UserInterestAssociationDTO associacao : associacoes) {
+
+            UserInterest userInterest = existentes.stream()
+                    .filter(ui -> ui.getInterest().getId()
+                            .equals(associacao.interestId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (userInterest != null) {
+                userInterest.setPeso(associacao.peso());
+            } else {
+                Interest interest = interestRepository
+                        .findById(associacao.interestId())
+                        .orElseThrow(() -> new BusinessException(
+                                "Interesse não encontrado: "
+                                        + associacao.interestId()
+                        ));
+
+                UserInterestId id = new UserInterestId();
+                id.setUserId(user.getId());
+                id.setInterestId(interest.getId());
+
+                userInterest = new UserInterest();
+                userInterest.setId(id);
+                userInterest.setUser(user);
+                userInterest.setInterest(interest);
+                userInterest.setPeso(associacao.peso());
+            }
+
+            userInterestRepository.save(userInterest);
+        }
+    }
+
 }

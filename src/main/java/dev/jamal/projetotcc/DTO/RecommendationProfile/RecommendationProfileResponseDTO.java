@@ -15,6 +15,7 @@ public class RecommendationProfileResponseDTO {
     private AmbientePreferido ambientePreferido;
     private Boolean questionarioConcluido;
     private List<Long> interestIds;
+    private List<UserInterestAssociationDTO> interestAssociations;
     private List<Long> objectiveIds;
     private String cidade;
     private String estado;
@@ -86,6 +87,18 @@ public class RecommendationProfileResponseDTO {
     public void setInterestIds(List<Long> interestIds) {
         this.interestIds = interestIds;
     }
+
+
+    public List<UserInterestAssociationDTO> getInterestAssociations() {
+        return interestAssociations;
+    }
+
+    public void setInterestAssociations(
+            List<UserInterestAssociationDTO> interestAssociations
+    ) {
+        this.interestAssociations = interestAssociations;
+    }
+
 
     public List<Long> getObjectiveIds() {
         return objectiveIds;
