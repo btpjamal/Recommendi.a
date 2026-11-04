@@ -133,6 +133,7 @@ public class HobbyService {
 
         Hobby hobby = hobbyMapper.toEntity(dto, category);
         hobby.setNome(nome);
+        hobby.setAtivo(false);
 
         Hobby salvo = hobbyRepository.saveAndFlush(hobby);
 
@@ -201,6 +202,31 @@ public class HobbyService {
                     dto.getObjectiveAssociations()
             );
         }
+
+
+        if (atualizado.isAtivo()) {
+
+            hobbyInterestRepository.flush();
+            hobbyObjectiveRepository.flush();
+
+            boolean possuiInteresseValido =
+                    hobbyInterestRepository.existsByHobbyIdAndPesoBetween(
+                            atualizado.getId(), 1, 3
+                    );
+
+            boolean possuiObjetivoValido =
+                    hobbyObjectiveRepository.existsByHobbyIdAndPesoBetween(
+                            atualizado.getId(), 1, 3
+                    );
+
+            if (!possuiInteresseValido || !possuiObjetivoValido) {
+                throw new BusinessException(
+                        "Não é possível manter um hobby ativo sem " +
+                                "pelo menos um interesse e um objetivo associados."
+                );
+            }
+        }
+
 
         return hobbyMapper.toResponseDTO(atualizado);
     }
