@@ -100,4 +100,50 @@ public interface HobbyRepository extends JpaRepository<Hobby, Long> {
             @Param("nome") String nome,
             @Param("id") Long id
     );
+
+
+    @Query("""
+    SELECT h
+    FROM Hobby h
+    JOIN FETCH h.category
+    WHERE h.ativo = true
+      AND EXISTS (
+          SELECT hi.id
+          FROM HobbyInterest hi
+          WHERE hi.hobby = h
+            AND hi.peso BETWEEN 1 AND 3
+      )
+      AND EXISTS (
+          SELECT ho.id
+          FROM HobbyObjective ho
+          WHERE ho.hobby = h
+            AND ho.peso BETWEEN 1 AND 3
+      )
+""")
+    List<Hobby> findAllEligibleForRecommendation();
+
+
+    @Query("""
+    SELECT h
+    FROM Hobby h
+    JOIN FETCH h.category
+    WHERE h.id = :id
+      AND h.ativo = true
+      AND EXISTS (
+          SELECT hi.id
+          FROM HobbyInterest hi
+          WHERE hi.hobby = h
+            AND hi.peso BETWEEN 1 AND 3
+      )
+      AND EXISTS (
+          SELECT ho.id
+          FROM HobbyObjective ho
+          WHERE ho.hobby = h
+            AND ho.peso BETWEEN 1 AND 3
+      )
+""")
+    Optional<Hobby> findEligibleById(
+            @Param("id") Long id
+    );
+
 }

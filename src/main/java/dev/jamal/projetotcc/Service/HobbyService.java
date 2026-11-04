@@ -133,6 +133,7 @@ public class HobbyService {
 
         Hobby hobby = hobbyMapper.toEntity(dto, category);
         hobby.setNome(nome);
+        hobby.setAtivo(false);
 
         Hobby salvo = hobbyRepository.saveAndFlush(hobby);
 
@@ -202,6 +203,31 @@ public class HobbyService {
             );
         }
 
+
+        if (atualizado.isAtivo()) {
+
+            hobbyInterestRepository.flush();
+            hobbyObjectiveRepository.flush();
+
+            boolean possuiInteresseValido =
+                    hobbyInterestRepository.existsByHobbyIdAndPesoBetween(
+                            atualizado.getId(), 1, 3
+                    );
+
+            boolean possuiObjetivoValido =
+                    hobbyObjectiveRepository.existsByHobbyIdAndPesoBetween(
+                            atualizado.getId(), 1, 3
+                    );
+
+            if (!possuiInteresseValido || !possuiObjetivoValido) {
+                throw new BusinessException(
+                        "Não é possível manter um hobby ativo sem " +
+                                "pelo menos um interesse e um objetivo associados."
+                );
+            }
+        }
+
+
         return hobbyMapper.toResponseDTO(atualizado);
     }
 
@@ -216,15 +242,38 @@ public class HobbyService {
         hobbyRepository.save(hobby);
     }
 
+
     public void reativar(Long id) {
+
         Hobby hobby = hobbyRepository.findById(id)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Hobby não encontrado.")
+                        new ResourceNotFoundException(
+                                "Hobby não encontrado."
+                        )
                 );
+
+        boolean possuiInteresseValido =
+                hobbyInterestRepository.existsByHobbyIdAndPesoBetween(
+                        id, 1, 3
+                );
+
+        boolean possuiObjetivoValido =
+                hobbyObjectiveRepository.existsByHobbyIdAndPesoBetween(
+                        id, 1, 3
+                );
+
+        if (!possuiInteresseValido || !possuiObjetivoValido) {
+            throw new BusinessException(
+                    "Não é possível reativar o hobby. " +
+                            "É necessário possuir pelo menos um interesse " +
+                            "e um objetivo associados com pesos válidos."
+            );
+        }
 
         hobby.setAtivo(true);
         hobbyRepository.save(hobby);
     }
+
 
     // para uso interno da aplicação, não deve ser consumido por controllers
     @Transactional
