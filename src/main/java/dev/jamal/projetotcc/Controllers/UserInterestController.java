@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import dev.jamal.projetotcc.Entities.User;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -49,7 +50,7 @@ public class UserInterestController {
     @PostMapping
     public ResponseEntity<UserInterestResponseDTO> adicionarOuAtualizar(
             @PathVariable Long userId,
-            @RequestBody UserInterestCreateRequestDTO dto,
+            @Valid @RequestBody UserInterestCreateRequestDTO dto,
             @AuthenticationPrincipal User usuarioAutenticado
     ) {
         if (!usuarioAutenticado.getId().equals(userId)) {

@@ -37,6 +37,10 @@ public class RecommendationProfileCreateRequestDTO {
     @Size(max = 100)
     private List<@Positive Long> objectiveIds;
 
+    @Valid
+    @Size(max = 100)
+    private List<UserObjectiveAssociationDTO> objectiveAssociations;
+
     @NotBlank(message = "A cidade é obrigatória.")
     @Size(max = 100)
     @Pattern(regexp = "[\\p{L}\\p{M} .’'-]+", message = "Informe apenas o nome da cidade.")
@@ -121,6 +125,16 @@ public class RecommendationProfileCreateRequestDTO {
 
     public void setObjectiveIds(List<Long> objectiveIds) {
         this.objectiveIds = objectiveIds;
+    }
+
+    public List<UserObjectiveAssociationDTO> getObjectiveAssociations() {
+        return objectiveAssociations;
+    }
+
+    public void setObjectiveAssociations(
+            List<UserObjectiveAssociationDTO> objectiveAssociations
+    ) {
+        this.objectiveAssociations = objectiveAssociations;
     }
 
     public String getCidade() {

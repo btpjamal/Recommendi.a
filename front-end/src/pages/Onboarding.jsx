@@ -129,7 +129,10 @@ export default function Onboarding() {
 
     //Seleções múltiplas
     const [objetivosSelecionados, setObjetivosSelecionados] = useState([]);
+    const [pesosObjetivos, setPesosObjetivos] = useState({});
+
     const [interessesSelecionados,setInteressesSelecionados] = useState([]);
+    const [pesosInteresses, setPesosInteresses] = useState({});
 
     // Estado da interface
         const [etapa, setEtapa] = useState(0);
@@ -221,14 +224,66 @@ export default function Onboarding() {
                                         dados.objectiveIds ?? []
                                 });
 
-                                setInteressesSelecionados(
-                                    dados.interestIds ?? []
-                                );
 
-                                setObjetivosSelecionados(
-                                    dados.objectiveIds ?? []
-                                );
-                            }
+                    const associacoes = dados.interestAssociations ?? [];
+
+                    if (associacoes.length > 0) {
+                        setInteressesSelecionados(
+                            associacoes.map((associacao) => associacao.interestId)
+                        );
+
+                        setPesosInteresses(
+                            Object.fromEntries(
+                                associacoes.map((associacao) => [
+                                    associacao.interestId,
+                                    associacao.peso
+                                ])
+                            )
+                        );
+                    } else {
+                        const ids = dados.interestIds ?? [];
+
+                        setInteressesSelecionados(ids);
+
+                        setPesosInteresses(
+                            Object.fromEntries(
+                                ids.map((id) => [id, 1])
+                            )
+                        );
+                    }
+
+
+
+                    const associacoesObjetivos = dados.objectiveAssociations ?? [];
+
+                    if (associacoesObjetivos.length > 0) {
+                        setObjetivosSelecionados(
+                            associacoesObjetivos.map(
+                                (associacao) => associacao.objectiveId
+                            )
+                        );
+
+                        setPesosObjetivos(
+                            Object.fromEntries(
+                                associacoesObjetivos.map((associacao) => [
+                                    associacao.objectiveId,
+                                    associacao.peso
+                                ])
+                            )
+                        );
+                    } else {
+                        const ids = dados.objectiveIds ?? [];
+
+                        setObjetivosSelecionados(ids);
+
+                        setPesosObjetivos(
+                            Object.fromEntries(
+                                ids.map((id) => [id, 1])
+                            )
+                        );
+                    }
+
+                }
 
             } catch {
 
@@ -289,30 +344,89 @@ export default function Onboarding() {
         return () => controller.abort();
     }, [profile.estado]);
 
+
     function alternarObjetivo(id) {
-        setObjetivosSelecionados((atuais) => {
+        const selecionado = objetivosSelecionados.includes(id);
 
-            if (atuais.includes(id)) {
-                return atuais.filter(
-                    (objectiveId) => objectiveId !== id
-                );
-            }
+        if (selecionado) {
+            setObjetivosSelecionados((atuais) =>
+                atuais.filter((objectiveId) => objectiveId !== id)
+            );
 
-            return [...atuais, id];
-        });
+            setPesosObjetivos((atuais) => {
+                const novos = { ...atuais };
+                delete novos[id];
+                return novos;
+            });
+        } else {
+            setObjetivosSelecionados((atuais) => [...atuais, id]);
+
+            setPesosObjetivos((atuais) => ({
+                ...atuais,
+                [id]: 1
+            }));
+        }
     }
+
+
 
     function alternarInteresse(id) {
-        setInteressesSelecionados((atuais) => {
-            if (atuais.includes(id)) {
-                return atuais.filter(
-                    (interestId) => interestId !== id
-                );
-            }
+        const selecionado = interessesSelecionados.includes(id);
 
-            return [...atuais, id];
-        });
+        if (selecionado) {
+            setInteressesSelecionados((atuais) =>
+                atuais.filter((interestId) => interestId !== id)
+            );
+
+            setPesosInteresses((atuais) => {
+                const novos = { ...atuais };
+                delete novos[id];
+                return novos;
+            });
+        } else {
+            setInteressesSelecionados((atuais) => [...atuais, id]);
+
+            setPesosInteresses((atuais) => ({
+                ...atuais,
+                [id]: 1
+            }));
+        }
     }
+
+
+    function alterarPesoInteresse(id, peso) {
+        if (!interessesSelecionados.includes(id)) {
+            return;
+        }
+
+        if (![1, 2, 3].includes(peso)) {
+            return;
+        }
+
+        setPesosInteresses((atuais) => ({
+            ...atuais,
+            [id]: peso
+        }));
+    }
+
+
+    function alterarPesoObjetivo(id, peso) {
+        if (!objetivosSelecionados.includes(id)) {
+            return;
+        }
+
+        if (![1, 2, 3].includes(peso)) {
+            return;
+        }
+
+        setPesosObjetivos((atuais) => ({
+            ...atuais,
+            [id]: peso
+        }));
+    }
+
+
+
 
 
     const perguntaAtual = perguntas[etapa];
@@ -446,21 +560,40 @@ export default function Onboarding() {
                                         interesse.id
                                     );
 
+
                                 return (
-                                    <button
-                                        type="button"
-                                        key={interesse.id}
-                                        className={`onboarding-option ${
-                                            selecionado ? "selected" : ""
-                                        }`}
-                                        onClick={() =>
-                                            alternarInteresse(interesse.id)
-                                        }
-                                        disabled={enviando}
-                                    >
-                                        {interesse.nome}
-                                    </button>
+                                    <div key={interesse.id} className="onboarding-interest-item">
+                                        <button
+                                            type="button"
+                                            className={`onboarding-option ${
+                                                selecionado ? "selected" : ""
+                                            }`}
+                                            onClick={() => alternarInteresse(interesse.id)}
+                                            disabled={enviando}
+                                        >
+                                            {interesse.nome}
+                                        </button>
+
+                                        {selecionado && (
+                                            <select
+                                                value={pesosInteresses[interesse.id] ?? 1}
+                                                onChange={(e) =>
+                                                    alterarPesoInteresse(
+                                                        interesse.id,
+                                                        Number(e.target.value)
+                                                    )
+                                                }
+                                                disabled={enviando}
+                                                aria-label={`Prioridade de ${interesse.nome}`}
+                                            >
+                                                <option value={1}>Normal</option>
+                                                <option value={2}>Importante</option>
+                                                <option value={3}>Prioritário</option>
+                                            </select>
+                                        )}
+                                    </div>
                                 );
+
                             })}
 
                         </div>
@@ -478,11 +611,21 @@ export default function Onboarding() {
                                     return;
                                 }
 
+
+                                const {
+                                    interestIds,
+                                    interestAssociations,
+                                    ...demaisDados
+                                } = profile;
+
                                 const atualizado = {
-                                    ...profile,
-                                    interestIds:
-                                        interessesSelecionados
+                                    ...demaisDados,
+                                    interestAssociations: interessesSelecionados.map((id) => ({
+                                        interestId: id,
+                                        peso: pesosInteresses[id] ?? 1
+                                    }))
                                 };
+
 
                                 setProfile(atualizado);
                                 setErro("");
@@ -522,25 +665,48 @@ export default function Onboarding() {
                 {perguntaAtual.campo === "objectiveIds" && (
                     <>
                         <div className="onboarding-options">
+
                             {objetivos.map((objetivo) => {
                                 const selecionado =
                                     objetivosSelecionados.includes(objetivo.id);
 
                                 return (
-                                    <button
-                                        type="button"
+                                    <div
                                         key={objetivo.id}
-                                        className={`onboarding-option ${
-                                            selecionado ? "selected" : ""
-                                        }`}
-                                        onClick={() =>
-                                            alternarObjetivo(objetivo.id)
-                                        }
+                                        className="onboarding-interest-item"
                                     >
-                                        {objetivo.nome}
-                                    </button>
+                                        <button
+                                            type="button"
+                                            className={`onboarding-option ${
+                                                selecionado ? "selected" : ""
+                                            }`}
+                                            onClick={() => alternarObjetivo(objetivo.id)}
+                                            disabled={enviando}
+                                        >
+                                            {objetivo.nome}
+                                        </button>
+
+                                        {selecionado && (
+                                            <select
+                                                value={pesosObjetivos[objetivo.id] ?? 1}
+                                                onChange={(e) =>
+                                                    alterarPesoObjetivo(
+                                                        objetivo.id,
+                                                        Number(e.target.value)
+                                                    )
+                                                }
+                                                disabled={enviando}
+                                                aria-label={`Prioridade de ${objetivo.nome}`}
+                                            >
+                                                <option value={1}>Normal</option>
+                                                <option value={2}>Importante</option>
+                                                <option value={3}>Prioritário</option>
+                                            </select>
+                                        )}
+                                    </div>
                                 );
                             })}
+
                         </div>
 
                         <button
@@ -555,11 +721,21 @@ export default function Onboarding() {
                                     return;
                                 }
 
+
+                                const {
+                                    objectiveIds,
+                                    objectiveAssociations,
+                                    ...demaisDados
+                                } = profile;
+
                                 const atualizado = {
-                                    ...profile,
-                                    objectiveIds:
-                                        objetivosSelecionados
+                                    ...demaisDados,
+                                    objectiveAssociations: objetivosSelecionados.map((id) => ({
+                                        objectiveId: id,
+                                        peso: pesosObjetivos[id] ?? 1
+                                    }))
                                 };
+
 
                                 setProfile(atualizado);
                                 setErro("");

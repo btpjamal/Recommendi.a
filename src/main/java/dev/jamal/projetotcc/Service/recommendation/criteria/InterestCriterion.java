@@ -34,45 +34,63 @@ public class InterestCriterion implements RecommendationCriterion {
             return CriterionResult.of(0,null);
         }
 
-        int compatibilidade = interesses.stream()
-                .mapToInt(userInterest ->
-                        interessesHobby.stream()
-                                .filter(hobbyInterest ->
-                                        hobbyInterest
-                                                .getInterest()
-                                                .getId()
-                                                .equals(
-                                                        userInterest
-                                                                .getInterest()
-                                                                .getId()
-                                                )
-                                )
-                                .mapToInt(hobbyInterest -> {
-                                    int pesoHobby =
-                                            hobbyInterest.getPeso() != null
-                                                    ? hobbyInterest.getPeso()
-                                                    : 1;
 
-                                    int pesoUsuario =
-                                            userInterest.getPeso() != null
-                                                    ? userInterest.getPeso()
-                                                    : 1;
+        double maiorPrioridadeUsuario = interesses.stream()
+                .mapToInt(ui -> ui.getPeso() != null ? ui.getPeso() : 1)
+                .max()
+                .orElse(0);
 
-                                    return pesoHobby * pesoUsuario;
-                                })
-                                .max()
-                                .orElse(0)
-                )
+        double somaPrioridadesUsuario = interesses.stream()
+                .mapToInt(ui -> ui.getPeso() != null ? ui.getPeso() : 1)
                 .sum();
 
-        if (compatibilidade == 0) {
+        if (maiorPrioridadeUsuario == 0 || somaPrioridadesUsuario == 0) {
             return CriterionResult.of(0, null);
         }
 
-        double pontos = Math.min(
-                25,
-                compatibilidade * 5
+        double maiorCompatibilidade = 0;
+        double somaCompatibilidades = 0;
+
+        for (UserInterest userInterest : interesses) {
+
+            int pesoUsuario = userInterest.getPeso() != null
+                    ? userInterest.getPeso()
+                    : 1;
+
+            int pesoHobby = interessesHobby.stream()
+                    .filter(hi ->
+                            hi.getInterest().getId()
+                                    .equals(userInterest.getInterest().getId())
+                    )
+                    .mapToInt(hi -> hi.getPeso() != null ? hi.getPeso() : 1)
+                    .max()
+                    .orElse(0);
+
+            double compatibilidade = pesoUsuario * pesoHobby;
+
+            maiorCompatibilidade = Math.max(
+                    maiorCompatibilidade,
+                    compatibilidade
+            );
+
+            somaCompatibilidades += compatibilidade;
+        }
+
+        if (maiorCompatibilidade == 0) {
+            return CriterionResult.of(0, null);
+        }
+
+        double afinidadePrincipal =
+                maiorCompatibilidade / (3.0 * maiorPrioridadeUsuario);
+
+        double coberturaPonderada =
+                somaCompatibilidades / (3.0 * somaPrioridadesUsuario);
+
+        double pontos = 25.0 * (
+                0.8 * afinidadePrincipal +
+                        0.2 * coberturaPonderada
         );
+
 
         List<String> interessesCorrespondentes = interesses.stream()
                 .filter(ui ->

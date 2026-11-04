@@ -17,6 +17,7 @@ public class RecommendationProfileResponseDTO {
     private List<Long> interestIds;
     private List<UserInterestAssociationDTO> interestAssociations;
     private List<Long> objectiveIds;
+    private List<UserObjectiveAssociationDTO> objectiveAssociations;
     private String cidade;
     private String estado;
 
@@ -106,6 +107,16 @@ public class RecommendationProfileResponseDTO {
 
     public void setObjectiveIds(List<Long> objectiveIds) {
         this.objectiveIds = objectiveIds;
+    }
+
+    public List<UserObjectiveAssociationDTO> getObjectiveAssociations() {
+        return objectiveAssociations;
+    }
+
+    public void setObjectiveAssociations(
+            List<UserObjectiveAssociationDTO> objectiveAssociations
+    ) {
+        this.objectiveAssociations = objectiveAssociations;
     }
 
     public void setId(Long id) {

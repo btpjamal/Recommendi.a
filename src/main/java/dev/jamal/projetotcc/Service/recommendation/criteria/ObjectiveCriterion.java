@@ -42,44 +42,56 @@ public class ObjectiveCriterion implements RecommendationCriterion{
             return CriterionResult.of(0, null);
         }
 
-        int compatibilidade = objetivosUsuario.stream()
-                .mapToInt(uo ->
-                        objetivosHobby.stream()
-                                .filter(ho ->
-                                        ho.getObjective()
-                                                .getId()
-                                                .equals(
-                                                        uo.getObjective()
-                                                                .getId()
-                                                )
-                                )
-                                .mapToInt(ho -> {
 
-                                    int pesoHobby =
-                                            ho.getPeso() != null
-                                                    ? ho.getPeso()
-                                                    : 1;
+        int maiorPesoUsuario = objetivosUsuario.stream()
+                .mapToInt(uo -> uo.getPeso() != null ? uo.getPeso() : 1)
+                .max()
+                .orElse(1);
 
-                                    int pesoUsuario =
-                                            uo.getPeso() != null
-                                                    ? uo.getPeso()
-                                                    : 1;
-
-                                    return pesoHobby * pesoUsuario;
-                                })
-                                .max()
-                                .orElse(0)
-                )
+        int somaPesosUsuario = objetivosUsuario.stream()
+                .mapToInt(uo -> uo.getPeso() != null ? uo.getPeso() : 1)
                 .sum();
 
-        if (compatibilidade == 0) {
+        int maiorCompatibilidade = 0;
+        int somaCompatibilidades = 0;
+
+        for (UserObjective objetivoUsuario : objetivosUsuario) {
+            int pesoUsuario = objetivoUsuario.getPeso() != null
+                    ? objetivoUsuario.getPeso()
+                    : 1;
+
+            int pesoHobby = objetivosHobby.stream()
+                    .filter(ho -> ho.getObjective().getId()
+                            .equals(objetivoUsuario.getObjective().getId()))
+                    .mapToInt(ho -> ho.getPeso() != null ? ho.getPeso() : 1)
+                    .max()
+                    .orElse(0);
+
+            int compatibilidade = pesoUsuario * pesoHobby;
+
+            maiorCompatibilidade = Math.max(
+                    maiorCompatibilidade,
+                    compatibilidade
+            );
+
+            somaCompatibilidades += compatibilidade;
+        }
+
+        if (somaCompatibilidades == 0) {
             return CriterionResult.of(0, null);
         }
 
-        double pontos = Math.min(
-                25,
-                compatibilidade * 5
+        double melhorCorrespondencia =
+                (double) maiorCompatibilidade / (3 * maiorPesoUsuario);
+
+        double coberturaGeral =
+                (double) somaCompatibilidades / (3 * somaPesosUsuario);
+
+        double pontos = 25 * (
+                0.8 * melhorCorrespondencia
+                        + 0.2 * coberturaGeral
         );
+
 
         List<String> objetivosCorrespondentes = objetivosUsuario.stream()
                 .filter(uo ->
