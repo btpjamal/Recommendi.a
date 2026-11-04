@@ -15,6 +15,7 @@ public class UserInterestCreateRequestDTO {
 
     @NotNull(message = "O peso é obrigatório")
     @Min(value = 1, message = "O peso mínimo é 1")
-    @Max(value = 5, message = "O peso máximo é 5")
+    @Max(value = 3, message = "O peso máximo é 3")
     private Integer peso;
+
 }

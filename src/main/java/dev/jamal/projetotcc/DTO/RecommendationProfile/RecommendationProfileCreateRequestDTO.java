@@ -3,6 +3,7 @@ package dev.jamal.projetotcc.DTO.RecommendationProfile;
 import dev.jamal.projetotcc.Enum.AmbientePreferido;
 import dev.jamal.projetotcc.Enum.NivelAtividadeFisica;
 import dev.jamal.projetotcc.Enum.TipoSocializacao;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
 import java.util.List;
@@ -29,8 +30,16 @@ public class RecommendationProfileCreateRequestDTO {
     @Size(max = 100)
     private List<@Positive Long> interestIds;
 
+    @Valid
+    @Size(max = 100)
+    private List<UserInterestAssociationDTO> interestAssociations;
+
     @Size(max = 100)
     private List<@Positive Long> objectiveIds;
+
+    @Valid
+    @Size(max = 100)
+    private List<UserObjectiveAssociationDTO> objectiveAssociations;
 
     @NotBlank(message = "A cidade é obrigatória.")
     @Size(max = 100)
@@ -100,12 +109,32 @@ public class RecommendationProfileCreateRequestDTO {
         this.interestIds = interestIds;
     }
 
+    public List<UserInterestAssociationDTO> getInterestAssociations() {
+        return interestAssociations;
+    }
+
+    public void setInterestAssociations(
+            List<UserInterestAssociationDTO> interestAssociations
+    ) {
+        this.interestAssociations = interestAssociations;
+    }
+
     public List<Long> getObjectiveIds() {
         return objectiveIds;
     }
 
     public void setObjectiveIds(List<Long> objectiveIds) {
         this.objectiveIds = objectiveIds;
+    }
+
+    public List<UserObjectiveAssociationDTO> getObjectiveAssociations() {
+        return objectiveAssociations;
+    }
+
+    public void setObjectiveAssociations(
+            List<UserObjectiveAssociationDTO> objectiveAssociations
+    ) {
+        this.objectiveAssociations = objectiveAssociations;
     }
 
     public String getCidade() {

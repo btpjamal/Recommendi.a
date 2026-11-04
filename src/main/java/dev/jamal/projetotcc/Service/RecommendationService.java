@@ -125,6 +125,15 @@ public class RecommendationService {
                         )
                         .toList();
 
+        for (int i = 0; i < criterios.size(); i++) {
+            System.out.printf(
+                    "[RECOMMENDATION] Hobby: %s | Critério: %s | Pontos: %.2f%n",
+                    hobby.getNome(),
+                    criterios.get(i).getClass().getSimpleName(),
+                    resultados.get(i).pontos()
+            );
+        }
+
         double score =
                 resultados.stream()
                         .mapToDouble(CriterionResult::pontos)
