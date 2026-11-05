@@ -12,6 +12,7 @@ export default function DiscoverTab() {
     const [recommendations, setRecommendations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [erro, setErro] = useState(null);
+    const [hobbyExplicacao, setHobbyExplicacao] = useState(null);
 
     async function registrarFeedback(hobbyId, tipo) {
                 try {
@@ -184,6 +185,16 @@ export default function DiscoverTab() {
                                             </div>
                                         )}
 
+                                    </div>
+
+                                    <div className="recommendation-explanation-action">
+                                        <button
+                                            type="button"
+                                            className="recommendation-explanation-button"
+                                            onClick={() => setHobbyExplicacao(item)}
+                                        >
+                                            Por que este hobby?
+                                        </button>
                                     </div>
 
                                     {/* Ações */}
