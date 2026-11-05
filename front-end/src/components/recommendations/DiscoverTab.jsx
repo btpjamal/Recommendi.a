@@ -1,5 +1,5 @@
 import { session } from "../../auth/session.js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef , useState } from "react";
 import { api } from "../../api/api";
 import { useNavigate } from "react-router";
 import "../../pages/css/Recommendations.css";
@@ -23,6 +23,8 @@ export default function DiscoverTab() {
     const [loading, setLoading] = useState(true);
     const [erro, setErro] = useState(null);
     const [hobbyExplicacao, setHobbyExplicacao] = useState(null);
+    const botaoFecharRef = useRef(null);
+    const modalRef = useRef(null);
 
     async function registrarFeedback(hobbyId, tipo) {
                 try {
@@ -93,16 +95,47 @@ export default function DiscoverTab() {
     useEffect(() => {
         if (!hobbyExplicacao) return;
 
-        function fecharComEscape(event) {
+        const elementoAnterior = document.activeElement;
+
+        botaoFecharRef.current?.focus();
+
+        function controlarTeclado(event) {
             if (event.key === "Escape") {
                 setHobbyExplicacao(null);
+                return;
+            }
+
+            if (event.key !== "Tab") return;
+
+            const elementos = modalRef.current?.querySelectorAll(
+                'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+            );
+
+            if (!elementos || elementos.length === 0) {
+                event.preventDefault();
+                return;
+            }
+
+            const primeiro = elementos[0];
+            const ultimo = elementos[elementos.length - 1];
+
+            if (event.shiftKey && document.activeElement === primeiro) {
+                event.preventDefault();
+                ultimo.focus();
+            } else if (!event.shiftKey && document.activeElement === ultimo) {
+                event.preventDefault();
+                primeiro.focus();
+            } else if (!modalRef.current?.contains(document.activeElement)) {
+                event.preventDefault();
+                primeiro.focus();
             }
         }
 
-        document.addEventListener("keydown", fecharComEscape);
+        document.addEventListener("keydown", controlarTeclado);
 
         return () => {
-            document.removeEventListener("keydown", fecharComEscape);
+            document.removeEventListener("keydown", controlarTeclado);
+            elementoAnterior?.focus?.();
         };
     }, [hobbyExplicacao]);
 
@@ -276,6 +309,7 @@ export default function DiscoverTab() {
                         onClick={() => setHobbyExplicacao(null)}
                     >
                         <div
+                            ref={modalRef}
                             className="explanation-modal"
                             role="dialog"
                             aria-modal="true"
@@ -288,6 +322,7 @@ export default function DiscoverTab() {
                                 </h2>
 
                                 <button
+                                    ref={botaoFecharRef}
                                     type="button"
                                     onClick={() => setHobbyExplicacao(null)}
                                     aria-label="Fechar explicação"
