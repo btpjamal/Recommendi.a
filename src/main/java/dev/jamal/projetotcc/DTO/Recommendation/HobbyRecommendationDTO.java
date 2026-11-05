@@ -9,6 +9,7 @@ public class HobbyRecommendationDTO {
  private Double score;
  private List<String> motivos;
  private List<String> alertas;
+ private List<CriterionScoreDTO> criterios;
  private String imagemUrl;
 
 

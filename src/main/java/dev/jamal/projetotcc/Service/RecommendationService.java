@@ -12,6 +12,7 @@ import dev.jamal.projetotcc.Service.recommendation.model.CriterionResult;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import dev.jamal.projetotcc.DTO.Recommendation.CriterionScoreDTO;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -155,11 +156,24 @@ public class RecommendationService {
                         .distinct()
                         .toList();
 
+        List<CriterionScoreDTO> pontuacoesCriterios =
+                new ArrayList<>();
+
+        for (int i = 0; i < criterios.size(); i++) {
+            pontuacoesCriterios.add(
+                    new CriterionScoreDTO(
+                            criterios.get(i).getClass().getSimpleName(),
+                            resultados.get(i).pontos()
+                    )
+            );
+        }
+
         return mapper.toDTO(
                 hobby,
                 score,
                 motivos,
-                alertas
+                alertas,
+                pontuacoesCriterios
         );
     }
 }

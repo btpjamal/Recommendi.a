@@ -1,9 +1,19 @@
 import { session } from "../../auth/session.js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef , useState } from "react";
 import { api } from "../../api/api";
 import { useNavigate } from "react-router";
 import "../../pages/css/Recommendations.css";
 
+const nomesCriterios = {
+    BehaviorCriterion: "Comportamento",
+    BudgetCriterion: "Orçamento",
+    ExperienceAffinityCriterion: "Experiência com hobbies",
+    FeedbackCriterion: "Avaliações anteriores",
+    InterestCriterion: "Interesses pessoais",
+    ObjectiveCriterion: "Objetivos pessoais",
+    PreferenceCriterion: "Preferências",
+    TimeCriterion: "Tempo disponível"
+};
 
 export default function DiscoverTab() {
 
@@ -12,6 +22,9 @@ export default function DiscoverTab() {
     const [recommendations, setRecommendations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [erro, setErro] = useState(null);
+    const [hobbyExplicacao, setHobbyExplicacao] = useState(null);
+    const botaoFecharRef = useRef(null);
+    const modalRef = useRef(null);
 
     async function registrarFeedback(hobbyId, tipo) {
                 try {
@@ -78,6 +91,53 @@ export default function DiscoverTab() {
 
         carregarRecomendacoes();
       }, [navigate]);
+
+    useEffect(() => {
+        if (!hobbyExplicacao) return;
+
+        const elementoAnterior = document.activeElement;
+
+        botaoFecharRef.current?.focus();
+
+        function controlarTeclado(event) {
+            if (event.key === "Escape") {
+                setHobbyExplicacao(null);
+                return;
+            }
+
+            if (event.key !== "Tab") return;
+
+            const elementos = modalRef.current?.querySelectorAll(
+                'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+            );
+
+            if (!elementos || elementos.length === 0) {
+                event.preventDefault();
+                return;
+            }
+
+            const primeiro = elementos[0];
+            const ultimo = elementos[elementos.length - 1];
+
+            if (event.shiftKey && document.activeElement === primeiro) {
+                event.preventDefault();
+                ultimo.focus();
+            } else if (!event.shiftKey && document.activeElement === ultimo) {
+                event.preventDefault();
+                primeiro.focus();
+            } else if (!modalRef.current?.contains(document.activeElement)) {
+                event.preventDefault();
+                primeiro.focus();
+            }
+        }
+
+        document.addEventListener("keydown", controlarTeclado);
+
+        return () => {
+            document.removeEventListener("keydown", controlarTeclado);
+            elementoAnterior?.focus?.();
+        };
+    }, [hobbyExplicacao]);
 
       if (loading) {
           return (
@@ -186,6 +246,16 @@ export default function DiscoverTab() {
 
                                     </div>
 
+                                    <div className="recommendation-explanation-action">
+                                        <button
+                                            type="button"
+                                            className="recommendation-explanation-button"
+                                            onClick={() => setHobbyExplicacao(item)}
+                                        >
+                                            Por que este hobby?
+                                        </button>
+                                    </div>
+
                                     {/* Ações */}
                                     <div className="recommendation-card-actions">
 
@@ -233,6 +303,119 @@ export default function DiscoverTab() {
                         </section>
                     )}
                 </div>
+                {hobbyExplicacao && (
+                    <div
+                        className="explanation-overlay"
+                        onClick={() => setHobbyExplicacao(null)}
+                    >
+                        <div
+                            ref={modalRef}
+                            className="explanation-modal"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="explanation-title"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <div className="explanation-header">
+                                <h2 id="explanation-title">
+                                    Por que {hobbyExplicacao.nome}?
+                                </h2>
+
+                                <button
+                                    ref={botaoFecharRef}
+                                    type="button"
+                                    onClick={() => setHobbyExplicacao(null)}
+                                    aria-label="Fechar explicação"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <p>
+                                Pontuação total:{" "}
+                                <strong>{hobbyExplicacao.score} pontos</strong>
+                            </p>
+
+                            <h3>Como calculamos sua recomendação</h3>
+
+                            <div className="explanation-criteria">
+                                {(hobbyExplicacao.criterios || []).map((criterio) => {
+                                    const maiorValor = Math.max(
+                                        1,
+                                        ...(hobbyExplicacao.criterios || [])
+                                            .map((item) => Math.abs(item.pontos))
+                                    );
+
+                                    const porcentagem =
+                                        (Math.abs(criterio.pontos) / maiorValor) * 100;
+
+                                    return (
+                                        <div
+                                            className="explanation-criterion"
+                                            key={criterio.criterio}
+                                        >
+                                            <div className="explanation-criterion-info">
+                                                <span>
+                                                    {nomesCriterios[criterio.criterio] ??
+                                                    criterio.criterio}
+                                                </span>
+
+                                                <strong
+                                                    className={
+                                                        criterio.pontos < 0
+                                                            ? "criterion-negative"
+                                                            : criterio.pontos > 0
+                                                                ? "criterion-positive"
+                                                                : "criterion-neutral"
+                                                    }
+                                                >
+                                                    {criterio.pontos > 0 ? "+" : ""}
+                                                    {criterio.pontos.toLocaleString("pt-BR", {
+                                                        minimumFractionDigits: 1,
+                                                        maximumFractionDigits: 2
+                                                    })} pts
+                                                </strong>
+                                            </div>
+
+                                            <div className="explanation-bar-track">
+                                                <div
+                                                    className={
+                                                        criterio.pontos < 0
+                                                            ? "explanation-bar-negative"
+                                                            : criterio.pontos > 0
+                                                                ? "explanation-bar-positive"
+                                                                : "explanation-bar-neutral"
+                                                    }
+                                                    style={{ width: `${porcentagem}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <h3>Por que combina com você?</h3>
+
+                            <ul>
+                                {(hobbyExplicacao.motivos || []).map((motivo) => (
+                                    <li key={motivo}>{motivo}</li>
+                                ))}
+                            </ul>
+
+                            {(hobbyExplicacao.alertas || []).length > 0 && (
+                                <>
+                                    <h3>Pontos de atenção</h3>
+
+                                    <ul>
+                                        {hobbyExplicacao.alertas.map((alerta) => (
+                                            <li key={alerta}>{alerta}</li>
+                                        ))}
+                                    </ul>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
             </main>
         );
     }
