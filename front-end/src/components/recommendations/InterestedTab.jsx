@@ -13,9 +13,12 @@ export default function InterestedTab() {
     const [loading, setLoading] = useState(true);
     const [erro, setErro] = useState("");
     const [possuiPlanoGeral, setPossuiPlanoGeral] = useState(false);
+    const [avaliacoes, setAvaliacoes] = useState({});
+    const [salvandoAvaliacao, setSalvandoAvaliacao] = useState(null);
 
     useEffect(() => {
         carregarInteressados();
+        carregarAvaliacoes();
     }, []);
 
     useEffect(() => {
@@ -49,6 +52,37 @@ export default function InterestedTab() {
             );
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function carregarAvaliacoes() {
+        try {
+            const userId = session.getItem("userId");
+            const token = session.getItem("token");
+
+            const response = await api.get(
+                `/users/${userId}/feedbacks`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const avaliacoesPorHobby = {};
+
+            response.data.forEach((avaliacao) => {
+                avaliacoesPorHobby[avaliacao.hobby.id] =
+                    avaliacao.rating;
+            });
+
+            setAvaliacoes(avaliacoesPorHobby);
+
+        } catch (error) {
+            console.error(
+                "Erro ao carregar avaliações:",
+                error
+            );
         }
     }
 
@@ -168,6 +202,42 @@ export default function InterestedTab() {
             setErro(
                 "Não foi possível atualizar a situação do hobby."
             );
+        }
+    }
+
+    async function salvarAvaliacao(hobbyId, rating) {
+        if (salvandoAvaliacao !== null) return;
+
+        try {
+            setSalvandoAvaliacao(hobbyId);
+
+            const userId = session.getItem("userId");
+            const token = session.getItem("token");
+
+            await api.post(
+                `/users/${userId}/feedbacks`,
+                {
+                    hobbyId,
+                    rating
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            setAvaliacoes((atuais) => ({
+                ...atuais,
+                [hobbyId]: rating
+            }));
+
+        } catch (error) {
+            console.error("Erro ao salvar avaliação:", error);
+            alert("Não foi possível salvar sua avaliação.");
+
+        } finally {
+            setSalvandoAvaliacao(null);
         }
     }
 
@@ -323,6 +393,48 @@ export default function InterestedTab() {
                                 </label>
 
                             </div>
+
+                            {(hobby.statusAtual === "PRATICANDO" || hobby.statusAtual === "PAUSADO") && (
+
+                                <div className="hobby-rating">
+                                    <span className="hobby-rating-title">
+                                        Minha avaliação
+                                    </span>
+
+                                    <div className="hobby-rating-stars">
+                                        {[1, 2, 3, 4, 5].map((estrela) => (
+                                            <button
+                                                disabled={salvandoAvaliacao !== null}
+                                                key={estrela}
+                                                type="button"
+                                                className={
+                                                    estrela <= (avaliacoes[hobby.hobbyId] ?? 0)
+                                                        ? "star-filled"
+                                                        : "star-empty"
+                                                }
+                                                onClick={() =>
+                                                    salvarAvaliacao(hobby.hobbyId, estrela)
+                                                }
+                                                aria-label={`Avaliar com ${estrela} estrela${estrela > 1 ? "s" : ""}`}
+                                                title={`Avaliar com ${estrela} estrela${estrela > 1 ? "s" : ""}`}
+                                            >
+                                                ★
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {salvandoAvaliacao === hobby.hobbyId && (
+                                        <span className="hobby-rating-description">
+                                        Salvando avaliação...
+                                        </span>
+                                    )}
+
+                                    <span className="hobby-rating-description">
+        {avaliacoes[hobby.hobbyId] != null
+            ? `Sua nota: ${avaliacoes[hobby.hobbyId]}/5`
+            : "Você ainda não avaliou este hobby."}
+    </span>
+                                </div>
+                            )}
 
                             <details className="hobby-status-help">
                                 <summary>

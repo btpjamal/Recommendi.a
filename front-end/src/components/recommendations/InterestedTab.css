@@ -363,3 +363,52 @@
         padding: 36px 22px;
     }
 }
+
+/* AVALIAÇÃO DOS HOBBIES */
+
+.hobby-rating {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    padding: 18px;
+    margin-top: 12px;
+
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.hobby-rating-title {
+    color: #334155;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.hobby-rating-stars {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.hobby-rating-stars button {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+
+    padding: 0;
+    border: none;
+    background: transparent;
+
+    font-size: 26px;
+    cursor: pointer;
+}
+
+.hobby-rating-stars button.star-filled {
+    color: #f59e0b;
+}
+
+.hobby-rating-stars button.star-empty {
+    color: #cbd5e1;
+}

@@ -19,14 +19,3 @@ public class FeedbackCreateRequestDTO {
     @Max(value = 5, message = "A nota máxima é 5")
     private Integer rating;
 }
-
-/*
-
-EXEMPLO DE JSON QUE O FRONT-END VAI MANDAR PARA O BACK-END
-
-{
-    "hobbyId": 3,
-    "rating": 5
-}
-
- */
