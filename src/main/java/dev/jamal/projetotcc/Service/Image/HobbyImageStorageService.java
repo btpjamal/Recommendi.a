@@ -5,6 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import dev.jamal.projetotcc.DTO.Image.HobbyImageUploadResponseDTO;
 
 import java.io.IOException;
 import java.util.Map;
@@ -21,7 +22,7 @@ public class HobbyImageStorageService {
 
     private final Cloudinary cloudinary;
 
-    public String enviarImagem(MultipartFile arquivo) throws IOException {
+    public HobbyImageUploadResponseDTO enviarImagem(MultipartFile arquivo) throws IOException {
 
         if (arquivo == null || arquivo.isEmpty()) {
             throw new IllegalArgumentException(
@@ -50,13 +51,38 @@ public class HobbyImageStorageService {
         );
 
         Object url = resultado.get("secure_url");
+        Object publicId = resultado.get("public_id");
 
-        if (url == null) {
+        if (url == null || publicId == null) {
             throw new IOException(
-                    "O Cloudinary não retornou a URL da imagem."
+                    "O Cloudinary não retornou os dados da imagem."
             );
         }
 
-        return url.toString();
+        return new HobbyImageUploadResponseDTO(
+                url.toString(),
+                publicId.toString()
+        );
+    }
+
+    public void excluirImagem(String publicId) throws IOException {
+
+        if (publicId == null ||
+                !publicId.startsWith("recommendia/hobbies/")) {
+            throw new IllegalArgumentException(
+                    "Identificador de imagem inválido."
+            );
+        }
+
+        Map<?, ?> resultado = cloudinary.uploader().destroy(
+                publicId,
+                ObjectUtils.emptyMap()
+        );
+
+        if (!"ok".equals(resultado.get("result"))) {
+            throw new IOException(
+                    "Não foi possível excluir a imagem do Cloudinary."
+            );
+        }
     }
 }
