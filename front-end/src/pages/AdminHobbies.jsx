@@ -508,7 +508,7 @@ export default function AdminHobbies() {
             form.tempoNecessario.trim() === "" || !Number.isFinite(tempo) || tempo <= 0 ||
             !Number.isInteger(dificuldade) || dificuldade < 1 || dificuldade > 5 ||
             !form.tipoSocializacao || !form.nivelAtividadeFisica || !form.ambiente ||
-            form.nome.trim().length > 150 || form.imagemUrl.length > 2000) {
+            form.nome.trim().length > 150) {
             setErroCadastro("Confira os campos obrigatórios e os valores informados.");
             return;
         }
@@ -862,7 +862,29 @@ export default function AdminHobbies() {
                         <form onSubmit={salvarHobby} className="admin-hobby-form">
                             <label>Nome *<input name="nome" value={form.nome} onChange={alterar} required maxLength={150} /></label>
                             <label>Descrição *<textarea name="descricao" value={form.descricao} onChange={alterar} required rows={4} /></label>
-                            <label>URL da imagem<input name="imagemUrl" value={form.imagemUrl} onChange={alterar} maxLength={2000} /></label>
+                            <div className="admin-hobby-current-image">
+                                <h3>Imagem atual do hobby</h3>
+
+                                {form.imagemUrl ? (
+                                    <div>
+                                        <img
+                                            src={form.imagemUrl}
+                                            alt={`Imagem atual de ${form.nome}`}
+                                            style={{
+                                                width: "100%",
+                                                maxWidth: "320px",
+                                                maxHeight: "220px",
+                                                objectFit: "contain",
+                                                borderRadius: "8px"
+                                            }}
+                                        />
+
+                                        <p>Imagem atualmente vinculada ao hobby.</p>
+                                    </div>
+                                ) : (
+                                    <p>Este hobby ainda não possui uma imagem.</p>
+                                )}
+                            </div>
                             <div className="admin-hobby-image-upload">
                                 <label htmlFor="hobby-imagem-arquivo">
                                     Selecionar imagem do computador
@@ -919,6 +941,7 @@ export default function AdminHobbies() {
 
                                 {imagemPendente && (
                                     <div className="admin-hobby-image-pending">
+                                        <h3>Imagem selecionada para aprovação</h3>
                                         <p>Imagem enviada! Aguardando confirmação.</p>
 
                                         <img
@@ -964,6 +987,14 @@ export default function AdminHobbies() {
                                     </div>
                                 )}
                             </div>
+                            {!carregandoPendentes &&
+                                !erroPendentes &&
+                                imagensPendentes.length === 1 &&
+                                imagensPendentes[0].publicId === imagemPendente?.publicId && (
+                                    <p>
+                                        A imagem pendente está selecionada para aprovação.
+                                    </p>
+                                )}
                             <div className="admin-hobby-pending-gallery">
                                 <h3>Imagens pendentes</h3>
 
@@ -985,7 +1016,11 @@ export default function AdminHobbies() {
 
                                 {!carregandoPendentes && imagensPendentes.length > 0 && (
                                     <div className="admin-hobby-pending-list">
-                                        {imagensPendentes.map((imagem) => (
+                                        {imagensPendentes
+                                            .filter((imagem) =>
+                                                imagem.publicId !== imagemPendente?.publicId
+                                            )
+                                            .map((imagem) => (
                                             <div
                                                 key={imagem.publicId}
                                                 className="admin-hobby-pending-item"
