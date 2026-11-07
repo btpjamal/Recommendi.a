@@ -34,6 +34,7 @@ export default function AdminHobbies() {
     const [erroImagem, setErroImagem] = useState("");
     const [confirmandoImagem, setConfirmandoImagem] = useState(false);
     const [descartandoImagem, setDescartandoImagem] = useState(false);
+    const operacaoImagemRef = useRef(false);
     const [categorias, setCategorias] = useState([]);
     const [carregandoCategorias, setCarregandoCategorias] = useState(false);
     const [erroCategorias, setErroCategorias] = useState("");
@@ -137,9 +138,10 @@ export default function AdminHobbies() {
     useEffect(() => {
         if (!modalAberto) return;
         function aoTeclar(event) {
-            if (event.key === "Escape" && !salvandoRef.current) {
-                setModalAberto(false);
-                requestAnimationFrame(() => botaoOrigemRef.current?.focus());
+            if (event.key === "Escape") {
+                event.preventDefault();
+                fecharModal();
+                return;
             }
             if (event.key !== "Tab" || !modalRef.current) return;
             const elementos = [...modalRef.current.querySelectorAll(
@@ -156,7 +158,7 @@ export default function AdminHobbies() {
         }
         document.addEventListener("keydown", aoTeclar);
         return () => document.removeEventListener("keydown", aoTeclar);
-    }, [modalAberto]);
+    }, [modalAberto, imagemPendente]);
 
     useEffect(() => {
         if (!hobbyParaDesativar) return;
@@ -264,10 +266,11 @@ export default function AdminHobbies() {
     function fecharModal() {
         if (
             salvandoRef.current ||
-            enviandoImagem ||
-            confirmandoImagem ||
-            descartandoImagem
-        ) return;
+            operacaoImagemRef.current ||
+            imagemPendente
+        ) {
+            return;
+        }
 
         setModalAberto(false);
 
@@ -322,6 +325,8 @@ export default function AdminHobbies() {
         setErroImagem("");
         setEnviandoImagem(true);
 
+        operacaoImagemRef.current = true;
+
         try {
             const dados = new FormData();
             dados.append("file", arquivoImagem);
@@ -344,6 +349,7 @@ export default function AdminHobbies() {
                 "Não foi possível enviar a imagem."
             );
         } finally {
+            operacaoImagemRef.current = false;
             setEnviandoImagem(false);
         }
     }
@@ -357,6 +363,8 @@ export default function AdminHobbies() {
 
         setErroImagem("");
         setConfirmandoImagem(true);
+
+        operacaoImagemRef.current = true;
 
         try {
             await api.post(
@@ -387,6 +395,7 @@ export default function AdminHobbies() {
                 "Não foi possível confirmar a imagem."
             );
         } finally {
+            operacaoImagemRef.current = false;
             setConfirmandoImagem(false);
         }
     }
@@ -400,6 +409,8 @@ export default function AdminHobbies() {
 
         setErroImagem("");
         setDescartandoImagem(true);
+
+        operacaoImagemRef.current = true;
 
         try {
             await api.delete(
@@ -422,6 +433,7 @@ export default function AdminHobbies() {
                 "Não foi possível descartar a imagem."
             );
         } finally {
+            operacaoImagemRef.current = false;
             setDescartandoImagem(false);
         }
     }
@@ -790,7 +802,8 @@ export default function AdminHobbies() {
                                                                             salvando ||
                                                                             enviandoImagem ||
                                                                             confirmandoImagem ||
-                                                                            descartandoImagem
+                                                                            descartandoImagem ||
+                                                                            !!imagemPendente
                                                                         } aria-label="Fechar formulário">×</button>
                         </div>
                         <form onSubmit={salvarHobby} className="admin-hobby-form">
@@ -931,7 +944,8 @@ export default function AdminHobbies() {
                                                                                 salvando ||
                                                                                 enviandoImagem ||
                                                                                 confirmandoImagem ||
-                                                                                descartandoImagem
+                                                                                descartandoImagem ||
+                                                                                !!imagemPendente
                                                                             }>Cancelar</button>
                                 <button type="submit" className="admin-hobby-new-button" disabled={salvando || carregandoCategorias || !!erroCategorias}>
                                     {salvando ? "Salvando..." : hobbyEmEdicao ? "Salvar alterações" : "Cadastrar hobby"}
