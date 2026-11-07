@@ -35,6 +35,9 @@ export default function AdminHobbies() {
     const [confirmandoImagem, setConfirmandoImagem] = useState(false);
     const [descartandoImagem, setDescartandoImagem] = useState(false);
     const operacaoImagemRef = useRef(false);
+    const [imagensPendentes, setImagensPendentes] = useState([]);
+    const [carregandoPendentes, setCarregandoPendentes] = useState(false);
+    const [erroPendentes, setErroPendentes] = useState("");
     const [categorias, setCategorias] = useState([]);
     const [carregandoCategorias, setCarregandoCategorias] = useState(false);
     const [erroCategorias, setErroCategorias] = useState("");
@@ -124,12 +127,12 @@ export default function AdminHobbies() {
                 const response = await api.get("/hobby-categories", { headers: headers() });
                 if (ativo) setCategorias(response.data);
             } catch {
-
                 if (ativo) setErroCategorias("Não foi possível carregar as categorias.");
             } finally {
                 if (ativo) setCarregandoCategorias(false);
             }
         }
+        carregarImagensPendentes();
         carregarCategorias();
         modalRef.current?.querySelector("input[name='nome']")?.focus();
         return () => { ativo = false; };
@@ -340,6 +343,7 @@ export default function AdminHobbies() {
             );
 
             setImagemPendente(response.data);
+            await carregarImagensPendentes();
             setArquivoImagem(null);
             setPreviewImagem(null);
 
@@ -352,6 +356,53 @@ export default function AdminHobbies() {
             operacaoImagemRef.current = false;
             setEnviandoImagem(false);
         }
+    }
+
+    async function carregarImagensPendentes() {
+        setCarregandoPendentes(true);
+        setErroPendentes("");
+
+        try {
+            const response = await api.get(
+                "/admin/hobbies/images/pending",
+                {
+                    headers: headers()
+                }
+            );
+
+            setImagensPendentes(response.data);
+
+        } catch (error) {
+            setErroPendentes(
+                error.response?.data?.message ||
+                "Não foi possível carregar as imagens pendentes."
+            );
+        } finally {
+            setCarregandoPendentes(false);
+        }
+    }
+
+    function selecionarImagemPendente(imagem) {
+        if (
+            enviandoImagem ||
+            confirmandoImagem ||
+            descartandoImagem
+        ) return;
+
+        if (
+            imagemPendente &&
+            imagemPendente.publicId !== imagem.publicId
+        ) {
+            setErroImagem(
+                "Confirme ou descarte a imagem selecionada antes de escolher outra."
+            );
+            return;
+        }
+
+        setImagemPendente(imagem);
+        setArquivoImagem(null);
+        setPreviewImagem(null);
+        setErroImagem("");
     }
 
     async function confirmarImagem() {
@@ -384,6 +435,7 @@ export default function AdminHobbies() {
             }));
 
             setImagemPendente(null);
+            await carregarImagensPendentes();
             setArquivoImagem(null);
             setPreviewImagem(null);
 
@@ -424,6 +476,7 @@ export default function AdminHobbies() {
             );
 
             setImagemPendente(null);
+            await carregarImagensPendentes();
             setArquivoImagem(null);
             setPreviewImagem(null);
 
@@ -908,6 +961,62 @@ export default function AdminHobbies() {
                                                 e depois abra sua edição.
                                             </p>
                                         )}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="admin-hobby-pending-gallery">
+                                <h3>Imagens pendentes</h3>
+
+                                {carregandoPendentes && (
+                                    <p>Carregando imagens pendentes...</p>
+                                )}
+
+                                {erroPendentes && (
+                                    <p className="admin-error" role="alert">
+                                        {erroPendentes}
+                                    </p>
+                                )}
+
+                                {!carregandoPendentes && !erroPendentes &&
+                                    imagensPendentes.length === 0 && (
+                                        <p>Nenhuma imagem pendente encontrada.</p>
+                                    )
+                                }
+
+                                {!carregandoPendentes && imagensPendentes.length > 0 && (
+                                    <div className="admin-hobby-pending-list">
+                                        {imagensPendentes.map((imagem) => (
+                                            <div
+                                                key={imagem.publicId}
+                                                className="admin-hobby-pending-item"
+                                            >
+                                                <img
+                                                    src={imagem.imagemUrl}
+                                                    alt="Imagem aguardando aprovação"
+                                                    style={{
+                                                        width: "160px",
+                                                        height: "120px",
+                                                        objectFit: "cover",
+                                                        borderRadius: "8px"
+                                                    }}
+                                                />
+
+                                                <p>Status: PENDENTE</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => selecionarImagemPendente(imagem)}
+                                                    disabled={
+                                                        enviandoImagem ||
+                                                        confirmandoImagem ||
+                                                        descartandoImagem
+                                                    }
+                                                >
+                                                    {imagemPendente?.publicId === imagem.publicId
+                                                        ? "Imagem selecionada"
+                                                        : "Selecionar imagem"}
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
