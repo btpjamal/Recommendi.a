@@ -33,6 +33,7 @@ export default function AdminHobbies() {
     const [imagemPendente, setImagemPendente] = useState(null);
     const [erroImagem, setErroImagem] = useState("");
     const [confirmandoImagem, setConfirmandoImagem] = useState(false);
+    const [descartandoImagem, setDescartandoImagem] = useState(false);
     const [categorias, setCategorias] = useState([]);
     const [carregandoCategorias, setCarregandoCategorias] = useState(false);
     const [erroCategorias, setErroCategorias] = useState("");
@@ -261,10 +262,18 @@ export default function AdminHobbies() {
     }
 
     function fecharModal() {
-        if (salvandoRef.current || enviandoImagem || confirmandoImagem) return;
+        if (
+            salvandoRef.current ||
+            enviandoImagem ||
+            confirmandoImagem ||
+            descartandoImagem
+        ) return;
 
         setModalAberto(false);
-        requestAnimationFrame(() => botaoOrigemRef.current?.focus());
+
+        requestAnimationFrame(() =>
+            botaoOrigemRef.current?.focus()
+        );
     }
 
     function alterar(event) {
@@ -382,6 +391,41 @@ export default function AdminHobbies() {
         }
     }
 
+    async function descartarImagem() {
+        if (
+            !imagemPendente ||
+            descartandoImagem ||
+            confirmandoImagem
+        ) return;
+
+        setErroImagem("");
+        setDescartandoImagem(true);
+
+        try {
+            await api.delete(
+                "/admin/hobbies/images/discard",
+                {
+                    headers: headers(),
+                    params: {
+                        publicId: imagemPendente.publicId
+                    }
+                }
+            );
+
+            setImagemPendente(null);
+            setArquivoImagem(null);
+            setPreviewImagem(null);
+
+        } catch (error) {
+            setErroImagem(
+                error.response?.data?.message ||
+                "Não foi possível descartar a imagem."
+            );
+        } finally {
+            setDescartandoImagem(false);
+        }
+    }
+
     async function salvarHobby(event) {
         event.preventDefault();
         if (salvandoRef.current) return;
@@ -406,7 +450,6 @@ export default function AdminHobbies() {
 
         const payload = {
             nome: form.nome.trim(), descricao: form.descricao.trim(),
-            imagemUrl: form.imagemUrl.trim() || null,
             categoryId: Number(form.categoryId),
             custoEstimado: custo, custoRecorrenteEstimado: recorrente,
             nivelDificuldade: dificuldade, tempoNecessario: tempo,
@@ -743,7 +786,12 @@ export default function AdminHobbies() {
                     <div className="admin-hobby-modal" ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="titulo-form-hobby">
                         <div className="admin-hobby-modal-heading">
                             <h2 id="titulo-form-hobby">{hobbyEmEdicao ? "Editar hobby" : "Cadastrar novo hobby"}</h2>
-                            <button type="button" onClick={fecharModal} disabled={salvando} aria-label="Fechar formulário">×</button>
+                            <button type="button" onClick={fecharModal} disabled={
+                                                                            salvando ||
+                                                                            enviandoImagem ||
+                                                                            confirmandoImagem ||
+                                                                            descartandoImagem
+                                                                        } aria-label="Fechar formulário">×</button>
                         </div>
                         <form onSubmit={salvarHobby} className="admin-hobby-form">
                             <label>Nome *<input name="nome" value={form.nome} onChange={alterar} required maxLength={150} /></label>
@@ -819,16 +867,28 @@ export default function AdminHobbies() {
                                         />
 
                                         <p>Status: PENDENTE</p>
+
                                         {hobbyEmEdicao ? (
-                                            <button
-                                                type="button"
-                                                onClick={confirmarImagem}
-                                                disabled={confirmandoImagem || enviandoImagem}
-                                            >
-                                                {confirmandoImagem
-                                                    ? "Confirmando imagem..."
-                                                    : "Confirmar imagem para este hobby"}
-                                            </button>
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={confirmarImagem}
+                                                    disabled={confirmandoImagem || enviandoImagem}
+                                                >
+                                                    {confirmandoImagem
+                                                        ? "Confirmando imagem..."
+                                                        : "Confirmar imagem para este hobby"}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={descartarImagem}
+                                                    disabled={descartandoImagem || confirmandoImagem}
+                                                >
+                                                    {descartandoImagem
+                                                        ? "Descartando imagem..."
+                                                        : "Descartar imagem"}
+                                                </button>
+                                            </>
                                         ) : (
                                             <p>
                                                 Para confirmar a imagem, primeiro cadastre o hobby
@@ -867,7 +927,12 @@ export default function AdminHobbies() {
                             <label className="admin-hobby-checkbox"><input type="checkbox" name="requerEquipamento" checked={form.requerEquipamento} onChange={alterar} /> Requer equipamento</label>
                             {erroCadastro && <p className="admin-error" role="alert">{erroCadastro}</p>}
                             <div className="admin-hobby-actions">
-                                <button type="button" onClick={fecharModal} disabled={salvando || enviandoImagem || confirmandoImagem}>Cancelar</button>
+                                <button type="button" onClick={fecharModal} disabled={
+                                                                                salvando ||
+                                                                                enviandoImagem ||
+                                                                                confirmandoImagem ||
+                                                                                descartandoImagem
+                                                                            }>Cancelar</button>
                                 <button type="submit" className="admin-hobby-new-button" disabled={salvando || carregandoCategorias || !!erroCategorias}>
                                     {salvando ? "Salvando..." : hobbyEmEdicao ? "Salvar alterações" : "Cadastrar hobby"}
                                 </button>
