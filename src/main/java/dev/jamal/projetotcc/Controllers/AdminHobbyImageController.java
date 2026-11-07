@@ -11,6 +11,7 @@ import dev.jamal.projetotcc.DTO.Image.HobbyImageConfirmRequestDTO;
 import jakarta.validation.Valid;
 
 import java.io.IOException;
+import java.util.List;
 
 
 @RestController
@@ -55,5 +56,13 @@ public class AdminHobbyImageController {
         imageUploadService.descartarImagem(publicId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/pending")
+    public ResponseEntity<List<HobbyImageUploadResponseDTO>> listarPendentes() {
+
+        return ResponseEntity.ok(
+                imageUploadService.listarPendentes()
+        );
     }
 }

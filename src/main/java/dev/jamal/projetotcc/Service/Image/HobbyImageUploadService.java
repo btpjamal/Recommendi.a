@@ -12,6 +12,7 @@ import dev.jamal.projetotcc.Repository.HobbyRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -123,5 +124,17 @@ public class HobbyImageUploadService {
         // 5. Atualiza o status no PostgreSQL
         upload.setStatus(HobbyImageStatus.DESCARTADA);
         uploadRepository.saveAndFlush(upload);
+    }
+
+    public List<HobbyImageUploadResponseDTO> listarPendentes() {
+
+        return uploadRepository
+                .findByStatus(HobbyImageStatus.PENDENTE)
+                .stream()
+                .map(upload -> new HobbyImageUploadResponseDTO(
+                        upload.getImagemUrl(),
+                        upload.getPublicId()
+                ))
+                .toList();
     }
 }
