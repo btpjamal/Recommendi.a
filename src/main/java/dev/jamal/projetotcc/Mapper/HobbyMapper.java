@@ -14,7 +14,6 @@ public class HobbyMapper {
         Hobby h = new Hobby();
         h.setNome(d.getNome());
         h.setDescricao(d.getDescricao());
-        h.setImagemUrl(d.getImagemUrl());
         h.setCustoEstimado(d.getCustoEstimado());
         h.setCustoRecorrenteEstimado(d.getCustoRecorrenteEstimado());
         h.setNivelDificuldade(d.getNivelDificuldade());
