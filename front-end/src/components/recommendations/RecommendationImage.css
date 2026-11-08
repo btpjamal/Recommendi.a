@@ -1,0 +1,29 @@
+.recommendation-hobby-image {
+    width: 100%;
+    aspect-ratio: 8 / 5;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #eef2ff;
+}
+.recommendation-hobby-image > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+.recommendation-hobby-image-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    padding: 16px;
+    box-sizing: border-box;
+    text-align: center;
+    color: #475569;
+    font-size: 13px;
+}

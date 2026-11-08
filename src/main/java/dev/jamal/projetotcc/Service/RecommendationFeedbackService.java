@@ -64,17 +64,17 @@ public class RecommendationFeedbackService {
             User user,
             Hobby hobby
     ) {
-       boolean jaExiste =
-               userHobbyRepository
-                       .findByUser_IdAndHobby_Id(
-                               user.getId(),
-                               hobby.getId()
-                       )
-                       .isPresent();
+        boolean jaExiste =
+                userHobbyRepository
+                        .findByUser_IdAndHobby_Id(
+                                user.getId(),
+                                hobby.getId()
+                        )
+                        .isPresent();
 
-       if (jaExiste) {
-           return;
-       }
+        if (jaExiste) {
+            return;
+        }
 
         RecommendationProfile profile =
                 recommendationProfileRepository
@@ -144,7 +144,8 @@ public class RecommendationFeedbackService {
                             feedback.getTipo(),
                             nivelAtual,
                             statusAtual,
-                            recomendacao.getScore()
+                            recomendacao.getScore(),
+                            hobby.getImagemUrl()
                     );
                 })
                 .toList();

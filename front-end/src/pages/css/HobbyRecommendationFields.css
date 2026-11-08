@@ -1,0 +1,40 @@
+.admin-hobby-recommendation {
+    min-width: 0;
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+.admin-hobby-recommendation h3,
+.admin-hobby-recommendation > p { margin: 0; }
+.admin-hobby-weight-group {
+    min-width: 0;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+}
+.admin-hobby-weight-group legend { font-weight: 600; padding: 0 5px; }
+.admin-hobby-weight-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(110px, 150px);
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+}
+.admin-hobby-weight-row + .admin-hobby-weight-row {
+    border-top: 1px solid #e2e8f0;
+}
+.admin-hobby-form .admin-hobby-weight-choice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-wrap: anywhere;
+}
+.admin-hobby-form .admin-hobby-weight-value { font-size: 12px; }
+.admin-hobby-weight-choice input { flex-shrink: 0; }
+@media (max-width: 480px) {
+    .admin-hobby-weight-row { grid-template-columns: minmax(0, 1fr); }
+}

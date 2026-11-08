@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/api";
 import "../../pages/css/Recommendations.css";
+import RecommendationImage from "./RecommendationImage";
 import "./InterestedTab.css";
 
 export default function InterestedTab() {
@@ -101,33 +102,33 @@ export default function InterestedTab() {
     }
 
     async function devolverParaDescobrir(hobbyId) {
-                try {
-                    const userId = session.getItem("userId");
-                    const token = session.getItem("token");
+        try {
+            const userId = session.getItem("userId");
+            const token = session.getItem("token");
 
-                    await api.delete(
-                        `/recommendation-feedbacks/${userId}/${hobbyId}`,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                            },
-                        }
-                    );
-
-                    setHobbies((atuais) =>
-                        atuais.filter(
-                            (hobby) => hobby.hobbyId !== hobbyId
-                        )
-                    );
-
-                } catch {
-
-
-                    setErro(
-                        "Não foi possível desfazer sua escolha."
-                    );
+            await api.delete(
+                `/recommendation-feedbacks/${userId}/${hobbyId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 }
-            }
+            );
+
+            setHobbies((atuais) =>
+                atuais.filter(
+                    (hobby) => hobby.hobbyId !== hobbyId
+                )
+            );
+
+        } catch {
+
+
+            setErro(
+                "Não foi possível desfazer sua escolha."
+            );
+        }
+    }
 
     async function atualizarNivel(hobbyId, nivelAtual) {
         try {
@@ -333,6 +334,8 @@ export default function InterestedTab() {
                             <p className="recommendation-description">
                                 {hobby.descricao}
                             </p>
+
+                            <RecommendationImage imagemUrl={hobby.imagemUrl} nome={hobby.nome} />
 
                             <div className="interested-fields">
 

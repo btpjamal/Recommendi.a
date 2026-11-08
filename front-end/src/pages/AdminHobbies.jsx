@@ -1,6 +1,9 @@
 import { session } from "../auth/session.js";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/api";
+import HobbyRecommendationFields from "../components/HobbyRecommendationFields";
+import "./css/HobbyRecommendationFields.css";
+import "./css/AdminHobbyModal.css";
 
 const FORM_INICIAL = {
     nome: "", descricao: "", imagemUrl: "", categoryId: "",
@@ -32,6 +35,8 @@ export default function AdminHobbies() {
     const [enviandoImagem, setEnviandoImagem] = useState(false);
     const [imagemPendente, setImagemPendente] = useState(null);
     const [erroImagem, setErroImagem] = useState("");
+    const [sucessoImagem, setSucessoImagem] = useState("");
+    const arquivoInputRef = useRef(null);
     const [confirmandoImagem, setConfirmandoImagem] = useState(false);
     const [descartandoImagem, setDescartandoImagem] = useState(false);
     const operacaoImagemRef = useRef(false);
@@ -43,6 +48,13 @@ export default function AdminHobbies() {
     const [erroCategorias, setErroCategorias] = useState("");
     const [erroCadastro, setErroCadastro] = useState("");
     const [salvando, setSalvando] = useState(false);
+    const [interesses, setInteresses] = useState([]);
+    const [objetivos, setObjetivos] = useState([]);
+    const [pesosInteresses, setPesosInteresses] = useState({});
+    const [pesosObjetivos, setPesosObjetivos] = useState({});
+    const [recomendacaoPronta, setRecomendacaoPronta] = useState(false);
+    const [erroRecomendacao, setErroRecomendacao] = useState("");
+    const [tentativaRecomendacao, setTentativaRecomendacao] = useState(0);
     const salvandoRef = useRef(false);
     const modalRef = useRef(null);
     const botaoNovoRef = useRef(null);
@@ -117,6 +129,68 @@ export default function AdminHobbies() {
         carregar();
         return () => { cancelado = true; };
     }, [buscaAplicada, filtroStatus, pagina, tamanhoPagina, ordenacao, revisao]);
+
+    useEffect(() => {
+        if (!modalAberto) return;
+        let ativo = true;
+        setRecomendacaoPronta(false);
+        setErroRecomendacao("");
+
+        async function carregarRecomendacao() {
+            try {
+                const [listaInteresses, listaObjetivos, associacoes] = await Promise.all([
+                    api.get("/interests", { headers: headers() }),
+                    api.get("/objectives", { headers: headers() }),
+                    hobbyEmEdicao?.id
+                        ? api.get(`/admin/hobbies/${hobbyEmEdicao.id}/recommendation-associations`, {
+                            headers: headers()
+                        })
+                        : Promise.resolve({ data: {
+                                interestAssociations: [], objectiveAssociations: []
+                            } })
+                ]);
+                if (!ativo) return;
+                const { interestAssociations, objectiveAssociations } = associacoes.data;
+                if (!Array.isArray(listaInteresses.data) || !Array.isArray(listaObjetivos.data)
+                    || !Array.isArray(interestAssociations) || !Array.isArray(objectiveAssociations)) {
+                    throw new Error("Resposta de recomendação inválida.");
+                }
+                if (interestAssociations.some((item) => !listaInteresses.data.some(
+                        (opcao) => String(opcao.id) === String(item.interestId)))
+                    || objectiveAssociations.some((item) => !listaObjetivos.data.some(
+                        (opcao) => String(opcao.id) === String(item.objectiveId)))) {
+                    throw new Error("Uma associação existente não está disponível no catálogo.");
+                }
+                setInteresses(listaInteresses.data);
+                setObjetivos(listaObjetivos.data);
+                setPesosInteresses(Object.fromEntries(interestAssociations.map(
+                    (item) => [String(item.interestId), item.peso]
+                )));
+                setPesosObjetivos(Object.fromEntries(objectiveAssociations.map(
+                    (item) => [String(item.objectiveId), item.peso]
+                )));
+                setRecomendacaoPronta(true);
+            } catch {
+                if (ativo) setErroRecomendacao(
+                    "Não foi possível carregar os interesses, objetivos e pesos. Tente novamente."
+                );
+            }
+        }
+
+        carregarRecomendacao();
+        return () => { ativo = false; };
+    }, [modalAberto, hobbyEmEdicao?.id, tentativaRecomendacao]);
+
+    function alterarPeso(tipo, id, peso) {
+        if (salvandoRef.current || operacaoImagemRef.current || !recomendacaoPronta) return;
+        const atualizar = tipo === "interesses" ? setPesosInteresses : setPesosObjetivos;
+        atualizar((atual) => {
+            const proximo = { ...atual };
+            if (peso === null) delete proximo[String(id)];
+            else proximo[String(id)] = peso;
+            return proximo;
+        });
+    }
 
     useEffect(() => {
         if (!modalAberto) return;
@@ -228,6 +302,11 @@ export default function AdminHobbies() {
     }, [hobbyParaDesativar]);
 
     function abrirModal() {
+        setSucessoImagem("");
+        setRecomendacaoPronta(false);
+        setErroRecomendacao("");
+        setPesosInteresses({});
+        setPesosObjetivos({});
         botaoOrigemRef.current = botaoNovoRef.current;
         setHobbyEmEdicao(null);
         setForm({ ...FORM_INICIAL });
@@ -243,6 +322,11 @@ export default function AdminHobbies() {
     }
 
     function abrirEdicao(hobby, elementoOrigem) {
+        setSucessoImagem("");
+        setRecomendacaoPronta(false);
+        setErroRecomendacao("");
+        setPesosInteresses({});
+        setPesosObjetivos({});
         botaoOrigemRef.current = elementoOrigem;
         setHobbyEmEdicao(hobby);
         setImagensPendentes([]);
@@ -293,6 +377,7 @@ export default function AdminHobbies() {
     }
 
     function selecionarImagem(event) {
+        if (salvandoRef.current || operacaoImagemRef.current || imagemPendente) return;
         const arquivo = event.target.files?.[0];
 
         if (!arquivo) return;
@@ -304,21 +389,29 @@ export default function AdminHobbies() {
         ];
 
         if (!tiposPermitidos.includes(arquivo.type)) {
-            setErroCadastro("Selecione uma imagem JPG, PNG ou WebP.");
+            setErroImagem("Selecione uma imagem JPG, PNG ou WebP.");
+            setArquivoImagem(null);
+            setPreviewImagem(null);
             event.target.value = "";
             return;
         }
 
         if (arquivo.size > 5 * 1024 * 1024) {
-            setErroCadastro("A imagem deve ter no máximo 5 MB.");
+            setErroImagem("A imagem deve ter no máximo 5 MB.");
+            setArquivoImagem(null);
+            setPreviewImagem(null);
             event.target.value = "";
             return;
         }
 
-        setErroCadastro("");
+        setErroImagem("");
+        setSucessoImagem("");
         setArquivoImagem(arquivo);
         setPreviewImagem(URL.createObjectURL(arquivo));
     }
+    useEffect(() => {
+        if (!arquivoImagem && arquivoInputRef.current) arquivoInputRef.current.value = "";
+    }, [arquivoImagem, modalAberto]);
     useEffect(() => {
         return () => {
             if (previewImagem) {
@@ -328,6 +421,8 @@ export default function AdminHobbies() {
     }, [previewImagem]);
 
     async function enviarImagem() {
+        if (salvandoRef.current || operacaoImagemRef.current) return;
+        setSucessoImagem("");
         if (
             !arquivoImagem ||
             !hobbyEmEdicao?.id ||
@@ -436,6 +531,8 @@ export default function AdminHobbies() {
     }
 
     async function confirmarImagem() {
+        if (salvandoRef.current || operacaoImagemRef.current) return;
+        setSucessoImagem("");
         if (
             !imagemPendente ||
             !hobbyEmEdicao ||
@@ -463,6 +560,7 @@ export default function AdminHobbies() {
                 ...atual,
                 imagemUrl: imagemPendente.imagemUrl
             }));
+            setSucessoImagem("Imagem atualizada. A troca já foi salva.");
 
             setImagemPendente(null);
             await carregarImagensPendentes(hobbyEmEdicao.id);
@@ -483,6 +581,8 @@ export default function AdminHobbies() {
     }
 
     async function descartarImagem() {
+        if (salvandoRef.current || operacaoImagemRef.current) return;
+        setSucessoImagem("");
         if (
             !imagemPendente ||
             descartandoImagem ||
@@ -523,8 +623,29 @@ export default function AdminHobbies() {
 
     async function salvarHobby(event) {
         event.preventDefault();
-        if (salvandoRef.current) return;
+        if (salvandoRef.current || operacaoImagemRef.current) return;
         setErroCadastro("");
+
+        if (!recomendacaoPronta || erroRecomendacao) {
+            setErroCadastro("Aguarde o carregamento dos dados de recomendação antes de salvar.");
+            return;
+        }
+
+        const interestAssociations = Object.entries(pesosInteresses).map(
+            ([id, peso]) => ({ interestId: Number(id), peso: Number(peso) })
+        );
+        const objectiveAssociations = Object.entries(pesosObjetivos).map(
+            ([id, peso]) => ({ objectiveId: Number(id), peso: Number(peso) })
+        );
+        const associacoesValidas = (itens, campoId) => itens.length > 0 && itens.every(
+            (item) => Number.isSafeInteger(item[campoId]) && item[campoId] > 0
+                && Number.isInteger(item.peso) && item.peso >= 1 && item.peso <= 3
+        );
+        if (!associacoesValidas(interestAssociations, "interestId")
+            || !associacoesValidas(objectiveAssociations, "objectiveId")) {
+            setErroCadastro("Selecione pelo menos um interesse e um objetivo, com pesos de 1 a 3.");
+            return;
+        }
 
         const custo = Number(form.custoEstimado);
         const recorrente = form.custoRecorrenteEstimado.trim() === ""
@@ -550,7 +671,9 @@ export default function AdminHobbies() {
             nivelDificuldade: dificuldade, tempoNecessario: tempo,
             tipoSocializacao: form.tipoSocializacao,
             nivelAtividadeFisica: form.nivelAtividadeFisica,
-            ambiente: form.ambiente, requerEquipamento: form.requerEquipamento
+            ambiente: form.ambiente, requerEquipamento: form.requerEquipamento,
+            interestAssociations,
+            objectiveAssociations
         };
 
         salvandoRef.current = true;
@@ -889,248 +1012,287 @@ export default function AdminHobbies() {
                                                                         } aria-label="Fechar formulário">×</button>
                         </div>
                         <form onSubmit={salvarHobby} className="admin-hobby-form">
-                            <label>Nome *<input name="nome" value={form.nome} onChange={alterar} required maxLength={150} /></label>
-                            <label>Descrição *<textarea name="descricao" value={form.descricao} onChange={alterar} required rows={4} /></label>
-                            <div className="admin-hobby-current-image">
-                                <h3>Imagem atual do hobby</h3>
-
-                                {form.imagemUrl ? (
-                                    <div>
-                                        <img
-                                            src={form.imagemUrl}
-                                            alt={`Imagem atual de ${form.nome}`}
-                                            style={{
-                                                width: "100%",
-                                                maxWidth: "320px",
-                                                maxHeight: "220px",
-                                                objectFit: "contain",
-                                                borderRadius: "8px"
-                                            }}
-                                        />
-
-                                        <p>Imagem atualmente vinculada ao hobby.</p>
-                                    </div>
-                                ) : (
-                                    <p>Este hobby ainda não possui uma imagem.</p>
-                                )}
-                            </div>
-                            <div className="admin-hobby-image-upload">
-                                <label htmlFor="hobby-imagem-arquivo">
-                                    Selecionar imagem do computador
+                            <section className="admin-hobby-data-section" aria-labelledby="titulo-dados-hobby">
+                                <h3 id="titulo-dados-hobby">Dados do hobby</h3>
+                                <label>Nome *<input name="nome" value={form.nome} onChange={alterar} required maxLength={150} /></label>
+                                <label>Descrição *<textarea name="descricao" value={form.descricao} onChange={alterar} required rows={4} /></label>
+                                <label>Categoria *
+                                    <select name="categoryId" value={form.categoryId} onChange={alterar} required disabled={carregandoCategorias || !!erroCategorias}>
+                                        <option value="">Selecione uma categoria</option>
+                                        {categorias.map((categoria) => <option key={categoria.id} value={categoria.id}>{categoria.nome}</option>)}
+                                    </select>
                                 </label>
-
-                                <input
-                                    id="hobby-imagem-arquivo"
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp"
-                                    onChange={selecionarImagem}
-                                />
-
-                                {previewImagem && (
-                                    <div className="admin-hobby-image-preview">
-                                        <img
-                                            src={previewImagem}
-                                            alt="Pré-visualização da imagem selecionada"
-                                            style={{
-                                                maxWidth: "100%",
-                                                maxHeight: "240px",
-                                                objectFit: "contain",
-                                                borderRadius: "8px"
-                                            }}
-                                        />
-
-                                        <p>{arquivoImagem?.name}</p>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setArquivoImagem(null);
-                                                setPreviewImagem(null);
-                                            }}
-                                        >
-                                            Remover seleção
-                                        </button>
-                                    </div>
+                                {carregandoCategorias && <p>Carregando categorias...</p>}
+                                {erroCategorias && <p role="alert" className="admin-error">{erroCategorias}</p>}
+                                <div className="admin-hobby-form-grid">
+                                    <label>Custo inicial (R$) *<input type="number" name="custoEstimado" value={form.custoEstimado} onChange={alterar} min="0" step="any" required /></label>
+                                    <label>Custo recorrente (R$)<input type="number" name="custoRecorrenteEstimado" value={form.custoRecorrenteEstimado} onChange={alterar} min="0" step="any" /></label>
+                                    <label>Dificuldade (1 a 5) *<select name="nivelDificuldade" value={form.nivelDificuldade} onChange={alterar} required>
+                                        <option value="">Selecione</option>
+                                        {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+                                    </select></label>
+                                    <label>Tempo necessário (horas) *<input type="number" name="tempoNecessario" value={form.tempoNecessario} onChange={alterar} min="0.01" step="any" required /></label>
+                                    {Object.entries(OPCOES).map(([campo, opcoes]) => (
+                                        <label key={campo}>
+                                            {campo === "tipoSocializacao" ? "Socialização" : campo === "nivelAtividadeFisica" ? "Atividade física" : "Ambiente"} *
+                                            <select name={campo} value={form[campo]} onChange={alterar} required>
+                                                <option value="">Selecione</option>
+                                                {opcoes.map((opcao) => <option key={opcao} value={opcao}>{rotulo(opcao)}</option>)}
+                                            </select>
+                                        </label>
+                                    ))}
+                                </div>
+                                <label className="admin-hobby-checkbox"><input type="checkbox" name="requerEquipamento" checked={form.requerEquipamento} onChange={alterar} /> Requer equipamento</label>
+                            </section>
+                            <section className="admin-hobby-recommendation" aria-labelledby="titulo-recomendacao-hobby" aria-busy={!recomendacaoPronta && !erroRecomendacao}>
+                                <h3 id="titulo-recomendacao-hobby">Dados para recomendação</h3>
+                                <p>Selecione os interesses e objetivos relacionados ao hobby e informe o peso de cada associação, de 1 a 3.</p>
+                                {!recomendacaoPronta && !erroRecomendacao && <p role="status">Carregando interesses, objetivos e pesos...</p>}
+                                {erroRecomendacao && (
+                                    <>
+                                        <p className="admin-error" role="alert">{erroRecomendacao}</p>
+                                        <button type="button" onClick={() => setTentativaRecomendacao((atual) => atual + 1)}>Tentar novamente</button>
+                                    </>
                                 )}
-                                {arquivoImagem && !imagemPendente && (
-                                    <button
-                                        type="button"
-                                        onClick={enviarImagem}
-                                        disabled={
-                                            enviandoImagem ||
-                                            !hobbyEmEdicao ||
-                                            !!imagemPendente
-                                        }
-                                    >
-                                        {!hobbyEmEdicao && (
-                                            <p>
-                                                Cadastre o hobby primeiro. Depois, abra sua edição
-                                                para adicionar uma imagem.
-                                            </p>
-                                        )}
-                                        {enviandoImagem ? "Enviando imagem..." : "Enviar imagem"}
-                                    </button>
+                                {recomendacaoPronta && (
+                                    <HobbyRecommendationFields
+                                        interesses={interesses}
+                                        objetivos={objetivos}
+                                        pesosInteresses={pesosInteresses}
+                                        pesosObjetivos={pesosObjetivos}
+                                        onChange={alterarPeso}
+                                        disabled={salvando || enviandoImagem || confirmandoImagem || descartandoImagem}
+                                    />
                                 )}
-
-                                {erroImagem && (
-                                    <p className="admin-error" role="alert">
-                                        {erroImagem}
+                            </section>
+                            <details className="admin-hobby-image-section">
+                                <summary>Imagem do hobby <span>Abrir gerenciamento de imagem</span></summary>
+                                <fieldset className="admin-hobby-image-content" aria-label="Gerenciar imagem do hobby" disabled={salvando || enviandoImagem || confirmandoImagem || descartandoImagem}>
+                                    <p className="admin-hobby-image-notice">
+                                        Confirmar uma imagem salva a troca imediatamente.
+                                        A imagem anterior poderá ser excluída.
+                                        Fechar o formulário não desfaz essa troca.
                                     </p>
-                                )}
+                                    {sucessoImagem && <p className="admin-hobby-image-success" role="status">{sucessoImagem}</p>}
+                                    {!hobbyEmEdicao && (
+                                        <p>Cadastre o hobby primeiro. Depois, abra sua edição para adicionar uma imagem.</p>
+                                    )}
+                                    <div className="admin-hobby-current-image">
+                                        <h3>Imagem atual do hobby</h3>
 
-                                {imagemPendente && (
-                                    <div className="admin-hobby-image-pending">
-                                        <h3>Imagem selecionada para aprovação</h3>
-                                        <p>Imagem enviada! Aguardando confirmação.</p>
-
-                                        <img
-                                            src={imagemPendente.imagemUrl}
-                                            alt="Imagem enviada aguardando confirmação"
-                                            style={{
-                                                maxWidth: "100%",
-                                                maxHeight: "240px",
-                                                objectFit: "contain",
-                                                borderRadius: "8px"
-                                            }}
-                                        />
-
-                                        <p>Status: PENDENTE</p>
-
-                                        {hobbyEmEdicao ? (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    onClick={confirmarImagem}
-                                                    disabled={confirmandoImagem || enviandoImagem}
-                                                >
-                                                    {confirmandoImagem
-                                                        ? "Confirmando imagem..."
-                                                        : "Confirmar imagem para este hobby"}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={descartarImagem}
-                                                    disabled={descartandoImagem || confirmandoImagem}
-                                                >
-                                                    {descartandoImagem
-                                                        ? "Descartando imagem..."
-                                                        : "Descartar imagem"}
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <p>
-                                                Para confirmar a imagem, primeiro cadastre o hobby
-                                                e depois abra sua edição.
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            {!carregandoPendentes &&
-                                !erroPendentes &&
-                                imagensPendentes.length === 1 &&
-                                imagensPendentes[0].publicId === imagemPendente?.publicId && (
-                                    <p>
-                                        A imagem pendente está selecionada para aprovação.
-                                    </p>
-                                )}
-                            <div className="admin-hobby-pending-gallery">
-                                <h3>Imagens pendentes</h3>
-
-                                {carregandoPendentes && (
-                                    <p>Carregando imagens pendentes...</p>
-                                )}
-
-                                {erroPendentes && (
-                                    <p className="admin-error" role="alert">
-                                        {erroPendentes}
-                                    </p>
-                                )}
-
-                                {!carregandoPendentes && !erroPendentes &&
-                                    imagensPendentes.length === 0 && (
-                                        <p>Nenhuma imagem pendente encontrada.</p>
-                                    )
-                                }
-
-                                {!carregandoPendentes && imagensPendentes.length > 0 && (
-                                    <div className="admin-hobby-pending-list">
-                                        {imagensPendentes
-                                            .filter((imagem) =>
-                                                imagem.publicId !== imagemPendente?.publicId
-                                            )
-                                            .map((imagem) => (
-                                            <div
-                                                key={imagem.publicId}
-                                                className="admin-hobby-pending-item"
-                                            >
+                                        {form.imagemUrl ? (
+                                            <div>
                                                 <img
-                                                    src={imagem.imagemUrl}
-                                                    alt="Imagem aguardando aprovação"
+                                                    src={form.imagemUrl}
+                                                    alt={`Imagem atual de ${form.nome}`}
                                                     style={{
-                                                        width: "160px",
-                                                        height: "120px",
-                                                        objectFit: "cover",
+                                                        width: "100%",
+                                                        maxWidth: "320px",
+                                                        maxHeight: "220px",
+                                                        objectFit: "contain",
                                                         borderRadius: "8px"
                                                     }}
                                                 />
 
-                                                <p>Status: PENDENTE</p>
+                                                <p>Imagem atualmente vinculada ao hobby.</p>
+                                            </div>
+                                        ) : (
+                                            <p>Este hobby ainda não possui uma imagem.</p>
+                                        )}
+                                    </div>
+                                    <div className="admin-hobby-image-upload">
+                                        <label htmlFor="hobby-imagem-arquivo">
+                                            Selecionar imagem do computador
+                                        </label>
+
+                                        <input
+                                            id="hobby-imagem-arquivo"
+                                            ref={arquivoInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            onChange={selecionarImagem}
+                                            disabled={!hobbyEmEdicao || salvando || enviandoImagem || confirmandoImagem || descartandoImagem || !!imagemPendente}
+                                        />
+
+                                        {previewImagem && (
+                                            <div className="admin-hobby-image-preview">
+                                                <img
+                                                    src={previewImagem}
+                                                    alt="Pré-visualização da imagem selecionada"
+                                                    style={{
+                                                        maxWidth: "100%",
+                                                        maxHeight: "240px",
+                                                        objectFit: "contain",
+                                                        borderRadius: "8px"
+                                                    }}
+                                                />
+
+                                                <p>{arquivoImagem?.name}</p>
+
                                                 <button
                                                     type="button"
-                                                    onClick={() => selecionarImagemPendente(imagem)}
-                                                    disabled={
-                                                        enviandoImagem ||
-                                                        confirmandoImagem ||
-                                                        descartandoImagem
-                                                    }
+                                                    onClick={() => {
+                                                        setArquivoImagem(null);
+                                                        setPreviewImagem(null);
+                                                    }}
+                                                    disabled={salvando || enviandoImagem || confirmandoImagem || descartandoImagem}
                                                 >
-                                                    {imagemPendente?.publicId === imagem.publicId
-                                                        ? "Imagem selecionada"
-                                                        : "Selecionar imagem"}
+                                                    Remover seleção
                                                 </button>
                                             </div>
-                                        ))}
+                                        )}
+                                        {arquivoImagem && !imagemPendente && (
+                                            <button
+                                                type="button"
+                                                onClick={enviarImagem}
+                                                disabled={
+                                                    enviandoImagem ||
+                                                    !hobbyEmEdicao ||
+                                                    !!imagemPendente
+                                                }
+                                            >
+                                                {enviandoImagem ? "Enviando imagem..." : "Enviar para revisão"}
+                                            </button>
+                                        )}
+
+                                        {erroImagem && (
+                                            <p className="admin-error" role="alert">
+                                                {erroImagem}
+                                            </p>
+                                        )}
+
+                                        {imagemPendente && (
+                                            <div className="admin-hobby-image-pending">
+                                                <h4>Nova imagem para confirmação</h4>
+                                                <p>Confira a imagem antes de aplicar a troca ao hobby.</p>
+
+                                                <img
+                                                    src={imagemPendente.imagemUrl}
+                                                    alt="Imagem enviada aguardando confirmação"
+                                                    style={{
+                                                        maxWidth: "100%",
+                                                        maxHeight: "240px",
+                                                        objectFit: "contain",
+                                                        borderRadius: "8px"
+                                                    }}
+                                                />
+
+                                                <p>Ainda não aplicada ao hobby.</p>
+
+                                                {hobbyEmEdicao ? (
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            onClick={confirmarImagem}
+                                                            disabled={salvando || confirmandoImagem || enviandoImagem || descartandoImagem}
+                                                        >
+                                                            {confirmandoImagem
+                                                                ? "Confirmando imagem..."
+                                                                : "Confirmar e salvar imagem agora"}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={descartarImagem}
+                                                            disabled={salvando || descartandoImagem || confirmandoImagem || enviandoImagem}
+                                                        >
+                                                            {descartandoImagem
+                                                                ? "Descartando imagem..."
+                                                                : "Descartar imagem"}
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <p>
+                                                        Para confirmar a imagem, primeiro cadastre o hobby
+                                                        e depois abra sua edição.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                            <label>Categoria *
-                                <select name="categoryId" value={form.categoryId} onChange={alterar} required disabled={carregandoCategorias || !!erroCategorias}>
-                                    <option value="">Selecione uma categoria</option>
-                                    {categorias.map((categoria) => <option key={categoria.id} value={categoria.id}>{categoria.nome}</option>)}
-                                </select>
-                            </label>
-                            {carregandoCategorias && <p>Carregando categorias...</p>}
-                            {erroCategorias && <p role="alert" className="admin-error">{erroCategorias}</p>}
-                            <div className="admin-hobby-form-grid">
-                                <label>Custo inicial (R$) *<input type="number" name="custoEstimado" value={form.custoEstimado} onChange={alterar} min="0" step="any" required /></label>
-                                <label>Custo recorrente (R$)<input type="number" name="custoRecorrenteEstimado" value={form.custoRecorrenteEstimado} onChange={alterar} min="0" step="any" /></label>
-                                <label>Dificuldade (1 a 5) *<select name="nivelDificuldade" value={form.nivelDificuldade} onChange={alterar} required>
-                                    <option value="">Selecione</option>
-                                    {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-                                </select></label>
-                                <label>Tempo necessário (horas) *<input type="number" name="tempoNecessario" value={form.tempoNecessario} onChange={alterar} min="0.01" step="any" required /></label>
-                                {Object.entries(OPCOES).map(([campo, opcoes]) => (
-                                    <label key={campo}>
-                                        {campo === "tipoSocializacao" ? "Socialização" : campo === "nivelAtividadeFisica" ? "Atividade física" : "Ambiente"} *
-                                        <select name={campo} value={form[campo]} onChange={alterar} required>
-                                            <option value="">Selecione</option>
-                                            {opcoes.map((opcao) => <option key={opcao} value={opcao}>{rotulo(opcao)}</option>)}
-                                        </select>
-                                    </label>
-                                ))}
-                            </div>
-                            <label className="admin-hobby-checkbox"><input type="checkbox" name="requerEquipamento" checked={form.requerEquipamento} onChange={alterar} /> Requer equipamento</label>
+                                    {!carregandoPendentes &&
+                                        !erroPendentes &&
+                                        imagensPendentes.length === 1 &&
+                                        imagensPendentes[0].publicId === imagemPendente?.publicId && (
+                                            <p>
+                                                A imagem pendente está selecionada para aprovação.
+                                            </p>
+                                        )}
+                                    <div className="admin-hobby-pending-gallery">
+                                        <h4>Imagens pendentes</h4>
+
+                                        {carregandoPendentes && (
+                                            <p>Carregando imagens pendentes...</p>
+                                        )}
+
+                                        {erroPendentes && (
+                                            <p className="admin-error" role="alert">
+                                                {erroPendentes}
+                                            </p>
+                                        )}
+
+                                        {!carregandoPendentes && !erroPendentes &&
+                                            imagensPendentes.length === 0 && (
+                                                <p>Nenhuma imagem pendente encontrada.</p>
+                                            )
+                                        }
+
+                                        {!carregandoPendentes && imagensPendentes.length > 0 && (
+                                            <div className="admin-hobby-pending-list">
+                                                {imagensPendentes
+                                                    .filter((imagem) =>
+                                                        imagem.publicId !== imagemPendente?.publicId
+                                                    )
+                                                    .map((imagem) => (
+                                                        <div
+                                                            key={imagem.publicId}
+                                                            className="admin-hobby-pending-item"
+                                                        >
+                                                            <img
+                                                                src={imagem.imagemUrl}
+                                                                alt="Imagem aguardando aprovação"
+                                                                style={{
+                                                                    width: "160px",
+                                                                    height: "120px",
+                                                                    objectFit: "cover",
+                                                                    borderRadius: "8px"
+                                                                }}
+                                                            />
+
+                                                            <p>Ainda não aplicada ao hobby.</p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => selecionarImagemPendente(imagem)}
+                                                                disabled={
+                                                                    enviandoImagem ||
+                                                                    confirmandoImagem ||
+                                                                    descartandoImagem
+                                                                }
+                                                            >
+                                                                {imagemPendente?.publicId === imagem.publicId
+                                                                    ? "Imagem selecionada"
+                                                                    : "Selecionar imagem"}
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </fieldset>
+                            </details>
                             {erroCadastro && <p className="admin-error" role="alert">{erroCadastro}</p>}
+                            <p className="admin-hobby-save-note">
+                                Salvar grava os dados e os pesos. Fechar descarta alterações não salvas nesses campos.
+                                Imagens confirmadas já estão salvas.
+                            </p>
                             <div className="admin-hobby-actions">
                                 <button type="button" onClick={fecharModal} disabled={
                                                                                 salvando ||
                                                                                 enviandoImagem ||
                                                                                 confirmandoImagem ||
                                                                                 descartandoImagem
-                                                                            }>Cancelar</button>
-                                <button type="submit" className="admin-hobby-new-button" disabled={salvando || carregandoCategorias || !!erroCategorias}>
-                                    {salvando ? "Salvando..." : hobbyEmEdicao ? "Salvar alterações" : "Cadastrar hobby"}
+                                                                            }>Fechar</button>
+                                <button type="submit" className="admin-hobby-new-button" disabled={salvando || carregandoCategorias || !!erroCategorias || !recomendacaoPronta || !!erroRecomendacao || enviandoImagem || confirmandoImagem || descartandoImagem}>
+                                    {salvando ? "Salvando..." : hobbyEmEdicao ? "Salvar dados e pesos" : "Cadastrar hobby"}
                                 </button>
                             </div>
                         </form>
