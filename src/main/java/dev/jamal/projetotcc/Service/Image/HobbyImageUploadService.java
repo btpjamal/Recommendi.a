@@ -11,6 +11,11 @@ import dev.jamal.projetotcc.Entities.Hobby;
 import dev.jamal.projetotcc.Repository.HobbyRepository;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -21,10 +26,19 @@ public class HobbyImageUploadService {
     private final HobbyImageStorageService storageService;
     private final HobbyImageUploadRepository uploadRepository;
     private final HobbyRepository hobbyRepository;
+    private static final Logger log =
+            LoggerFactory.getLogger(HobbyImageUploadService.class);
+    private final HobbyImageCleanupService cleanupService;
 
     public HobbyImageUploadResponseDTO enviarImagem(
-            MultipartFile arquivo
+            MultipartFile arquivo,
+            Long hobbyId
     ) throws IOException {
+
+        Hobby hobby = hobbyRepository.findById(hobbyId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Hobby não encontrado."
+                ));
 
         // 1. Envia a imagem ao Cloudinary
         HobbyImageUploadResponseDTO resultado =
@@ -36,6 +50,7 @@ public class HobbyImageUploadService {
         upload.setImagemUrl(resultado.imagemUrl());
         upload.setPublicId(resultado.publicId());
         upload.setStatus(HobbyImageStatus.PENDENTE);
+        upload.setHobby(hobby);
 
         // 3. Persiste o registro
         try {
@@ -72,6 +87,18 @@ public class HobbyImageUploadService {
             );
         }
 
+        if (upload.getHobby() == null) {
+            throw new IllegalStateException(
+                    "Esta imagem não possui um hobby associado."
+            );
+        }
+
+        if (!upload.getHobby().getId().equals(hobbyId)) {
+            throw new IllegalArgumentException(
+                    "Esta imagem pertence a outro hobby."
+            );
+        }
+
         // 3. Localiza o hobby
         Hobby hobby = hobbyRepository.findById(hobbyId)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -85,12 +112,48 @@ public class HobbyImageUploadService {
             );
         }
 
-        // 5. Associa a imagem ao hobby
+        // 5. Identifica a imagem oficial anterior
+        String urlImagemAnterior = hobby.getImagemUrl();
+
+        HobbyImageUpload imagemAnterior = null;
+
+        if (urlImagemAnterior != null && !urlImagemAnterior.isBlank()) {
+            imagemAnterior = uploadRepository
+                    .findByImagemUrlAndStatus(
+                            urlImagemAnterior,
+                            HobbyImageStatus.CONFIRMADA
+                    )
+                    .orElse(null);
+        }
+
+        // 6. Associa a nova imagem ao hobby
         hobby.setImagemUrl(upload.getImagemUrl());
 
-        // 6. Atualiza o registro do upload
+        // 7. Atualiza o registro do upload
         upload.setHobby(hobby);
         upload.setStatus(HobbyImageStatus.CONFIRMADA);
+
+        // Registra a imagem anterior como aguardando exclusão
+        if (imagemAnterior != null) {
+            imagemAnterior.setStatus(
+                    HobbyImageStatus.AGUARDANDO_EXCLUSAO
+            );
+        }
+
+        if (imagemAnterior != null) {
+
+            String publicIdAnterior = imagemAnterior.getPublicId();
+
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+
+                        @Override
+                        public void afterCommit() {
+                            cleanupService.excluirImagemPendente(publicIdAnterior);
+                        }
+                    }
+            );
+        }
     }
 
     @Transactional
@@ -110,11 +173,10 @@ public class HobbyImageUploadService {
             );
         }
 
-        // 3. Verifica se existe vínculo com algum hobby
-        if (upload.getHobby() != null ||
-                hobbyRepository.existsByImagemUrl(upload.getImagemUrl())) {
+        // Verifica se a imagem já é utilizada oficialmente
+        if (hobbyRepository.existsByImagemUrl(upload.getImagemUrl())) {
             throw new IllegalStateException(
-                    "A imagem está vinculada a um hobby."
+                    "A imagem já está vinculada oficialmente a um hobby."
             );
         }
 
@@ -126,10 +188,20 @@ public class HobbyImageUploadService {
         uploadRepository.saveAndFlush(upload);
     }
 
-    public List<HobbyImageUploadResponseDTO> listarPendentes() {
+    public List<HobbyImageUploadResponseDTO> listarPendentes(
+            Long hobbyId
+    ) {
+        if (!hobbyRepository.existsById(hobbyId)) {
+            throw new IllegalArgumentException(
+                    "Hobby não encontrado."
+            );
+        }
 
         return uploadRepository
-                .findByStatus(HobbyImageStatus.PENDENTE)
+                .findByStatusAndHobbyId(
+                        HobbyImageStatus.PENDENTE,
+                        hobbyId
+                )
                 .stream()
                 .map(upload -> new HobbyImageUploadResponseDTO(
                         upload.getImagemUrl(),

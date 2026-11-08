@@ -64,6 +64,7 @@ export default function AdminHobbies() {
     const botaoCancelarRef = useRef(null);
     const botaoDesativarOrigemRef = useRef(null);
     const processandoDesativacaoRef = useRef(false);
+    const requisicaoPendentesRef = useRef(0);
 
     const headers = () => ({ Authorization: `Bearer ${session.getItem("token")}` });
 
@@ -132,7 +133,6 @@ export default function AdminHobbies() {
                 if (ativo) setCarregandoCategorias(false);
             }
         }
-        carregarImagensPendentes();
         carregarCategorias();
         modalRef.current?.querySelector("input[name='nome']")?.focus();
         return () => { ativo = false; };
@@ -238,11 +238,15 @@ export default function AdminHobbies() {
         setPreviewImagem(null);
         setImagemPendente(null);
         setErroImagem("");
+        setImagensPendentes([]);
+        requisicaoPendentesRef.current++;
     }
 
     function abrirEdicao(hobby, elementoOrigem) {
         botaoOrigemRef.current = elementoOrigem;
         setHobbyEmEdicao(hobby);
+        setImagensPendentes([]);
+        carregarImagensPendentes(hobby.id);
         setForm({
             nome: hobby.nome ?? "",
             descricao: hobby.descricao ?? "",
@@ -269,11 +273,12 @@ export default function AdminHobbies() {
     function fecharModal() {
         if (
             salvandoRef.current ||
-            operacaoImagemRef.current ||
-            imagemPendente
+            operacaoImagemRef.current
         ) {
             return;
         }
+
+        requisicaoPendentesRef.current++;
 
         setModalAberto(false);
 
@@ -323,7 +328,12 @@ export default function AdminHobbies() {
     }, [previewImagem]);
 
     async function enviarImagem() {
-        if (!arquivoImagem || enviandoImagem || imagemPendente) return;
+        if (
+            !arquivoImagem ||
+            !hobbyEmEdicao?.id ||
+            enviandoImagem ||
+            imagemPendente
+        ) return;
 
         setErroImagem("");
         setEnviandoImagem(true);
@@ -333,6 +343,7 @@ export default function AdminHobbies() {
         try {
             const dados = new FormData();
             dados.append("file", arquivoImagem);
+            dados.append("hobbyId", String(hobbyEmEdicao.id));
 
             const response = await api.post(
                 "/admin/hobbies/images/upload",
@@ -343,7 +354,7 @@ export default function AdminHobbies() {
             );
 
             setImagemPendente(response.data);
-            await carregarImagensPendentes();
+            await carregarImagensPendentes(hobbyEmEdicao.id);
             setArquivoImagem(null);
             setPreviewImagem(null);
 
@@ -358,27 +369,46 @@ export default function AdminHobbies() {
         }
     }
 
-    async function carregarImagensPendentes() {
+    async function carregarImagensPendentes(hobbyId) {
+        const requisicaoAtual = ++requisicaoPendentesRef.current;
+
+        if (!hobbyId) {
+            setImagensPendentes([]);
+            setCarregandoPendentes(false);
+            setErroPendentes("");
+            return;
+        }
+
         setCarregandoPendentes(true);
         setErroPendentes("");
 
         try {
-            const response = await api.get(
+            const resposta = await api.get(
                 "/admin/hobbies/images/pending",
                 {
-                    headers: headers()
+                    headers: headers(),
+                    params: { hobbyId }
                 }
             );
 
-            setImagensPendentes(response.data);
+            if (requisicaoAtual !== requisicaoPendentesRef.current) {
+                return;
+            }
 
-        } catch (error) {
+            setImagensPendentes(resposta.data);
+        } catch (erro) {
+            if (requisicaoAtual !== requisicaoPendentesRef.current) {
+                return;
+            }
+
             setErroPendentes(
-                error.response?.data?.message ||
                 "Não foi possível carregar as imagens pendentes."
             );
+            setImagensPendentes([]);
         } finally {
-            setCarregandoPendentes(false);
+            if (requisicaoAtual === requisicaoPendentesRef.current) {
+                setCarregandoPendentes(false);
+            }
         }
     }
 
@@ -435,7 +465,7 @@ export default function AdminHobbies() {
             }));
 
             setImagemPendente(null);
-            await carregarImagensPendentes();
+            await carregarImagensPendentes(hobbyEmEdicao.id);
             setArquivoImagem(null);
             setPreviewImagem(null);
 
@@ -476,7 +506,7 @@ export default function AdminHobbies() {
             );
 
             setImagemPendente(null);
-            await carregarImagensPendentes();
+            await carregarImagensPendentes(hobbyEmEdicao.id);
             setArquivoImagem(null);
             setPreviewImagem(null);
 
@@ -855,8 +885,7 @@ export default function AdminHobbies() {
                                                                             salvando ||
                                                                             enviandoImagem ||
                                                                             confirmandoImagem ||
-                                                                            descartandoImagem ||
-                                                                            !!imagemPendente
+                                                                            descartandoImagem
                                                                         } aria-label="Fechar formulário">×</button>
                         </div>
                         <form onSubmit={salvarHobby} className="admin-hobby-form">
@@ -927,8 +956,18 @@ export default function AdminHobbies() {
                                     <button
                                         type="button"
                                         onClick={enviarImagem}
-                                        disabled={enviandoImagem}
+                                        disabled={
+                                            enviandoImagem ||
+                                            !hobbyEmEdicao ||
+                                            !!imagemPendente
+                                        }
                                     >
+                                        {!hobbyEmEdicao && (
+                                            <p>
+                                                Cadastre o hobby primeiro. Depois, abra sua edição
+                                                para adicionar uma imagem.
+                                            </p>
+                                        )}
                                         {enviandoImagem ? "Enviando imagem..." : "Enviar imagem"}
                                     </button>
                                 )}
@@ -1088,8 +1127,7 @@ export default function AdminHobbies() {
                                                                                 salvando ||
                                                                                 enviandoImagem ||
                                                                                 confirmandoImagem ||
-                                                                                descartandoImagem ||
-                                                                                !!imagemPendente
+                                                                                descartandoImagem
                                                                             }>Cancelar</button>
                                 <button type="submit" className="admin-hobby-new-button" disabled={salvando || carregandoCategorias || !!erroCategorias}>
                                     {salvando ? "Salvando..." : hobbyEmEdicao ? "Salvar alterações" : "Cadastrar hobby"}

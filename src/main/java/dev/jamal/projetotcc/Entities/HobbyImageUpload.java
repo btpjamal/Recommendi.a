@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "hobby_image_upload")
@@ -28,7 +28,13 @@ public class HobbyImageUpload {
     private HobbyImageStatus status = HobbyImageStatus.PENDENTE;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime dataUpload = LocalDateTime.now();
+    private Instant dataUpload = Instant.now();
+
+    @Column(name = "exclusao_iniciada_em")
+    private Instant exclusaoIniciadaEm;
+
+    @Column(name = "exclusao_token", length = 36)
+    private String exclusaoToken;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hobby_id")

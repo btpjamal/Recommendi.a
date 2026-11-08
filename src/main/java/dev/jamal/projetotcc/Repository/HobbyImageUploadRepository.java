@@ -7,6 +7,7 @@ import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.time.Instant;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,5 +31,29 @@ public interface HobbyImageUploadRepository
         """)
     Optional<HobbyImageUpload> findByPublicIdForUpdate(
             @Param("publicId") String publicId
+    );
+
+    List<HobbyImageUpload> findByStatusAndHobbyId(
+            HobbyImageStatus status,
+            Long hobbyId
+    );
+
+    Optional<HobbyImageUpload> findByImagemUrlAndStatus(
+            String imagemUrl,
+            HobbyImageStatus status
+    );
+
+    @Query("""
+    SELECT u.publicId
+    FROM HobbyImageUpload u
+    WHERE u.status = :status
+      AND (
+          u.exclusaoIniciadaEm IS NULL
+          OR u.exclusaoIniciadaEm < :limite
+      )
+    """)
+    List<String> buscarPublicIdsComReservaExpirada(
+            @Param("status") HobbyImageStatus status,
+            @Param("limite") Instant limite
     );
 }

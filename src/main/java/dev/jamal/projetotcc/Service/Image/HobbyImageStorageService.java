@@ -79,10 +79,15 @@ public class HobbyImageStorageService {
                 ObjectUtils.emptyMap()
         );
 
-        if (!"ok".equals(resultado.get("result"))) {
-            throw new IOException(
-                    "Não foi possível excluir a imagem do Cloudinary."
-            );
+        Object status = resultado.get("result");
+
+        if ("ok".equals(status) || "not found".equals(status)) {
+            return;
         }
+
+        throw new IOException(
+                "Não foi possível excluir a imagem do Cloudinary. Resultado: "
+                        + status
+        );
     }
 }

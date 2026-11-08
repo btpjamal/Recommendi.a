@@ -26,11 +26,12 @@ public class AdminHobbyImageController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<HobbyImageUploadResponseDTO> upload(
-            @RequestParam("file") MultipartFile file
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("hobbyId") Long hobbyId
     ) throws IOException {
 
         HobbyImageUploadResponseDTO resultado =
-                imageUploadService.enviarImagem(file);
+                imageUploadService.enviarImagem(file, hobbyId);
 
         return ResponseEntity.ok(resultado);
     }
@@ -59,10 +60,11 @@ public class AdminHobbyImageController {
     }
 
     @GetMapping("/pending")
-    public ResponseEntity<List<HobbyImageUploadResponseDTO>> listarPendentes() {
-
+    public ResponseEntity<List<HobbyImageUploadResponseDTO>> listarPendentes(
+            @RequestParam("hobbyId") Long hobbyId
+    ) {
         return ResponseEntity.ok(
-                imageUploadService.listarPendentes()
+                imageUploadService.listarPendentes(hobbyId)
         );
     }
 }
