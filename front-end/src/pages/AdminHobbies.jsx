@@ -27,6 +27,17 @@ export default function AdminHobbies() {
     const [modalAberto, setModalAberto] = useState(false);
     const [hobbyEmEdicao, setHobbyEmEdicao] = useState(null);
     const [form, setForm] = useState(FORM_INICIAL);
+    const [arquivoImagem, setArquivoImagem] = useState(null);
+    const [previewImagem, setPreviewImagem] = useState(null);
+    const [enviandoImagem, setEnviandoImagem] = useState(false);
+    const [imagemPendente, setImagemPendente] = useState(null);
+    const [erroImagem, setErroImagem] = useState("");
+    const [confirmandoImagem, setConfirmandoImagem] = useState(false);
+    const [descartandoImagem, setDescartandoImagem] = useState(false);
+    const operacaoImagemRef = useRef(false);
+    const [imagensPendentes, setImagensPendentes] = useState([]);
+    const [carregandoPendentes, setCarregandoPendentes] = useState(false);
+    const [erroPendentes, setErroPendentes] = useState("");
     const [categorias, setCategorias] = useState([]);
     const [carregandoCategorias, setCarregandoCategorias] = useState(false);
     const [erroCategorias, setErroCategorias] = useState("");
@@ -53,6 +64,7 @@ export default function AdminHobbies() {
     const botaoCancelarRef = useRef(null);
     const botaoDesativarOrigemRef = useRef(null);
     const processandoDesativacaoRef = useRef(false);
+    const requisicaoPendentesRef = useRef(0);
 
     const headers = () => ({ Authorization: `Bearer ${session.getItem("token")}` });
 
@@ -116,7 +128,6 @@ export default function AdminHobbies() {
                 const response = await api.get("/hobby-categories", { headers: headers() });
                 if (ativo) setCategorias(response.data);
             } catch {
-
                 if (ativo) setErroCategorias("Não foi possível carregar as categorias.");
             } finally {
                 if (ativo) setCarregandoCategorias(false);
@@ -130,9 +141,10 @@ export default function AdminHobbies() {
     useEffect(() => {
         if (!modalAberto) return;
         function aoTeclar(event) {
-            if (event.key === "Escape" && !salvandoRef.current) {
-                setModalAberto(false);
-                requestAnimationFrame(() => botaoOrigemRef.current?.focus());
+            if (event.key === "Escape") {
+                event.preventDefault();
+                fecharModal();
+                return;
             }
             if (event.key !== "Tab" || !modalRef.current) return;
             const elementos = [...modalRef.current.querySelectorAll(
@@ -149,7 +161,7 @@ export default function AdminHobbies() {
         }
         document.addEventListener("keydown", aoTeclar);
         return () => document.removeEventListener("keydown", aoTeclar);
-    }, [modalAberto]);
+    }, [modalAberto, imagemPendente]);
 
     useEffect(() => {
         if (!hobbyParaDesativar) return;
@@ -222,11 +234,19 @@ export default function AdminHobbies() {
         setErroCadastro("");
         setSucesso("");
         setModalAberto(true);
+        setArquivoImagem(null);
+        setPreviewImagem(null);
+        setImagemPendente(null);
+        setErroImagem("");
+        setImagensPendentes([]);
+        requisicaoPendentesRef.current++;
     }
 
     function abrirEdicao(hobby, elementoOrigem) {
         botaoOrigemRef.current = elementoOrigem;
         setHobbyEmEdicao(hobby);
+        setImagensPendentes([]);
+        carregarImagensPendentes(hobby.id);
         setForm({
             nome: hobby.nome ?? "",
             descricao: hobby.descricao ?? "",
@@ -244,17 +264,261 @@ export default function AdminHobbies() {
         setErroCadastro("");
         setSucesso("");
         setModalAberto(true);
+        setArquivoImagem(null);
+        setPreviewImagem(null);
+        setImagemPendente(null);
+        setErroImagem("");
     }
 
     function fecharModal() {
-        if (salvandoRef.current) return;
+        if (
+            salvandoRef.current ||
+            operacaoImagemRef.current
+        ) {
+            return;
+        }
+
+        requisicaoPendentesRef.current++;
+
         setModalAberto(false);
-        requestAnimationFrame(() => botaoOrigemRef.current?.focus());
+
+        requestAnimationFrame(() =>
+            botaoOrigemRef.current?.focus()
+        );
     }
 
     function alterar(event) {
         const { name, value, type, checked } = event.target;
         setForm((atual) => ({ ...atual, [name]: type === "checkbox" ? checked : value }));
+    }
+
+    function selecionarImagem(event) {
+        const arquivo = event.target.files?.[0];
+
+        if (!arquivo) return;
+
+        const tiposPermitidos = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
+        if (!tiposPermitidos.includes(arquivo.type)) {
+            setErroCadastro("Selecione uma imagem JPG, PNG ou WebP.");
+            event.target.value = "";
+            return;
+        }
+
+        if (arquivo.size > 5 * 1024 * 1024) {
+            setErroCadastro("A imagem deve ter no máximo 5 MB.");
+            event.target.value = "";
+            return;
+        }
+
+        setErroCadastro("");
+        setArquivoImagem(arquivo);
+        setPreviewImagem(URL.createObjectURL(arquivo));
+    }
+    useEffect(() => {
+        return () => {
+            if (previewImagem) {
+                URL.revokeObjectURL(previewImagem);
+            }
+        };
+    }, [previewImagem]);
+
+    async function enviarImagem() {
+        if (
+            !arquivoImagem ||
+            !hobbyEmEdicao?.id ||
+            enviandoImagem ||
+            imagemPendente
+        ) return;
+
+        setErroImagem("");
+        setEnviandoImagem(true);
+
+        operacaoImagemRef.current = true;
+
+        try {
+            const dados = new FormData();
+            dados.append("file", arquivoImagem);
+            dados.append("hobbyId", String(hobbyEmEdicao.id));
+
+            const response = await api.post(
+                "/admin/hobbies/images/upload",
+                dados,
+                {
+                    headers: headers()
+                }
+            );
+
+            setImagemPendente(response.data);
+            await carregarImagensPendentes(hobbyEmEdicao.id);
+            setArquivoImagem(null);
+            setPreviewImagem(null);
+
+        } catch (error) {
+            setErroImagem(
+                error.response?.data?.message ||
+                "Não foi possível enviar a imagem."
+            );
+        } finally {
+            operacaoImagemRef.current = false;
+            setEnviandoImagem(false);
+        }
+    }
+
+    async function carregarImagensPendentes(hobbyId) {
+        const requisicaoAtual = ++requisicaoPendentesRef.current;
+
+        if (!hobbyId) {
+            setImagensPendentes([]);
+            setCarregandoPendentes(false);
+            setErroPendentes("");
+            return;
+        }
+
+        setCarregandoPendentes(true);
+        setErroPendentes("");
+
+        try {
+            const resposta = await api.get(
+                "/admin/hobbies/images/pending",
+                {
+                    headers: headers(),
+                    params: { hobbyId }
+                }
+            );
+
+            if (requisicaoAtual !== requisicaoPendentesRef.current) {
+                return;
+            }
+
+            setImagensPendentes(resposta.data);
+        } catch (erro) {
+            if (requisicaoAtual !== requisicaoPendentesRef.current) {
+                return;
+            }
+
+            setErroPendentes(
+                "Não foi possível carregar as imagens pendentes."
+            );
+            setImagensPendentes([]);
+        } finally {
+            if (requisicaoAtual === requisicaoPendentesRef.current) {
+                setCarregandoPendentes(false);
+            }
+        }
+    }
+
+    function selecionarImagemPendente(imagem) {
+        if (
+            enviandoImagem ||
+            confirmandoImagem ||
+            descartandoImagem
+        ) return;
+
+        if (
+            imagemPendente &&
+            imagemPendente.publicId !== imagem.publicId
+        ) {
+            setErroImagem(
+                "Confirme ou descarte a imagem selecionada antes de escolher outra."
+            );
+            return;
+        }
+
+        setImagemPendente(imagem);
+        setArquivoImagem(null);
+        setPreviewImagem(null);
+        setErroImagem("");
+    }
+
+    async function confirmarImagem() {
+        if (
+            !imagemPendente ||
+            !hobbyEmEdicao ||
+            confirmandoImagem
+        ) return;
+
+        setErroImagem("");
+        setConfirmandoImagem(true);
+
+        operacaoImagemRef.current = true;
+
+        try {
+            await api.post(
+                "/admin/hobbies/images/confirm",
+                {
+                    publicId: imagemPendente.publicId,
+                    hobbyId: hobbyEmEdicao.id
+                },
+                {
+                    headers: headers()
+                }
+            );
+
+            setForm((atual) => ({
+                ...atual,
+                imagemUrl: imagemPendente.imagemUrl
+            }));
+
+            setImagemPendente(null);
+            await carregarImagensPendentes(hobbyEmEdicao.id);
+            setArquivoImagem(null);
+            setPreviewImagem(null);
+
+            atualizarLista();
+
+        } catch (error) {
+            setErroImagem(
+                error.response?.data?.message ||
+                "Não foi possível confirmar a imagem."
+            );
+        } finally {
+            operacaoImagemRef.current = false;
+            setConfirmandoImagem(false);
+        }
+    }
+
+    async function descartarImagem() {
+        if (
+            !imagemPendente ||
+            descartandoImagem ||
+            confirmandoImagem
+        ) return;
+
+        setErroImagem("");
+        setDescartandoImagem(true);
+
+        operacaoImagemRef.current = true;
+
+        try {
+            await api.delete(
+                "/admin/hobbies/images/discard",
+                {
+                    headers: headers(),
+                    params: {
+                        publicId: imagemPendente.publicId
+                    }
+                }
+            );
+
+            setImagemPendente(null);
+            await carregarImagensPendentes(hobbyEmEdicao.id);
+            setArquivoImagem(null);
+            setPreviewImagem(null);
+
+        } catch (error) {
+            setErroImagem(
+                error.response?.data?.message ||
+                "Não foi possível descartar a imagem."
+            );
+        } finally {
+            operacaoImagemRef.current = false;
+            setDescartandoImagem(false);
+        }
     }
 
     async function salvarHobby(event) {
@@ -274,14 +538,13 @@ export default function AdminHobbies() {
             form.tempoNecessario.trim() === "" || !Number.isFinite(tempo) || tempo <= 0 ||
             !Number.isInteger(dificuldade) || dificuldade < 1 || dificuldade > 5 ||
             !form.tipoSocializacao || !form.nivelAtividadeFisica || !form.ambiente ||
-            form.nome.trim().length > 150 || form.imagemUrl.length > 2000) {
+            form.nome.trim().length > 150) {
             setErroCadastro("Confira os campos obrigatórios e os valores informados.");
             return;
         }
 
         const payload = {
             nome: form.nome.trim(), descricao: form.descricao.trim(),
-            imagemUrl: form.imagemUrl.trim() || null,
             categoryId: Number(form.categoryId),
             custoEstimado: custo, custoRecorrenteEstimado: recorrente,
             nivelDificuldade: dificuldade, tempoNecessario: tempo,
@@ -618,12 +881,219 @@ export default function AdminHobbies() {
                     <div className="admin-hobby-modal" ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="titulo-form-hobby">
                         <div className="admin-hobby-modal-heading">
                             <h2 id="titulo-form-hobby">{hobbyEmEdicao ? "Editar hobby" : "Cadastrar novo hobby"}</h2>
-                            <button type="button" onClick={fecharModal} disabled={salvando} aria-label="Fechar formulário">×</button>
+                            <button type="button" onClick={fecharModal} disabled={
+                                                                            salvando ||
+                                                                            enviandoImagem ||
+                                                                            confirmandoImagem ||
+                                                                            descartandoImagem
+                                                                        } aria-label="Fechar formulário">×</button>
                         </div>
                         <form onSubmit={salvarHobby} className="admin-hobby-form">
                             <label>Nome *<input name="nome" value={form.nome} onChange={alterar} required maxLength={150} /></label>
                             <label>Descrição *<textarea name="descricao" value={form.descricao} onChange={alterar} required rows={4} /></label>
-                            <label>URL da imagem<input name="imagemUrl" value={form.imagemUrl} onChange={alterar} maxLength={2000} /></label>
+                            <div className="admin-hobby-current-image">
+                                <h3>Imagem atual do hobby</h3>
+
+                                {form.imagemUrl ? (
+                                    <div>
+                                        <img
+                                            src={form.imagemUrl}
+                                            alt={`Imagem atual de ${form.nome}`}
+                                            style={{
+                                                width: "100%",
+                                                maxWidth: "320px",
+                                                maxHeight: "220px",
+                                                objectFit: "contain",
+                                                borderRadius: "8px"
+                                            }}
+                                        />
+
+                                        <p>Imagem atualmente vinculada ao hobby.</p>
+                                    </div>
+                                ) : (
+                                    <p>Este hobby ainda não possui uma imagem.</p>
+                                )}
+                            </div>
+                            <div className="admin-hobby-image-upload">
+                                <label htmlFor="hobby-imagem-arquivo">
+                                    Selecionar imagem do computador
+                                </label>
+
+                                <input
+                                    id="hobby-imagem-arquivo"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={selecionarImagem}
+                                />
+
+                                {previewImagem && (
+                                    <div className="admin-hobby-image-preview">
+                                        <img
+                                            src={previewImagem}
+                                            alt="Pré-visualização da imagem selecionada"
+                                            style={{
+                                                maxWidth: "100%",
+                                                maxHeight: "240px",
+                                                objectFit: "contain",
+                                                borderRadius: "8px"
+                                            }}
+                                        />
+
+                                        <p>{arquivoImagem?.name}</p>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setArquivoImagem(null);
+                                                setPreviewImagem(null);
+                                            }}
+                                        >
+                                            Remover seleção
+                                        </button>
+                                    </div>
+                                )}
+                                {arquivoImagem && !imagemPendente && (
+                                    <button
+                                        type="button"
+                                        onClick={enviarImagem}
+                                        disabled={
+                                            enviandoImagem ||
+                                            !hobbyEmEdicao ||
+                                            !!imagemPendente
+                                        }
+                                    >
+                                        {!hobbyEmEdicao && (
+                                            <p>
+                                                Cadastre o hobby primeiro. Depois, abra sua edição
+                                                para adicionar uma imagem.
+                                            </p>
+                                        )}
+                                        {enviandoImagem ? "Enviando imagem..." : "Enviar imagem"}
+                                    </button>
+                                )}
+
+                                {erroImagem && (
+                                    <p className="admin-error" role="alert">
+                                        {erroImagem}
+                                    </p>
+                                )}
+
+                                {imagemPendente && (
+                                    <div className="admin-hobby-image-pending">
+                                        <h3>Imagem selecionada para aprovação</h3>
+                                        <p>Imagem enviada! Aguardando confirmação.</p>
+
+                                        <img
+                                            src={imagemPendente.imagemUrl}
+                                            alt="Imagem enviada aguardando confirmação"
+                                            style={{
+                                                maxWidth: "100%",
+                                                maxHeight: "240px",
+                                                objectFit: "contain",
+                                                borderRadius: "8px"
+                                            }}
+                                        />
+
+                                        <p>Status: PENDENTE</p>
+
+                                        {hobbyEmEdicao ? (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={confirmarImagem}
+                                                    disabled={confirmandoImagem || enviandoImagem}
+                                                >
+                                                    {confirmandoImagem
+                                                        ? "Confirmando imagem..."
+                                                        : "Confirmar imagem para este hobby"}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={descartarImagem}
+                                                    disabled={descartandoImagem || confirmandoImagem}
+                                                >
+                                                    {descartandoImagem
+                                                        ? "Descartando imagem..."
+                                                        : "Descartar imagem"}
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <p>
+                                                Para confirmar a imagem, primeiro cadastre o hobby
+                                                e depois abra sua edição.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            {!carregandoPendentes &&
+                                !erroPendentes &&
+                                imagensPendentes.length === 1 &&
+                                imagensPendentes[0].publicId === imagemPendente?.publicId && (
+                                    <p>
+                                        A imagem pendente está selecionada para aprovação.
+                                    </p>
+                                )}
+                            <div className="admin-hobby-pending-gallery">
+                                <h3>Imagens pendentes</h3>
+
+                                {carregandoPendentes && (
+                                    <p>Carregando imagens pendentes...</p>
+                                )}
+
+                                {erroPendentes && (
+                                    <p className="admin-error" role="alert">
+                                        {erroPendentes}
+                                    </p>
+                                )}
+
+                                {!carregandoPendentes && !erroPendentes &&
+                                    imagensPendentes.length === 0 && (
+                                        <p>Nenhuma imagem pendente encontrada.</p>
+                                    )
+                                }
+
+                                {!carregandoPendentes && imagensPendentes.length > 0 && (
+                                    <div className="admin-hobby-pending-list">
+                                        {imagensPendentes
+                                            .filter((imagem) =>
+                                                imagem.publicId !== imagemPendente?.publicId
+                                            )
+                                            .map((imagem) => (
+                                            <div
+                                                key={imagem.publicId}
+                                                className="admin-hobby-pending-item"
+                                            >
+                                                <img
+                                                    src={imagem.imagemUrl}
+                                                    alt="Imagem aguardando aprovação"
+                                                    style={{
+                                                        width: "160px",
+                                                        height: "120px",
+                                                        objectFit: "cover",
+                                                        borderRadius: "8px"
+                                                    }}
+                                                />
+
+                                                <p>Status: PENDENTE</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => selecionarImagemPendente(imagem)}
+                                                    disabled={
+                                                        enviandoImagem ||
+                                                        confirmandoImagem ||
+                                                        descartandoImagem
+                                                    }
+                                                >
+                                                    {imagemPendente?.publicId === imagem.publicId
+                                                        ? "Imagem selecionada"
+                                                        : "Selecionar imagem"}
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                             <label>Categoria *
                                 <select name="categoryId" value={form.categoryId} onChange={alterar} required disabled={carregandoCategorias || !!erroCategorias}>
                                     <option value="">Selecione uma categoria</option>
@@ -653,7 +1123,12 @@ export default function AdminHobbies() {
                             <label className="admin-hobby-checkbox"><input type="checkbox" name="requerEquipamento" checked={form.requerEquipamento} onChange={alterar} /> Requer equipamento</label>
                             {erroCadastro && <p className="admin-error" role="alert">{erroCadastro}</p>}
                             <div className="admin-hobby-actions">
-                                <button type="button" onClick={fecharModal} disabled={salvando}>Cancelar</button>
+                                <button type="button" onClick={fecharModal} disabled={
+                                                                                salvando ||
+                                                                                enviandoImagem ||
+                                                                                confirmandoImagem ||
+                                                                                descartandoImagem
+                                                                            }>Cancelar</button>
                                 <button type="submit" className="admin-hobby-new-button" disabled={salvando || carregandoCategorias || !!erroCategorias}>
                                     {salvando ? "Salvando..." : hobbyEmEdicao ? "Salvar alterações" : "Cadastrar hobby"}
                                 </button>

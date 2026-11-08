@@ -146,4 +146,5 @@ public interface HobbyRepository extends JpaRepository<Hobby, Long> {
             @Param("id") Long id
     );
 
+    boolean existsByImagemUrl(String imagemUrl);
 }

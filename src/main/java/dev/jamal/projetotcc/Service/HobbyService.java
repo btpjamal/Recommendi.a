@@ -166,7 +166,6 @@ public class HobbyService {
 
         hobby.setNome(nome);
         hobby.setDescricao(dto.getDescricao());
-        hobby.setImagemUrl(dto.getImagemUrl());
 
         hobby.setCustoEstimado(dto.getCustoEstimado());
         hobby.setCustoRecorrenteEstimado(dto.getCustoRecorrenteEstimado());
