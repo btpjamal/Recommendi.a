@@ -9,12 +9,15 @@ import dev.jamal.projetotcc.Enum.UserHobbyStatus;
 import dev.jamal.projetotcc.Repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import dev.jamal.projetotcc.Enum.SocialLocationScope;
 
 import java.util.Comparator;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class SocialHubService {
 
     private final UserRepository userRepository;
@@ -24,6 +27,23 @@ public class SocialHubService {
     private final UserRecommendationFeedbackRepository feedbackRepository;
     private final SocialProfileResumeService resumeService;
     private final SocialAffinityService affinityService;
+    private final SocialLocationService locationService;
+    private final SocialUserBlockRepository blockRepository;
+
+    public SocialProfileDTO buscarPerfilPublicoPara(Long requesterId, Long outroId) {
+        if (blockRepository.bloqueados(requesterId, outroId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Perfil social indisponível.");
+        }
+        var perfil = buscarPerfilPublico(outroId);
+        String proximidade = socialProfileRepository.findByUser_Id(outroId)
+                .map(p -> locationService.proximidade(locationService.buscar(requesterId), p)).orElse(null);
+        return new SocialProfileDTO(perfil.userId(), perfil.nome(), perfil.resumo(), perfil.interesses(),
+                perfil.praticando(), perfil.interessados(),
+                affinityService.calcular(buscarPerfilPublico(requesterId), perfil), proximidade);
+    }
+
+    private record Candidato(SocialProfile perfil, String proximidade) {}
 
     public SocialProfileDTO buscarPerfilPublico(Long userId) {
 
@@ -145,6 +165,15 @@ public class SocialHubService {
     public List<SocialProfileDTO> buscarUsuarios(
             Long requesterId
     ) {
+        return buscarUsuarios(requesterId, SocialLocationScope.GERAL);
+    }
+
+    public List<SocialProfileDTO> buscarUsuarios(Long requesterId, SocialLocationScope escopo) {
+
+        var indisponiveis = blockRepository.buscarIdsIndisponiveis(requesterId);
+
+        var localAtual = locationService.buscar(requesterId);
+        locationService.validarEscopo(localAtual, escopo);
 
         SocialProfileDTO usuarioAtual =
                 buscarPerfilPublico(requesterId);
@@ -161,7 +190,15 @@ public class SocialHubService {
                                 .equals(requesterId)
                 )
 
-                .map(socialProfile -> {
+                .filter(perfil -> !indisponiveis.contains(perfil.getUser().getId()))
+                .map(perfil -> new Candidato(perfil, locationService.proximidade(localAtual, perfil)))
+                .filter(candidato -> switch (escopo) {
+                    case GERAL -> true;
+                    case ESTADUAL -> candidato.proximidade() != null;
+                    case MUNICIPAL -> "MESMA_CIDADE".equals(candidato.proximidade());
+                })
+                .map(candidato -> {
+                    SocialProfile socialProfile = candidato.perfil();
 
                     SocialProfileDTO outroUsuario =
                             buscarPerfilPublico(
@@ -185,7 +222,8 @@ public class SocialHubService {
                             outroUsuario.interesses(),
                             outroUsuario.praticando(),
                             outroUsuario.interessados(),
-                            afinidade
+                            afinidade,
+                            candidato.proximidade()
                     );
                 })
 

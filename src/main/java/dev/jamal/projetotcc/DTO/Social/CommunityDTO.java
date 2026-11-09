@@ -7,6 +7,7 @@ public record CommunityDTO (
         String tipo,
         String estado,
         long membros,
-        boolean participando
+        boolean participando,
+        String cidade
 ){
 }

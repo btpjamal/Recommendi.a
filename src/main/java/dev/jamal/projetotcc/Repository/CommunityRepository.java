@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface CommunityRepository
         extends JpaRepository<Community, Long> {
 
+    List<Community> findByTipoAndEstadoAndCidade(CommunityType tipo, String estado, String cidade);
+
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query(value = """
         INSERT INTO communities(hobby_id, tipo, estado, cidade, data_criacao)

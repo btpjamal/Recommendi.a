@@ -274,3 +274,11 @@
     font-size: 11px;
     font-weight: 700;
 }
+.community-chat-tools { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 28px 0; }
+.community-chat-tools button { padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; color: #4338ca; cursor: pointer; }
+.community-chat-tools button:disabled { opacity: .5; cursor: not-allowed; }
+.community-chat-update-note { margin: 12px 28px; color: #92400e; font-size: 13px; }
+.community-message-label { display: block; font-size: 13px; color: #475569; margin-bottom: 8px; }
+.community-message-meta time { color: #64748b; }
+.community-message { flex-shrink: 0; }
+

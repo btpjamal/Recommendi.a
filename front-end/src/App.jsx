@@ -12,6 +12,7 @@ import GeneralPlan from "./pages/GeneralPlan.jsx";
 import MyProfile from "./pages/MyProfile";
 import Community from "./pages/Community";
 import CommunityDetails from "./pages/CommunityDetails";
+import PrivateConversation from "./pages/PrivateConversation";
 import AISettings from "./pages/AISettings";
 import AdminRoute from "./components/AdminRoute";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/myProfile" element={<MyProfile />} />
         <Route path="/community" element={<Community />} />
         <Route path="/community/communities/:communityId" element={<CommunityDetails />} />
+        <Route path="/community/conversations/:contactId" element={<PrivateConversation />} />
         <Route path="/ai-settings" element={<AISettings />} />
         <Route path="/suggest-hobby" element={<SuggestHobby />} />
         <Route path="/my-suggestions" element={<MySuggestions />} />
