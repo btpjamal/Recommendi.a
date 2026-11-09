@@ -6,6 +6,7 @@ public record CommunityDetailsDTO(
         String hobbyNome,
         String tipo,
         String estado,
-        long membros
+        long membros,
+        String cidade
 ) {
 }

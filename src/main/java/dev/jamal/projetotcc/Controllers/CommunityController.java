@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import dev.jamal.projetotcc.Enum.SocialLocationScope;
+import dev.jamal.projetotcc.Service.Social.SocialLocationService;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Map;
@@ -25,11 +28,13 @@ public class CommunityController {
     private final UserRepository userRepository;
     private final CommunityService communityService;
     private final CommunityMessageService communityMessageService;
+    private final SocialLocationService locationService;
 
 
     @GetMapping("/users")
     public ResponseEntity<List<SocialProfileDTO>> usuarios(
-            Authentication authentication
+            Authentication authentication,
+            @RequestParam(defaultValue = "GERAL") SocialLocationScope escopo
     ) {
 
         Long userId = obterUserId(authentication);
@@ -37,7 +42,7 @@ public class CommunityController {
         validarAcessoSocial(userId);
 
         return ResponseEntity.ok(
-                socialHubService.buscarUsuarios(userId)
+                socialHubService.buscarUsuarios(userId, escopo)
         );
     }
 
@@ -54,7 +59,7 @@ public class CommunityController {
         validarAcessoSocial(requesterId);
 
         return ResponseEntity.ok(
-                socialHubService.buscarPerfilPublico(userId)
+                socialHubService.buscarPerfilPublicoPara(requesterId, userId)
         );
     }
 
@@ -183,10 +188,36 @@ public class CommunityController {
         );
     }
 
+    @GetMapping("/location")
+    public SocialLocationSettingsDTO localizacao(Authentication authentication) {
+        Long userId = obterUserId(authentication);
+        validarAcessoSocial(userId);
+        return locationService.configuracao(userId);
+    }
+
+    @PutMapping("/location-visibility")
+    public SocialLocationSettingsDTO visibilidadeLocalizacao(
+            Authentication authentication,
+            @Valid @RequestBody SocialLocationVisibilityRequestDTO request) {
+        Long userId = obterUserId(authentication);
+        validarAcessoSocial(userId);
+        return locationService.atualizarVisibilidade(userId, request.compartilharRegiao());
+    }
+
+    @GetMapping("/communities/municipal")
+    public List<CommunityDTO> comunidadesMunicipais(Authentication authentication) {
+        Long userId = obterUserId(authentication);
+        validarAcessoSocial(userId);
+        return communityService.listarMunicipais(userId);
+    }
+
     @GetMapping("/communities/{communityId}/messages")
-    public ResponseEntity<List<CommunityMessageDTO>> listarMensagens(
+    public ResponseEntity<CommunityMessagePageDTO> listarMensagens(
             @PathVariable Long communityId,
-            Authentication authentication
+            Authentication authentication,
+            @RequestParam(required = false) Long antesDe,
+            @RequestParam(required = false) Long aposId,
+            @RequestParam(defaultValue = "30") int limite
     ) {
 
         Long userId =
@@ -196,9 +227,9 @@ public class CommunityController {
 
 
         return ResponseEntity.ok(
-                communityMessageService.listar(
+                communityMessageService.listarPagina(
                         communityId,
-                        userId
+                        userId, antesDe, aposId, limite
                 )
         );
     }

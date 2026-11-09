@@ -30,6 +30,9 @@ public class SocialProfile {
     @Column(nullable = false)
     private boolean enabled = false;
 
+    @Column(name = "compartilhar_regiao", nullable = false)
+    private boolean compartilharRegiao = false;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 

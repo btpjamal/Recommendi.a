@@ -21,6 +21,30 @@ public class CommunityService {
     private final HobbyRepository hobbyRepository;
     private final UserRepository userRepository;
     private final RecommendationProfileRepository profileRepository;
+    private final SocialLocationService locationService;
+    private final CommunityChatLockRepository chatLocks;
+
+    private void bloquearParticipacao(Long communityId, Long userId) {
+        if (chatLocks.lockUser(userId).isEmpty()) throw new IllegalStateException("Usuário não encontrado.");
+        if (chatLocks.lockCommunity(communityId).isEmpty()) throw new IllegalStateException("Comunidade não encontrada.");
+    }
+
+    @Transactional
+    public List<CommunityDTO> listarMunicipais(Long userId) {
+        var local = locationService.buscar(userId);
+        locationService.validarEscopo(local, dev.jamal.projetotcc.Enum.SocialLocationScope.MUNICIPAL);
+
+        for (Hobby hobby : hobbyRepository.findAll()) {
+            communityRepository.insertIfAbsent(hobby.getId(), CommunityType.MUNICIPAL.name(),
+                    local.estado(), local.cidade());
+        }
+
+        return communityRepository.findByTipoAndEstadoAndCidade(
+                        CommunityType.MUNICIPAL, local.estado(), local.cidade()).stream()
+                .map(community -> converterParaDTO(community, userId))
+                .sorted(Comparator.comparing(CommunityDTO::hobbyNome, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
 
 
     @Transactional
@@ -111,7 +135,8 @@ public class CommunityService {
                 community.getTipo().name(),
                 community.getEstado(),
                 membros,
-                participando
+                participando,
+                community.getCidade()
         );
     }
 
@@ -120,6 +145,8 @@ public class CommunityService {
             Long communityId,
             Long userId
     ) {
+
+        bloquearParticipacao(communityId, userId);
 
         Community community =
                 communityRepository
@@ -130,32 +157,15 @@ public class CommunityService {
                                 )
                         );
 
-        boolean jaParticipa =
-                memberRepository
-                        .existsByCommunity_IdAndUser_Id(
-                                communityId,
-                                userId
-                        );
-
-        if (!jaParticipa) {
-
-            User user =
-                    userRepository
-                            .findById(userId)
-                            .orElseThrow(() ->
-                                    new IllegalStateException(
-                                            "Usuário não encontrado."
-                                    )
-                            );
-
-            CommunityMember member =
-                    new CommunityMember();
-
-            member.setCommunity(community);
-            member.setUser(user);
-
-            memberRepository.save(member);
+        if (community.getTipo() == CommunityType.MUNICIPAL) {
+            var local = locationService.buscar(userId);
+            if (!local.temCidade() || !local.estado().equals(community.getEstado())
+                    || !local.cidade().equals(community.getCidade())) {
+                throw new IllegalStateException("Esta comunidade é destinada à cidade cadastrada no seu perfil.");
+            }
         }
+
+        memberRepository.insertIfAbsent(communityId, userId, java.time.LocalDateTime.now());
 
         return converterParaDTO(
                 community,
@@ -168,6 +178,8 @@ public class CommunityService {
             Long communityId,
             Long userId
     ) {
+
+        bloquearParticipacao(communityId, userId);
 
         Community community =
                 communityRepository
@@ -360,7 +372,8 @@ public class CommunityService {
                 community.getHobby().getNome(),
                 community.getTipo().name(),
                 community.getEstado(),
-                membros
+                membros,
+                community.getCidade()
         );
     }
 }

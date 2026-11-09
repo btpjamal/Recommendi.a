@@ -41,6 +41,8 @@ public class SocialProfileService {
     @Transactional
     public SocialProfile ativar(Long userId) {
 
+        userRepository.lockTokenVersion(userId).orElseThrow(() -> new IllegalStateException("Usuário não encontrado."));
+
         User user = buscarUsuario(userId);
 
         if (!maiorDeIdade(user)) {
@@ -70,6 +72,8 @@ public class SocialProfileService {
 
     @Transactional
     public void desativar(Long userId) {
+
+        userRepository.lockTokenVersion(userId).orElseThrow(() -> new IllegalStateException("Usuário não encontrado."));
 
         socialProfileRepository
                 .findByUser_Id(userId)

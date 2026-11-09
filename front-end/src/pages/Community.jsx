@@ -1,30 +1,119 @@
 import { API_BASE_URL } from "../api/config.js";
 import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import axios from "axios";
 
 import "./css/Community.css";
 import "./css/RecommendationsLayout.css";
+import "./css/SocialLocation.css";
+import SocialContactRequestButton from "../components/social/SocialContactRequestButton";
+import SocialContactsPanel from "../components/social/SocialContactsPanel";
+import usePrivateUnread from "../components/social/usePrivateUnread.js";
 
 
 export default function Community() {
 
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const [status, setStatus] = useState(null);
     const [usuarios, setUsuarios] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
     const [ativando, setAtivando] = useState(false);
-    const [abaAtiva, setAbaAtiva] = useState("pessoas");
+    const [abaAtiva, setAbaAtiva] = useState(() => ["pessoas", "comunidades", "conversas"].includes(searchParams.get("aba")) ? searchParams.get("aba") : "pessoas");
+    const [caixaContato, setCaixaContato] = useState(() => ["RECEBIDAS", "ENVIADAS", "ACEITAS", "HISTORICO", "BLOQUEADOS"].includes(searchParams.get("caixa")) ? searchParams.get("caixa") : "RECEBIDAS");
+
+    function abrirSolicitacao(contato) {
+        setCaixaContato(contato.status === "ACEITA" ? "ACEITAS" : contato.direcao === "RECEBIDA" ? "RECEBIDAS" : "ENVIADAS");
+        setAbaAtiva("conversas");
+    }
+
+    function participanteBloqueado() {
+        setRevisaoLocal((atual) => atual + 1);
+        setCaixaContato("BLOQUEADOS");
+        setAbaAtiva("conversas");
+    }
     const [comunidades, setComunidades] = useState([]);
     const [alterandoComunidade, setAlterandoComunidade] = useState(null);
     const [comunidadesRegionais, setComunidadesRegionais] = useState([]);
     const [tipoComunidade, setTipoComunidade] = useState("geral");
+    const [comunidadesMunicipais, setComunidadesMunicipais] = useState([]);
+    const [configLocal, setConfigLocal] = useState(null);
+    const [filtroPessoas, setFiltroPessoas] = useState("GERAL");
+    const [carregandoPessoas, setCarregandoPessoas] = useState(false);
+    const [erroPessoas, setErroPessoas] = useState("");
+    const [carregandoRegiao, setCarregandoRegiao] = useState(false);
+    const [erroRegiao, setErroRegiao] = useState("");
+    const [salvandoVisibilidade, setSalvandoVisibilidade] = useState(false);
+    const [erroVisibilidade, setErroVisibilidade] = useState("");
+    const [revisaoLocal, setRevisaoLocal] = useState(0);
+    const naoLidas = usePrivateUnread(Boolean(status?.elegivel && status?.participa), revisaoLocal);
 
     const nome = session.getItem("nome");
     const token = session.getItem("token");
+
+    useEffect(() => {
+        if (!status?.elegivel || !status?.participa) return;
+        const controller = new AbortController();
+        setUsuarios([]);
+        setCarregandoPessoas(true);
+        setErroPessoas("");
+        axios.get(API_BASE_URL + "/community/users", {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { escopo: filtroPessoas },
+            signal: controller.signal
+        }).then((resposta) => {
+            if (!controller.signal.aborted) setUsuarios(resposta.data);
+        }).catch((error) => {
+            if (!controller.signal.aborted) setErroPessoas(
+                error.response?.data?.error || "Não foi possível carregar as pessoas."
+            );
+        }).finally(() => {
+            if (!controller.signal.aborted) setCarregandoPessoas(false);
+        });
+        return () => controller.abort();
+    }, [status?.elegivel, status?.participa, filtroPessoas, revisaoLocal, token]);
+
+    useEffect(() => {
+        setErroRegiao("");
+        setCarregandoRegiao(false);
+        if (!status?.participa || abaAtiva !== "comunidades" || tipoComunidade === "geral") return;
+        const controller = new AbortController();
+        setCarregandoRegiao(true);
+        axios.get(API_BASE_URL + "/community/communities/" + tipoComunidade, {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal
+        }).then((resposta) => {
+            if (controller.signal.aborted) return;
+            if (tipoComunidade === "municipal") setComunidadesMunicipais(resposta.data);
+            else setComunidadesRegionais(resposta.data);
+        }).catch((error) => {
+            if (!controller.signal.aborted) setErroRegiao(
+                error.response?.data?.error || "Não foi possível carregar as comunidades desta região."
+            );
+        }).finally(() => {
+            if (!controller.signal.aborted) setCarregandoRegiao(false);
+        });
+        return () => controller.abort();
+    }, [status?.participa, abaAtiva, tipoComunidade, revisaoLocal, token]);
+
+    async function alterarVisibilidade(compartilharRegiao) {
+        if (salvandoVisibilidade) return;
+        setSalvandoVisibilidade(true);
+        setErroVisibilidade("");
+        try {
+            const resposta = await axios.put(API_BASE_URL + "/community/location-visibility", {
+                compartilharRegiao
+            }, { headers: { Authorization: `Bearer ${token}` } });
+            setConfigLocal(resposta.data);
+        } catch (error) {
+            setErroVisibilidade(error.response?.data?.error || "Não foi possível salvar sua escolha.");
+        } finally {
+            setSalvandoVisibilidade(false);
+        }
+    }
 
 
     useEffect(() => {
@@ -57,11 +146,11 @@ export default function Community() {
                 statusAtual.elegivel &&
                 statusAtual.participa
             ) {
-                const [usersResponse, communitiesResponse, regionalResponse] =
+                const [locationResponse, communitiesResponse] =
                     await Promise.all([
 
                         axios.get(
-                            API_BASE_URL + "/community/users",
+                            API_BASE_URL + "/community/location",
                             {
                                 headers: {
                                     Authorization: `Bearer ${token}`
@@ -76,21 +165,11 @@ export default function Community() {
                                     Authorization: `Bearer ${token}`
                                 }
                             }
-                        ),
-
-                        axios.get(
-                            API_BASE_URL + "/community/communities/regional",
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${token}`
-                                }
-                            }
                         )
                     ]);
 
-                setUsuarios(usersResponse.data);
+                setConfigLocal(locationResponse.data);
                 setComunidades(communitiesResponse.data);
-                setComunidadesRegionais(regionalResponse.data);
             }
 
         } catch (error) {
@@ -257,10 +336,11 @@ export default function Community() {
 
         setComunidades(atualizarLista);
         setComunidadesRegionais(atualizarLista);
+        setComunidadesMunicipais(atualizarLista);
     }
 
     const comunidadesExibidas =
-        tipoComunidade === "regional"
+        tipoComunidade === "municipal" ? comunidadesMunicipais : tipoComunidade === "regional"
             ? comunidadesRegionais
             : comunidades;
 
@@ -496,12 +576,38 @@ export default function Community() {
                                 >
                                     Comunidades
                                 </button>
+                                <button className={abaAtiva === "conversas" ? "active" : ""}
+                                    onClick={() => setAbaAtiva("conversas")}>
+                                    Conversas
+                                    {naoLidas.total > 0 && <span className="private-unread-badge" aria-label={`${naoLidas.total} mensagens não lidas`}>{naoLidas.total}</span>}
+                                </button>
 
                             </div>
 
                             {abaAtiva === "pessoas" && (
                                 <>
-                            {usuarios.length === 0 ? (
+                                    <div className="social-location-controls">
+                                        <label htmlFor="filtro-local-pessoas">Encontrar pessoas</label>
+                                        <select id="filtro-local-pessoas" value={filtroPessoas} onChange={(event) => setFiltroPessoas(event.target.value)}>
+                                            <option value="GERAL">Geral</option>
+                                            <option value="ESTADUAL" disabled={!configLocal?.estadoDisponivel}>No meu estado</option>
+                                            <option value="MUNICIPAL" disabled={!configLocal?.cidadeDisponivel}>Na minha cidade</option>
+                                        </select>
+                                        {!configLocal?.cidadeDisponivel && <p>Preencha cidade e UF no seu perfil para habilitar todos os filtros regionais.</p>}
+                                        <label className="social-location-optin">
+                                            <input type="checkbox" checked={configLocal?.compartilharRegiao ?? false}
+                                                disabled={!configLocal || salvandoVisibilidade}
+                                                onChange={(event) => alterarVisibilidade(event.target.checked)} />
+                                            Permitir que meu perfil apareça nas buscas por região
+                                        </label>
+                                        <p>Sua cidade e estado serão usados nos filtros e nos indicadores de proximidade. A localização é informada pelo próprio participante.</p>
+                                        <p>Os filtros regionais mostram somente participantes que ativaram essa opção.</p>
+                                        {salvandoVisibilidade && <p role="status">Salvando sua escolha...</p>}
+                                        {erroVisibilidade && <p role="alert">{erroVisibilidade}</p>}
+                                    </div>
+                            {carregandoPessoas ? <p role="status">Carregando pessoas...</p> : erroPessoas ? (
+                                <div role="alert"><p>{erroPessoas}</p><button onClick={() => setRevisaoLocal((atual) => atual + 1)}>Tentar novamente</button></div>
+                            ) : usuarios.length === 0 ? (
 
                                 <div className="community-state">
 
@@ -510,12 +616,11 @@ export default function Community() {
                                     </div>
 
                                     <h2>
-                                        Ainda não há outras pessoas por aqui
+                                        Nenhuma pessoa encontrada neste filtro
                                     </h2>
 
                                     <p>
-                                        Conforme novos participantes entrarem
-                                        na comunidade, eles aparecerão aqui.
+                                        Tente outro filtro ou volte mais tarde para encontrar novos participantes.
                                     </p>
 
                                 </div>
@@ -529,12 +634,19 @@ export default function Community() {
                                         <SocialUserCard
                                             key={usuario.userId}
                                             usuario={usuario}
+                                            onSolicitada={abrirSolicitacao}
+                                            onBloqueado={participanteBloqueado}
                                         />
                                     ))}
                                 </div>
                             )}
                         </>
                     )}
+                            {abaAtiva === "conversas" && (
+                                <SocialContactsPanel caixa={caixaContato} onCaixaChange={setCaixaContato}
+                                    onBloqueioAlterado={() => setRevisaoLocal((atual) => atual + 1)}
+                                    naoLidas={naoLidas} />
+                            )}
                             {abaAtiva === "comunidades" && (
 
                                 <div className="communities-section">
@@ -572,14 +684,23 @@ export default function Community() {
                                             onClick={() =>
                                                 setTipoComunidade("regional")
                                             }
+                                            disabled={!configLocal?.estadoDisponivel}
                                         >
                                             No seu estado
+                                        </button>
+                                        <button className={tipoComunidade === "municipal" ? "active" : ""}
+                                            disabled={!configLocal?.cidadeDisponivel}
+                                            onClick={() => setTipoComunidade("municipal")}>
+                                            Na sua cidade
                                         </button>
 
                                     </div>
 
 
-                                    {comunidadesExibidas.length === 0 ? (
+                                    {!configLocal?.cidadeDisponivel && <p>Preencha cidade e UF no seu perfil para acessar as comunidades municipais.</p>}
+                                    {carregandoRegiao ? <p role="status">Carregando comunidades...</p> : erroRegiao ? (
+                                        <div role="alert"><p>{erroRegiao}</p><button onClick={() => setRevisaoLocal((atual) => atual + 1)}>Tentar novamente</button></div>
+                                    ) : comunidadesExibidas.length === 0 ? (
 
                                         <div className="community-state">
 
@@ -634,7 +755,7 @@ export default function Community() {
 }
 
 
-function SocialUserCard({ usuario }) {
+function SocialUserCard({ usuario, onSolicitada, onBloqueado }) {
 
     const afinidade = usuario.afinidade;
 
@@ -673,6 +794,13 @@ function SocialUserCard({ usuario }) {
             <p className="social-user-summary">
                 {usuario.resumo}
             </p>
+            {usuario.proximidade && (
+                <p className="social-location-badge" title="Conforme a localização informada nos perfis.">
+                    {usuario.proximidade === "MESMA_CIDADE"
+                        ? "É da mesma cidade que você"
+                        : "É do mesmo estado que você"}
+                </p>
+            )}
 
 
             {afinidade?.praticandoEmComum?.length > 0 && (
@@ -708,6 +836,7 @@ function SocialUserCard({ usuario }) {
                     mas talvez descubram novos hobbies juntos.
                 </p>
             )}
+            <SocialContactRequestButton usuario={usuario} onSolicitada={onSolicitada} onBloqueado={onBloqueado} />
 
         </article>
     );
@@ -757,7 +886,7 @@ function CommunityCard({
 
                     <div>
                         <span className="hobby-community-type">
-                            {comunidade.tipo === "REGIONAL"
+                            {comunidade.tipo === "MUNICIPAL" ? "COMUNIDADE MUNICIPAL" : comunidade.tipo === "REGIONAL"
                             ? "COMUNIDADE REGIONAL"
                             : "COMUNIDADE GERAL"}
                         </span>
@@ -784,7 +913,9 @@ function CommunityCard({
 
                 <p className="hobby-community-description">
 
-                    {comunidade.tipo === "REGIONAL" ? (
+                    {comunidade.tipo === "MUNICIPAL" ? (
+                        <>Converse com participantes de {comunidade.cidade} / {comunidade.estado} interessados em {comunidade.hobbyNome}.</>
+                    ) : comunidade.tipo === "REGIONAL" ? (
                         <>
                             Converse com pessoas da sua região
                             interessadas em {comunidade.hobbyNome}.
