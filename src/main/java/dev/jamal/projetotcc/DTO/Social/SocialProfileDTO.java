@@ -10,8 +10,15 @@ public record SocialProfileDTO(
         List<SocialHobbyDTO> praticando,
         List<SocialHobbyDTO> interessados,
         SocialAffinityDTO afinidade,
-        String proximidade
+        String proximidade,
+        String biografia,
+        boolean possuiFoto
 ) {
+    public SocialProfileDTO(Long userId, String nome, String resumo,
+                            List<String> interesses, List<SocialHobbyDTO> praticando,
+                            List<SocialHobbyDTO> interessados, SocialAffinityDTO afinidade, String proximidade) {
+        this(userId, nome, resumo, interesses, praticando, interessados, afinidade, proximidade, null, false);
+    }
     public SocialProfileDTO(Long userId, String nome, String resumo,
                             List<String> interesses, List<SocialHobbyDTO> praticando,
                             List<SocialHobbyDTO> interessados, SocialAffinityDTO afinidade) {

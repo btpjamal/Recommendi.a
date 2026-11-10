@@ -22,5 +22,6 @@ public class SocialContact {
     @Column(length = 300) private String apresentacao;
     @Column(nullable = false) private Instant requestedAt;
     @Column(nullable = false) private Instant updatedAt;
+    @Column(nullable=false) private java.util.UUID notificationCycle = java.util.UUID.randomUUID();
     @Version private Long version;
 }

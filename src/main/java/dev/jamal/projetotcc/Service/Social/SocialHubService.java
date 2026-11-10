@@ -29,30 +29,52 @@ public class SocialHubService {
     private final SocialAffinityService affinityService;
     private final SocialLocationService locationService;
     private final SocialUserBlockRepository blockRepository;
+    private final SocialContactRepository contactRepository;
 
     public SocialProfileDTO buscarPerfilPublicoPara(Long requesterId, Long outroId) {
         if (blockRepository.bloqueados(requesterId, outroId)) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.NOT_FOUND, "Perfil social indisponível.");
         }
-        var perfil = buscarPerfilPublico(outroId);
+        var perfil = visivelPara(requesterId, outroId);
         String proximidade = socialProfileRepository.findByUser_Id(outroId)
                 .map(p -> locationService.proximidade(locationService.buscar(requesterId), p)).orElse(null);
         return new SocialProfileDTO(perfil.userId(), perfil.nome(), perfil.resumo(), perfil.interesses(),
                 perfil.praticando(), perfil.interessados(),
-                affinityService.calcular(buscarPerfilPublico(requesterId), perfil), proximidade);
+                affinityService.calcular(visivelPara(outroId, requesterId), perfil), proximidade,
+                perfil.biografia(), perfil.possuiFoto());
+    }
+
+    public boolean podeVer(dev.jamal.projetotcc.Enum.SocialVisibility regra, Long viewer, Long owner) {
+        if (viewer.equals(owner)) return true;
+        if (regra == dev.jamal.projetotcc.Enum.SocialVisibility.PARTICIPANTES) return true;
+        return regra == dev.jamal.projetotcc.Enum.SocialVisibility.CONTATOS && contactRepository
+                .findByLowUserIdAndHighUserId(Math.min(viewer, owner), Math.max(viewer, owner))
+                .map(c -> c.getStatus() == dev.jamal.projetotcc.Enum.SocialContactStatus.ACEITA).orElse(false);
+    }
+
+    private SocialProfileDTO visivelPara(Long viewer, Long owner) {
+        var raw = buscarPerfilPublico(owner);
+        var p = socialProfileRepository.findByUser_Id(owner).orElseThrow();
+        List<String> interesses = podeVer(p.getInteressesVisibilidade(), viewer, owner) ? raw.interesses() : List.of();
+        List<SocialHobbyDTO> praticando = podeVer(p.getHobbiesVisibilidade(), viewer, owner) ? raw.praticando() : List.of();
+        List<SocialHobbyDTO> interessados = podeVer(p.getHobbiesVisibilidade(), viewer, owner) ? raw.interessados() : List.of();
+        return new SocialProfileDTO(owner, raw.nome(), resumeService.construirResumo(raw.nome(), interesses, praticando, interessados),
+                interesses, praticando, interessados, null, null,
+                podeVer(p.getBiografiaVisibilidade(), viewer, owner) ? p.getBiografia() : null,
+                p.getFoto() != null && podeVer(p.getFotoVisibilidade(), viewer, owner));
     }
 
     private record Candidato(SocialProfile perfil, String proximidade) {}
 
-    public SocialProfileDTO buscarPerfilPublico(Long userId) {
+    private SocialProfileDTO buscarPerfilPublico(Long userId) {
 
         SocialProfile socialProfile =
                 socialProfileRepository
                         .findByUser_Id(userId)
                         .filter(SocialProfile::isEnabled)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND,
                                         "Perfil social não disponível"
                                 )
                         );
@@ -175,8 +197,7 @@ public class SocialHubService {
         var localAtual = locationService.buscar(requesterId);
         locationService.validarEscopo(localAtual, escopo);
 
-        SocialProfileDTO usuarioAtual =
-                buscarPerfilPublico(requesterId);
+        buscarPerfilPublico(requesterId);
 
 
         return socialProfileRepository
@@ -197,35 +218,7 @@ public class SocialHubService {
                     case ESTADUAL -> candidato.proximidade() != null;
                     case MUNICIPAL -> "MESMA_CIDADE".equals(candidato.proximidade());
                 })
-                .map(candidato -> {
-                    SocialProfile socialProfile = candidato.perfil();
-
-                    SocialProfileDTO outroUsuario =
-                            buscarPerfilPublico(
-                                    socialProfile
-                                            .getUser()
-                                            .getId()
-                            );
-
-
-                    SocialAffinityDTO afinidade =
-                            affinityService.calcular(
-                                    usuarioAtual,
-                                    outroUsuario
-                            );
-
-
-                    return new SocialProfileDTO(
-                            outroUsuario.userId(),
-                            outroUsuario.nome(),
-                            outroUsuario.resumo(),
-                            outroUsuario.interesses(),
-                            outroUsuario.praticando(),
-                            outroUsuario.interessados(),
-                            afinidade,
-                            candidato.proximidade()
-                    );
-                })
+                .map(candidato -> buscarPerfilPublicoPara(requesterId, candidato.perfil().getUser().getId()))
 
                 .sorted(
                         Comparator.comparingInt(

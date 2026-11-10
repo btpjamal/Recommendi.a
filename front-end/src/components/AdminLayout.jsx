@@ -8,6 +8,7 @@ export default function AdminLayout() {
     const nome = session.getItem("nome") || "Administrador";
 
     const menu = [
+        { caminho: "/admin/community-reports", nome: "Denúncias da comunidade", icone: "!" },
         { caminho: "/admin", nome: "Visão geral", icone: "▦", fim: true },
         { caminho: "/admin/suggestions", nome: "Sugestões", icone: "☑" },
         { caminho: "/admin/hobbies", nome: "Catálogo de hobbies", icone: "◈" },

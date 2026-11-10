@@ -1,0 +1,11 @@
+.social-profile-page { max-width: 1100px; margin: auto; padding: 32px 20px; }
+.social-profile-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.social-profile-editor { background: white; border: 1px solid #ddd; border-radius: 18px; padding: 24px; color: #253047; }
+.social-profile-editor label { display: grid; gap: 8px; margin: 16px 0; font-weight: 600; }
+.social-profile-editor textarea,.social-profile-editor select { width: 100%; box-sizing: border-box; font: inherit; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
+.social-profile-editor textarea { resize: vertical; }
+.social-profile-editor fieldset { margin-top: 24px; border: 1px solid #cbd5e1; border-radius: 10px; }
+.social-profile-editor p,.social-profile-editor small { font-size: .9rem; line-height: 1.6; }
+.social-profile-bio { white-space: pre-wrap; overflow-wrap: anywhere; }
+.social-profile-columns > .social-user-card { min-width: 0; overflow-wrap: anywhere; }
+@media(max-width: 760px) { .social-profile-columns { grid-template-columns: 1fr; } }

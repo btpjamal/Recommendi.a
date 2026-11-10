@@ -10,6 +10,7 @@ import RecommendationDetails from "./pages/RecommendationDetails.jsx";
 import Onboarding from "./pages/Onboarding";
 import GeneralPlan from "./pages/GeneralPlan.jsx";
 import MyProfile from "./pages/MyProfile";
+import SocialProfile from "./pages/SocialProfile";
 import Community from "./pages/Community";
 import CommunityDetails from "./pages/CommunityDetails";
 import PrivateConversation from "./pages/PrivateConversation";
@@ -21,6 +22,7 @@ import AdminSuggestions from "./pages/AdminSuggestions";
 import SuggestHobby from "./pages/SuggestHobby";
 import MySuggestions from "./pages/MySuggestions";
 import AdminHobbies from "./pages/AdminHobbies";
+import AdminCommunityReports from "./pages/AdminCommunityReports.jsx";
 import AdminLocationRules from "./pages/AdminLocationRules";
 
 export default function App() {
@@ -38,6 +40,8 @@ export default function App() {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/general-plan" element={<GeneralPlan />} />
         <Route path="/myProfile" element={<MyProfile />} />
+        <Route path="/community/profile" element={<SocialProfile />} />
+        <Route path="/community/users/:userId" element={<SocialProfile />} />
         <Route path="/community" element={<Community />} />
         <Route path="/community/communities/:communityId" element={<CommunityDetails />} />
         <Route path="/community/conversations/:contactId" element={<PrivateConversation />} />
@@ -55,6 +59,7 @@ export default function App() {
                             element={<AdminSuggestions />}
                         />
 
+                        <Route path="community-reports" element={<AdminCommunityReports />} />
                         <Route path="hobbies" element={<AdminHobbies />} />
 
                         <Route

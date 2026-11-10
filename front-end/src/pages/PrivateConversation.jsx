@@ -1,3 +1,4 @@
+import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -257,7 +258,7 @@ function PrivateChat({ contactId }) {
         <main className="community-details-page">
             <header className="app-header"><div className="app-header-content">
                 <div className="app-brand"><span className="app-brand-icon">✦</span><div><span className="app-brand-name">Recommendi.a</span><span className="app-brand-subtitle">Descubra seu próximo hobby</span></div></div>
-                <div className="app-header-actions"><span className="app-user-greeting">Olá, {nome}!</span>
+                <div className="app-header-actions"><NotificationBell /><span className="app-user-greeting">Olá, {nome}!</span>
                     <button className="app-header-button" onClick={() => navigate("/community?aba=conversas&caixa=ACEITAS")}>Conversas</button>
                     <button className="app-logout-button" onClick={logout}>Sair</button>
                 </div>

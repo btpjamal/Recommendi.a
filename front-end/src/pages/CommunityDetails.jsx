@@ -1,18 +1,27 @@
+import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { api } from "../api/api";
 import { createChatSession, mergeMessages } from "../components/community/communityChatState.mjs";
+import CommunityPublications from "../components/community/CommunityPublications.jsx";
+import CommunityTabs from "../components/community/CommunityTabs.jsx";
 import "./css/CommunityDetails.css";
 import "./css/RecommendationsLayout.css";
 
 export default function CommunityDetails() {
     const { communityId } = useParams();
-    // Mudar de comunidade desmonta a sessao e tambem limpa o rascunho.
-    return <CommunityChat key={communityId} communityId={communityId} />;
+    const [search, setSearch] = useSearchParams();
+    const tab = search.get("aba") === "chat" ? "chat" : "posts";
+    function changeTab(value) { const next = new URLSearchParams(search); next.set("aba", value); setSearch(next, { replace: true }); }
+    // Keep drafts between sections; active effects close requests and polling on each tab switch.
+    return <div key={communityId}>
+        <div hidden={tab !== "posts"}><CommunityPublications communityId={communityId} active={tab === "posts"} onTabChange={changeTab} targetPostId={search.get("publicacao")} targetCommentId={search.get("comentario")} /></div>
+        <div hidden={tab !== "chat"}><CommunityChat communityId={communityId} active={tab === "chat"} onTabChange={changeTab} /></div>
+    </div>;
 }
 
-function CommunityChat({ communityId }) {
+function CommunityChat({ communityId, active, onTabChange }) {
     const navigate = useNavigate();
     const nome = session.getItem("nome");
     const [comunidade, setComunidade] = useState(null);
@@ -59,6 +68,7 @@ function CommunityChat({ communityId }) {
     }
 
     useEffect(() => {
+        if (!active) return;
         const sessao = createChatSession();
         sessaoRef.current = sessao;
         let timer;
@@ -70,6 +80,8 @@ function CommunityChat({ communityId }) {
         anterioresOcupadoRef.current = false;
         seguirFinalRef.current = true;
         setCarregando(true);
+        setEnviando(false);
+        setCarregandoAnteriores(false);
         setAcesso(false);
         setMensagens([]);
         setComunidade(null);
@@ -136,7 +148,7 @@ function CommunityChat({ communityId }) {
             sessao.close();
             document.removeEventListener("visibilitychange", aoVoltar);
         };
-    }, [base, revisao]);
+    }, [base, revisao, active]);
 
     useLayoutEffect(() => {
         const lista = listaRef.current;
@@ -200,7 +212,7 @@ function CommunityChat({ communityId }) {
         <main className="community-details-page">
             <header className="app-header"><div className="app-header-content">
                 <div className="app-brand"><span className="app-brand-icon">✦</span><div><span className="app-brand-name">Recommendi.a</span><span className="app-brand-subtitle">Descubra seu próximo hobby</span></div></div>
-                <div className="app-header-actions"><span className="app-user-greeting">Olá, {nome}!</span>
+                <div className="app-header-actions"><NotificationBell /><span className="app-user-greeting">Olá, {nome}!</span>
                     <button className="app-header-button" onClick={() => navigate("/community")}>Comunidade</button>
                     <button className="app-header-button" onClick={() => navigate("/recommendations")}>Recomendações</button>
                     <button className="app-logout-button" onClick={logout}>Sair</button>
@@ -215,6 +227,7 @@ function CommunityChat({ communityId }) {
                         <p>Converse com os participantes e compartilhe experiências sobre esse hobby.</p>
                         {comunidade && <div className="community-chat-info"><span>{comunidade.membros} {comunidade.membros === 1 ? "membro" : "membros"}</span></div>}
                     </div>
+                    <CommunityTabs active="chat" onChange={onTabChange} disabled={enviando} />
                     {erro && <div className="community-chat-error" role="alert">{erro}</div>}
                     {erroAtualizacao && <p className="community-chat-update-note" role="status">{erroAtualizacao}</p>}
                     {!carregando && !acesso && <div className="community-chat-tools"><button type="button" onClick={() => setRevisao((atual) => atual + 1)}>Verificar acesso novamente</button></div>}
