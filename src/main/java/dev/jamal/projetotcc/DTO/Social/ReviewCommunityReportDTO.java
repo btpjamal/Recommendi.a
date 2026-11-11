@@ -1,0 +1,2 @@
+package dev.jamal.projetotcc.DTO.Social;
+public record ReviewCommunityReportDTO(@jakarta.validation.constraints.NotNull dev.jamal.projetotcc.Enum.CommunityModerationDecision decisao, @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=1000) String notas, @jakarta.validation.constraints.NotNull @jakarta.validation.constraints.PositiveOrZero Long versaoDenuncia, @jakarta.validation.constraints.NotNull @jakarta.validation.constraints.PositiveOrZero Long versaoConteudo) {}

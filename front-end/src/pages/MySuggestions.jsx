@@ -1,3 +1,4 @@
+import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
@@ -87,7 +88,7 @@ export default function MySuggestions() {
                         </div>
                     </div>
 
-                    <div className="app-header-actions">
+                    <div className="app-header-actions"><NotificationBell />
                         <span className="app-user-greeting">
                             Olá, {nome}!
                         </span>

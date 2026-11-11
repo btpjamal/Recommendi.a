@@ -31,6 +31,8 @@ public class SocialContactService {
     private final SocialAffinityService affinity;
     private final SocialLocationService location;
 
+    private final org.springframework.context.ApplicationEventPublisher publisher;
+
     @PersistenceContext private EntityManager entityManager;
 
     private ResponseStatusException erro(HttpStatus status, String mensagem) {
@@ -110,13 +112,16 @@ public class SocialContactService {
             contato.setLowUserId(Math.min(atorId, destino));
             contato.setHighUserId(Math.max(atorId, destino));
         }
+        contato.setNotificationCycle(java.util.UUID.randomUUID());
         contato.setRequesterId(atorId);
         contato.setRecipientId(destino);
         contato.setApresentacao(texto);
         contato.setStatus(SocialContactStatus.PENDENTE);
         contato.setRequestedAt(Instant.now());
         contato.setUpdatedAt(contato.getRequestedAt());
-        return converter(atorId, contacts.saveAndFlush(contato));
+        contacts.saveAndFlush(contato);
+        publisher.publishEvent(new SocialNotificationEvent(SocialNotificationType.SOLICITACAO_CONTATO, contato.getId(), contato.getNotificationCycle()));
+        return converter(atorId, contato);
     }
 
     public SocialContactDTO responder(Long atorId, Long contatoId, boolean aceitar) {
@@ -132,6 +137,10 @@ public class SocialContactService {
         }
         contato.setStatus(aceitar ? SocialContactStatus.ACEITA : SocialContactStatus.RECUSADA);
         contato.setUpdatedAt(Instant.now());
+        if (aceitar) {
+            contacts.saveAndFlush(contato);
+            publisher.publishEvent(new SocialNotificationEvent(SocialNotificationType.CONTATO_ACEITO, contato.getId(), contato.getNotificationCycle()));
+        }
         return converter(atorId, contato);
     }
 
@@ -231,12 +240,7 @@ public class SocialContactService {
         boolean ativo = disponivel(outro) && !blocks.bloqueados(atorId, outro);
         SocialProfileDTO perfil = null;
         if (ativo) {
-            SocialProfileDTO publico = hub.buscarPerfilPublico(outro);
-            String proximidade = profiles.findByUser_Id(outro)
-                    .map(p -> location.proximidade(location.buscar(atorId), p)).orElse(null);
-            perfil = new SocialProfileDTO(publico.userId(), publico.nome(), publico.resumo(),
-                    publico.interesses(), publico.praticando(), publico.interessados(),
-                    affinity.calcular(hub.buscarPerfilPublico(atorId), publico), proximidade);
+            perfil = hub.buscarPerfilPublicoPara(atorId, outro);
         }
         return new SocialContactDTO(contato.getId(), contato.getStatus(),
                 atorId.equals(contato.getRecipientId()) ? "RECEBIDA" : "ENVIADA",

@@ -1,3 +1,6 @@
+import SocialFeed from "../components/social/SocialFeed.jsx";
+import SocialFollowButton from "../components/social/SocialFollowButton.jsx";
+import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { API_BASE_URL } from "../api/config.js";
 import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useState } from "react";
@@ -7,6 +10,7 @@ import axios from "axios";
 import "./css/Community.css";
 import "./css/RecommendationsLayout.css";
 import "./css/SocialLocation.css";
+import SocialAvatar from "../components/social/SocialAvatar.jsx";
 import SocialContactRequestButton from "../components/social/SocialContactRequestButton";
 import SocialContactsPanel from "../components/social/SocialContactsPanel";
 import usePrivateUnread from "../components/social/usePrivateUnread.js";
@@ -22,7 +26,7 @@ export default function Community() {
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
     const [ativando, setAtivando] = useState(false);
-    const [abaAtiva, setAbaAtiva] = useState(() => ["pessoas", "comunidades", "conversas"].includes(searchParams.get("aba")) ? searchParams.get("aba") : "pessoas");
+    const [abaAtiva, setAbaAtiva] = useState(() => ["feed", "pessoas", "comunidades", "conversas"].includes(searchParams.get("aba")) ? searchParams.get("aba") : "pessoas");
     const [caixaContato, setCaixaContato] = useState(() => ["RECEBIDAS", "ENVIADAS", "ACEITAS", "HISTORICO", "BLOQUEADOS"].includes(searchParams.get("caixa")) ? searchParams.get("caixa") : "RECEBIDAS");
 
     function abrirSolicitacao(contato) {
@@ -203,6 +207,7 @@ export default function Community() {
                 }
             );
 
+            window.dispatchEvent(new Event("social-participation-changed"));
             await carregarComunidade();
 
         } catch (error) {
@@ -241,6 +246,7 @@ export default function Community() {
                 }
             );
 
+            window.dispatchEvent(new Event("social-participation-changed"));
             setUsuarios([]);
 
             setStatus({
@@ -366,7 +372,7 @@ export default function Community() {
                     </div>
 
 
-                    <div className="app-header-actions">
+                    <div className="app-header-actions"><NotificationBell />
 
                         <span className="app-user-greeting">
                             Olá, {nome}!
@@ -509,7 +515,7 @@ export default function Community() {
                                 </span>
 
                                     <h1>
-                                        Pessoas com interesses parecidos
+                                        Hub Social
                                     </h1>
 
                                     <p>
@@ -561,7 +567,11 @@ export default function Community() {
                                 </div>
                             </div>
 
-                            <div className="community-tabs">
+                            <button className="community-secondary-button" onClick={() => navigate("/community/profile")}>Meu perfil social</button>
+                            <div className="community-tabs social-hub-tabs">
+                                <button className={abaAtiva === "feed" ? "active" : ""} onClick={() => setAbaAtiva("feed")}>
+                                    Feed
+                                </button>
 
                                 <button
                                     className={abaAtiva === "pessoas" ? "active" : ""}
@@ -584,6 +594,7 @@ export default function Community() {
 
                             </div>
 
+                            {abaAtiva === "feed" && <SocialFeed />}
                             {abaAtiva === "pessoas" && (
                                 <>
                                     <div className="social-location-controls">
@@ -756,6 +767,7 @@ export default function Community() {
 
 
 function SocialUserCard({ usuario, onSolicitada, onBloqueado }) {
+    const navigate = useNavigate();
 
     const afinidade = usuario.afinidade;
 
@@ -772,14 +784,11 @@ function SocialUserCard({ usuario, onSolicitada, onBloqueado }) {
 
             <div className="social-user-header">
 
-                <div className="social-user-avatar">
-                    {usuario.nome
-                        ?.charAt(0)
-                        .toUpperCase()}
-                </div>
+                <SocialAvatar usuario={usuario} />
 
                 <div>
                     <h2>{usuario.nome}</h2>
+                    <button className="community-secondary-button" onClick={() => navigate(`/community/users/${usuario.userId}`)}>Ver perfil</button>
 
                     {possuiAfinidade && (
                         <span className="social-affinity-badge">
@@ -791,6 +800,7 @@ function SocialUserCard({ usuario, onSolicitada, onBloqueado }) {
             </div>
 
 
+            {usuario.biografia && <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{usuario.biografia}</p>}
             <p className="social-user-summary">
                 {usuario.resumo}
             </p>
@@ -832,10 +842,11 @@ function SocialUserCard({ usuario, onSolicitada, onBloqueado }) {
 
             {!possuiAfinidade && (
                 <p className="social-no-affinity">
-                    Vocês ainda não possuem interesses em comum,
+                    Nenhum interesse em comum está visível,
                     mas talvez descubram novos hobbies juntos.
                 </p>
             )}
+            <SocialFollowButton userId={usuario.userId} />
             <SocialContactRequestButton usuario={usuario} onSolicitada={onSolicitada} onBloqueado={onBloqueado} />
 
         </article>
@@ -977,3 +988,4 @@ function CommunityCard({
         </article>
     );
 }
+

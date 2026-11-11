@@ -39,6 +39,20 @@ public class SocialProfile {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(length = 500)
+    private String biografia;
+    @JsonIgnore
+    @Column(name = "foto", columnDefinition = "bytea")
+    private byte[] foto;
+    @Enumerated(EnumType.STRING) @Column(nullable = false)
+    private dev.jamal.projetotcc.Enum.SocialVisibility fotoVisibilidade = dev.jamal.projetotcc.Enum.SocialVisibility.PARTICIPANTES;
+    @Enumerated(EnumType.STRING) @Column(nullable = false)
+    private dev.jamal.projetotcc.Enum.SocialVisibility biografiaVisibilidade = dev.jamal.projetotcc.Enum.SocialVisibility.PARTICIPANTES;
+    @Enumerated(EnumType.STRING) @Column(nullable = false)
+    private dev.jamal.projetotcc.Enum.SocialVisibility interessesVisibilidade = dev.jamal.projetotcc.Enum.SocialVisibility.PARTICIPANTES;
+    @Enumerated(EnumType.STRING) @Column(nullable = false)
+    private dev.jamal.projetotcc.Enum.SocialVisibility hobbiesVisibilidade = dev.jamal.projetotcc.Enum.SocialVisibility.PARTICIPANTES;
+
     @PrePersist
     public void prePersist() {
 
