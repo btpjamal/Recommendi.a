@@ -1,0 +1,14 @@
+.social-feed-section { margin-top: 24px; }
+.social-feed-section > p { color: #526783; line-height: 1.6; }
+.social-feed-section .community-post-feed { max-width: 800px; margin: 0 auto; }
+.social-feed-community { margin-bottom: 16px; }
+.social-feed-community button, .social-feed-author { border: 0; background: transparent; color: #4942d6; cursor: pointer; padding: 4px 0; text-align: left; }
+.social-feed-author { font-weight: 700; font-size: 1rem; }
+.social-follow-control { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.social-follow-control p { margin: 0; max-width: 260px; color: #9b2935; font-size: .85rem; }
+.social-feed-community button:hover, .social-feed-author:hover { text-decoration: underline; }
+.social-feed-section .community-post-meta { gap: 12px; flex-wrap: wrap; }
+.social-hub-tabs { flex-wrap: wrap; }
+@media (max-width: 600px) {
+    .social-hub-tabs button { padding-inline: 12px; }
+}

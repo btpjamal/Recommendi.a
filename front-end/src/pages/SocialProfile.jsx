@@ -1,3 +1,4 @@
+import SocialFollowButton from "../components/social/SocialFollowButton.jsx";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import axios from "axios";
@@ -109,9 +110,11 @@ function SocialProfileContent({ userId }) {
                 {[["Interesses", profile.interesses], ["Praticando", profile.praticando?.map(h => h.nome)],
                     ["Quero experimentar", profile.interessados?.map(h => h.nome)]].map(([title, items]) => items?.length > 0 &&
                         <section key={title}><h3>{title}</h3><div className="social-affinity-tags">{items.map(item => <span key={item}>{item}</span>)}</div></section>)}
+                {!own && <SocialFollowButton userId={profile.userId} />}
                 {!own && <SocialContactRequestButton usuario={profile} onSolicitada={() => navigate("/community?aba=conversas")}
                     onBloqueado={() => navigate("/community?aba=conversas&caixa=BLOQUEADOS")} />}
             </article>
         </div>}
     </section></main>;
 }
+

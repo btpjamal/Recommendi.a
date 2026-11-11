@@ -1,3 +1,5 @@
+import SocialFeed from "../components/social/SocialFeed.jsx";
+import SocialFollowButton from "../components/social/SocialFollowButton.jsx";
 import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { API_BASE_URL } from "../api/config.js";
 import { session, revokeSession } from "../auth/session.js";
@@ -24,7 +26,7 @@ export default function Community() {
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
     const [ativando, setAtivando] = useState(false);
-    const [abaAtiva, setAbaAtiva] = useState(() => ["pessoas", "comunidades", "conversas"].includes(searchParams.get("aba")) ? searchParams.get("aba") : "pessoas");
+    const [abaAtiva, setAbaAtiva] = useState(() => ["feed", "pessoas", "comunidades", "conversas"].includes(searchParams.get("aba")) ? searchParams.get("aba") : "pessoas");
     const [caixaContato, setCaixaContato] = useState(() => ["RECEBIDAS", "ENVIADAS", "ACEITAS", "HISTORICO", "BLOQUEADOS"].includes(searchParams.get("caixa")) ? searchParams.get("caixa") : "RECEBIDAS");
 
     function abrirSolicitacao(contato) {
@@ -513,7 +515,7 @@ export default function Community() {
                                 </span>
 
                                     <h1>
-                                        Pessoas com interesses parecidos
+                                        Hub Social
                                     </h1>
 
                                     <p>
@@ -566,7 +568,10 @@ export default function Community() {
                             </div>
 
                             <button className="community-secondary-button" onClick={() => navigate("/community/profile")}>Meu perfil social</button>
-                            <div className="community-tabs">
+                            <div className="community-tabs social-hub-tabs">
+                                <button className={abaAtiva === "feed" ? "active" : ""} onClick={() => setAbaAtiva("feed")}>
+                                    Feed
+                                </button>
 
                                 <button
                                     className={abaAtiva === "pessoas" ? "active" : ""}
@@ -589,6 +594,7 @@ export default function Community() {
 
                             </div>
 
+                            {abaAtiva === "feed" && <SocialFeed />}
                             {abaAtiva === "pessoas" && (
                                 <>
                                     <div className="social-location-controls">
@@ -840,6 +846,7 @@ function SocialUserCard({ usuario, onSolicitada, onBloqueado }) {
                     mas talvez descubram novos hobbies juntos.
                 </p>
             )}
+            <SocialFollowButton userId={usuario.userId} />
             <SocialContactRequestButton usuario={usuario} onSolicitada={onSolicitada} onBloqueado={onBloqueado} />
 
         </article>
@@ -981,3 +988,4 @@ function CommunityCard({
         </article>
     );
 }
+
