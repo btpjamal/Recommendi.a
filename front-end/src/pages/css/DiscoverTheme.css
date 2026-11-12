@@ -6,51 +6,51 @@
         var(--background);
 }
 
-.discover-theme .app-header {
+.recommendations-theme .app-header {
     background: var(--background);
     border-color: var(--border);
 }
 
-.discover-theme :is(.app-brand-name, .recommendations-title, .recommendation-name) {
+.recommendations-theme :is(.app-brand-name, .recommendations-title, .recommendation-name) {
     font-family: var(--heading-font);
     color: var(--text-primary);
 }
 
-.discover-theme :is(.app-brand-subtitle, .app-user-greeting, .recommendations-subtitle, .recommendation-description) {
+.recommendations-theme :is(.app-brand-subtitle, .app-user-greeting, .recommendations-subtitle, .recommendation-description) {
     color: var(--text-secondary);
 }
 
-.discover-theme :is(.app-brand-icon, .recommendation-category) {
+.recommendations-theme :is(.app-brand-icon, .recommendation-category) {
     background: #20372e;
     color: var(--success);
 }
 
-.discover-theme :is(.app-header-button, .app-logout-button, .social-notification-bell, .recommendation-button-secondary, .recommendation-explanation-button) {
+.recommendations-theme :is(.app-header-button, .app-logout-button, .social-notification-bell, .recommendation-button-secondary, .recommendation-explanation-button) {
     background: transparent;
     color: var(--text-primary);
     border: 1px solid #65786d;
 }
 
-.discover-theme :is(.app-header-button, .app-logout-button, .social-notification-bell, .recommendation-button-secondary, .recommendation-explanation-button):hover {
+.recommendations-theme :is(.app-header-button, .app-logout-button, .social-notification-bell, .recommendation-button-secondary, .recommendation-explanation-button):hover {
     background: #26342d;
     border-color: var(--success);
     color: var(--text-primary);
 }
 
-.discover-theme .recommendation-tabs {
+.recommendations-theme .recommendation-tabs {
     background: var(--surface);
     border: 1px solid var(--border);
 }
 
-.discover-theme .recommendation-tabs button {
+.recommendations-theme .recommendation-tabs button {
     color: var(--text-secondary);
 }
 
-.discover-theme .recommendation-tabs button:hover {
+.recommendations-theme .recommendation-tabs button:hover {
     color: var(--text-primary);
 }
 
-.discover-theme .recommendation-tabs button.active {
+.recommendations-theme .recommendation-tabs button.active {
     background: #304439;
     color: var(--text-primary);
 }
@@ -60,7 +60,12 @@
     padding-block: 28px 56px;
 }
 
-.discover-theme .recommendations-header {
+.recommendations-theme :is(.interested-section, .not-interested-section) {
+    max-width: 1240px;
+    padding: 28px 20px 56px;
+}
+
+.recommendations-theme .recommendations-header {
     min-height: 186px;
     padding: clamp(22px, 5vw, 52px);
     border: 1px solid var(--border);
@@ -69,13 +74,22 @@
         var(--glass-light);
 }
 
-.discover-theme .recommendations-title {
+@media (max-width: 900px) {
+    .recommendations-theme .recommendations-header {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        gap: 16px;
+    }
+}
+
+.recommendations-theme .recommendations-title {
     font-size: clamp(30px, 5vw, 54px);
     line-height: 1.05;
     letter-spacing: -0.035em;
 }
 
-.discover-theme .recommendations-subtitle {
+.recommendations-theme .recommendations-subtitle {
     margin: 12px 0 0;
     max-width: 44ch;
     line-height: 1.55;

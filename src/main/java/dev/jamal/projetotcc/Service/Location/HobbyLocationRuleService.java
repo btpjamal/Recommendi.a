@@ -13,11 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -32,7 +28,6 @@ public class HobbyLocationRuleService {
 
     private final HobbyLocationRuleRepository ruleRepository;
     private final HobbyRepository hobbyRepository;
-    private final CacheManager cacheManager;
 
     @Transactional(readOnly = true)
     public List<HobbyLocationRuleResponseDTO> listar(Long hobbyId) {
@@ -60,7 +55,6 @@ public class HobbyLocationRuleService {
 
         HobbyLocationRule salva = ruleRepository.saveAndFlush(regra);
 
-        invalidarCacheAposCommit();
 
         return toResponse(salva);
     }
@@ -83,7 +77,6 @@ public class HobbyLocationRuleService {
 
         ruleRepository.flush();
 
-        invalidarCacheAposCommit();
 
         return toResponse(regra);
     }
@@ -98,7 +91,6 @@ public class HobbyLocationRuleService {
 
         regra.setAtivo(ativo);
 
-        invalidarCacheAposCommit();
 
         return toResponse(regra);
     }
@@ -109,7 +101,6 @@ public class HobbyLocationRuleService {
 
         ruleRepository.delete(regra);
 
-        invalidarCacheAposCommit();
     }
 
     private Hobby buscarHobby(Long hobbyId) {
@@ -302,31 +293,6 @@ public class HobbyLocationRuleService {
                 regra.getRelevancia(),
                 regra.isAtivo(),
                 condicoes
-        );
-    }
-
-    private void invalidarCacheAposCommit() {
-
-        if (!TransactionSynchronizationManager
-                .isSynchronizationActive()) {
-            throw new IllegalStateException(
-                    "Transação não disponível para invalidar o cache."
-            );
-        }
-
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        Cache cache = cacheManager.getCache(
-                                "hobbyLocations"
-                        );
-
-                        if (cache != null) {
-                            cache.clear();
-                        }
-                    }
-                }
         );
     }
 }

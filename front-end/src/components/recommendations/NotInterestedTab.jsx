@@ -1,3 +1,4 @@
+import RecommendationBanner from "./RecommendationBanner";
 import { session } from "../../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
@@ -87,6 +88,10 @@ export default function NotInterestedTab() {
     if (hobbies.length === 0) {
         return (
             <section className="not-interested-section">
+                <RecommendationBanner
+                    title="Não me interessa"
+                    description="Hobbies que você decidiu não acompanhar no momento. Você pode reconsiderar sua escolha quando quiser."
+                />
 
                 <div className="not-interested-empty">
 
@@ -111,17 +116,10 @@ export default function NotInterestedTab() {
     return (
         <section className="not-interested-section">
 
-            <div className="not-interested-header">
-                <div>
-                    <h2>Não me interessa</h2>
-
-                    <p>
-                        Hobbies que você decidiu não acompanhar
-                        no momento. Você pode reconsiderar sua
-                        escolha quando quiser.
-                    </p>
-                </div>
-            </div>
+            <RecommendationBanner
+                title="Não me interessa"
+                description="Hobbies que você decidiu não acompanhar no momento. Você pode reconsiderar sua escolha quando quiser."
+            />
 
             <div className="recommendations-grid">
 

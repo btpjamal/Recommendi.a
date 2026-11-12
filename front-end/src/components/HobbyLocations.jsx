@@ -17,6 +17,7 @@ export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador =
     const [tentativaAtual, setTentativaAtual] = useState(0);
     const [statusBusca, setStatusBusca] = useState(null);
     const [mensagemBusca, setMensagemBusca] = useState("");
+    const [dataResultadoSalvo, setDataResultadoSalvo] = useState(null);
 
     const requisicaoAtual = useRef(null);
 
@@ -38,6 +39,7 @@ export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador =
         setCarregando(false);
         setStatusBusca(null);
         setMensagemBusca("");
+        setDataResultadoSalvo(null);
     }, [hobbyId]);
 
 
@@ -56,6 +58,7 @@ export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador =
         setBuscaRealizada(false);
         setStatusBusca(null);
         setMensagemBusca("");
+        setDataResultadoSalvo(null);
         setLocais([]);
         setCentro(null);
 
@@ -136,6 +139,14 @@ export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador =
 
                     setStatusBusca(status);
                     setMensagemBusca(resultado.mensagem ?? "");
+                    setDataResultadoSalvo(
+                        resultado.dadosDesatualizados && resultado.consultadoEm
+                            ? new Date(resultado.consultadoEm).toLocaleString("pt-BR", {
+                                dateStyle: "short",
+                                timeStyle: "short"
+                            })
+                            : null
+                    );
                     setLocais(resultado.locais ?? []);
 
                     const coordenadasValidas =
@@ -322,6 +333,11 @@ export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador =
 
             {buscaRealizada && (
                 <>
+                    {dataResultadoSalvo && (
+                        <p className="hobby-locations-status" role="status">
+                            Exibindo o resultado salvo em {dataResultadoSalvo}. A busca ao vivo está indisponível.
+                        </p>
+                    )}
                     {informacaoStatus ? (
                         <div
                             className="hobby-locations-status"

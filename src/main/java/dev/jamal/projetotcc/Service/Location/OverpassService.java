@@ -2,7 +2,6 @@ package dev.jamal.projetotcc.Service.Location;
 
 import dev.jamal.projetotcc.DTO.Location.HobbyLocationDTO;
 import dev.jamal.projetotcc.Entities.HobbyLocationRule;
-import dev.jamal.projetotcc.Repository.HobbyLocationRuleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -13,7 +12,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import dev.jamal.projetotcc.Exception.OverpassUnavailableException;
 import org.springframework.web.client.RestClientException;
-import org.springframework.cache.annotation.Cacheable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,12 +42,10 @@ public class OverpassService {
 
     private final HobbyLocationQuery hobbyLocationQuery;
 
-    private final HobbyLocationRuleRepository ruleRepository;
 
-    public OverpassService(HobbyLocationRankingService rankingService, HobbyLocationQuery hobbyLocationQuery, HobbyLocationRuleRepository hobbyLocationRuleRepository) {
+    public OverpassService(HobbyLocationRankingService rankingService, HobbyLocationQuery hobbyLocationQuery) {
         this.rankingService = rankingService;
         this.hobbyLocationQuery = hobbyLocationQuery;
-        this.ruleRepository = hobbyLocationRuleRepository;
 
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
@@ -97,7 +93,7 @@ public class OverpassService {
                         .retrieve()
                         .body(JsonNode.class);
 
-                if (response == null || !response.path("elements").isArray()) {
+                if (response == null || !response.path("elements").isArray() || response.hasNonNull("remark")) {
                     System.out.println("Overpass " + servidor + ": resposta inválida.");
                     informarProgresso("Resposta inválida do servidor " + servidor + ".");
                     continue;
@@ -146,21 +142,8 @@ public class OverpassService {
         throw new OverpassUnavailableException();
     }
 
-    @Cacheable(
-            cacheNames = "hobbyLocations",
-            key = "#hobbyId + ':' + #latitude + ':' + #longitude",
-            sync = true
-    )
-    public List<HobbyLocationDTO> buscarLocais(
-            Long hobbyId,
-            String hobbyNome,
-            double latitude,
-            double longitude
-    ) {
-
-        String query = hobbyLocationQuery
-                .construir(hobbyId, latitude, longitude)
-                .orElse(null);
+    public List<HobbyLocationDTO> buscarLocais(List<HobbyLocationRule> regras, double latitude, double longitude) {
+        String query = hobbyLocationQuery.construir(regras, latitude, longitude).orElse(null);
 
         if (query == null) {
             return List.of();
@@ -175,9 +158,6 @@ public class OverpassService {
         }
 
         JsonNode elementos = response.path("elements");
-
-        List<HobbyLocationRule> regras =
-                ruleRepository.findActiveWithConditions(hobbyId);
 
         for (JsonNode elemento : elementos) {
 

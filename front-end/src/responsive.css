@@ -37,3 +37,86 @@ body {
         max-height: min(50dvh, 420px);
     }
 }
+
+@media (max-width: 600px) {
+    .app-header .app-header-content {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: center;
+        gap: 8px 10px;
+        padding: 12px 16px;
+    }
+
+    .app-header .app-header-actions {
+        display: contents;
+    }
+
+    .app-header .app-brand {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        padding-inline-end: 54px;
+        min-height: 44px;
+        gap: 8px;
+    }
+
+    .app-header .app-brand-icon {
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+        font-size: 21px;
+    }
+
+    .app-header .app-brand-name {
+        font-size: 19px;
+    }
+
+    .app-header .app-brand-subtitle {
+        display: none;
+    }
+
+    .app-header .social-notifications {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: end;
+    }
+
+    .app-header .app-user-greeting {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .app-header :is(.app-header-button, .app-logout-button) {
+        min-height: 44px;
+        padding: 6px 8px;
+        line-height: 1.25;
+    }
+
+    .recommendation-tabs {
+        margin-block-start: 12px;
+    }
+
+    .recommendation-tabs button {
+        min-height: 44px;
+        padding: 6px;
+    }
+
+    .recommendations-theme :is(.recommendations-page, .interested-section, .not-interested-section) {
+        padding: 16px 16px 40px;
+    }
+
+    .recommendations-theme .recommendations-header {
+        min-height: auto;
+        padding: 20px;
+        margin-bottom: 18px;
+    }
+
+    .recommendations-theme .recommendations-title {
+        font-size: clamp(25px, 7vw, 36px);
+    }
+
+    .recommendations-theme .recommendations-subtitle {
+        font-size: 14px;
+    }
+}

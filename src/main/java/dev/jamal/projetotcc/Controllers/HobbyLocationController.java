@@ -5,7 +5,7 @@ import dev.jamal.projetotcc.Entities.RecommendationProfile;
 import dev.jamal.projetotcc.Entities.User;
 import dev.jamal.projetotcc.Repository.HobbyRepository;
 import dev.jamal.projetotcc.Repository.RecommendationProfileRepository;
-import dev.jamal.projetotcc.Service.Location.GeocodingService;
+import dev.jamal.projetotcc.Service.Location.HobbyLocationSearchService;
 import dev.jamal.projetotcc.Service.Location.OverpassService;
 import dev.jamal.projetotcc.Exception.OverpassUnavailableException;
 import dev.jamal.projetotcc.Repository.HobbyLocationRuleRepository;
@@ -26,7 +26,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
 
 @RestController
 @RequestMapping("/api/v1/hobbies")
@@ -34,7 +34,7 @@ import java.util.concurrent.Executors;
 public class HobbyLocationController {
 
     private final OverpassService overpassService;
-    private final GeocodingService geocodingService;
+    private final HobbyLocationSearchService buscaLocais;
     private final RecommendationProfileRepository profileRepository;
     private final HobbyRepository hobbyRepository;
     private final ExecutorService locationExecutor;
@@ -54,59 +54,34 @@ public class HobbyLocationController {
             );
         }
 
-        RecommendationProfile perfil = profileRepository
-                .findByUserId(user.getId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Perfil não encontrado."
-                ));
+        return buscarDados(hobbyId, user, false);
+    }
 
+    private HobbyLocationsResponseDTO buscarDados(Long hobbyId, User user, boolean stream) {
+        RecommendationProfile perfil = profileRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Perfil não encontrado."));
         String cidade = perfil.getCidade();
         String estado = perfil.getEstado();
-
-        if (cidade == null || cidade.isBlank()
-                || estado == null || estado.isBlank()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Cadastre sua cidade e estado no perfil."
-            );
+        if (cidade == null || cidade.isBlank() || estado == null || estado.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cadastre sua cidade e estado no perfil.");
         }
 
-        var hobby = hobbyRepository.findById(hobbyId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Hobby não encontrado."
-                ));
-
-        HobbyLocationSearchStatus statusConfiguracao =
-                verificarConfiguracaoGeografica(hobbyId);
-
-        if (statusConfiguracao != null) {
-            return respostaSemConfiguracao(
-                    cidade,
-                    estado,
-                    0.0,
-                    0.0,
-                    statusConfiguracao
-            );
+        if (!hobbyRepository.existsById(hobbyId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Hobby não encontrado.");
         }
 
-        GeocodingService.Coordinates coordenadas =
-                geocodingService.buscarCoordenadas(cidade, estado);
+        List<HobbyLocationRule> regras = ruleRepository.findAllWithConditionsByHobbyId(hobbyId);
+        List<HobbyLocationRule> ativas = regras.stream().filter(HobbyLocationRule::isAtivo).toList();
+        if (ativas.isEmpty()) {
+            var status = regras.isEmpty() ? HobbyLocationSearchStatus.SEM_REGRAS : HobbyLocationSearchStatus.REGRAS_INATIVAS;
+            Double coordenada = stream ? null : 0.0;
+            return respostaSemConfiguracao(cidade, estado, coordenada, coordenada, status);
+        }
 
-        var locais = overpassService.buscarLocais(
-                hobby.getId(),
-                hobby.getNome(),
-                coordenadas.latitude(),
-                coordenadas.longitude()
-        );
-
+        var resultado = buscaLocais.buscar(hobbyId, cidade, estado, ativas);
         return new HobbyLocationsResponseDTO(
-                cidade,
-                estado,
-                coordenadas.latitude(),
-                coordenadas.longitude(),
-                locais
+                cidade, estado, resultado.latitude(), resultado.longitude(), resultado.locais(),
+                resultado.consultadoEm().toString(), resultado.dadosDesatualizados()
         );
     }
 
@@ -131,119 +106,32 @@ public class HobbyLocationController {
             throw new dev.jamal.projetotcc.Exception.TooManyRequestsException();
         }
         try {
-        locationExecutor.execute(() -> {
-            try {
-                enviarEvento(
-                        emitter,
-                        "progresso",
-                        "Verificando perfil e localização..."
-                );
-
-                RecommendationProfile perfil = profileRepository
-                        .findByUserId(user.getId())
-                        .orElseThrow(() -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Perfil não encontrado."
-                        ));
-
-                String cidade = perfil.getCidade();
-                String estado = perfil.getEstado();
-
-                if (cidade == null || cidade.isBlank()
-                        || estado == null || estado.isBlank()) {
-                    throw new ResponseStatusException(
-                            HttpStatus.BAD_REQUEST,
-                            "Cadastre sua cidade e estado no perfil."
-                    );
-                }
-
-                var hobby = hobbyRepository.findById(hobbyId)
-                        .orElseThrow(() -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Hobby não encontrado."
-                        ));
-
-
-                HobbyLocationSearchStatus statusConfiguracao =
-                        verificarConfiguracaoGeografica(hobbyId);
-
-                if (statusConfiguracao != null) {
-
-                    enviarEvento(
-                            emitter,
-                            "progresso",
-                            "Verificando disponibilidade da busca geográfica..."
-                    );
-
-                    HobbyLocationsResponseDTO resultado =
-                            respostaSemConfiguracao(
-                                    cidade,
-                                    estado,
-                                    null,
-                                    null,
-                                    statusConfiguracao
-                            );
+            locationExecutor.execute(() -> {
+                try {
+                    enviarProgresso(emitter, "Verificando perfil, localização e resultados disponíveis...");
+                    overpassService.definirProgresso(mensagem -> enviarProgresso(emitter, mensagem));
+                    var resultado = buscarDados(hobbyId, user, true);
 
                     enviarEvento(emitter, "resultado", resultado);
                     emitter.complete();
 
-                    return;
+                } catch (Exception e) {
+                    // Não expõe mensagens internas de serviços externos ao frontend.
+                    String mensagem = mensagemErroBusca(e);
+                    System.err.println("Falha na busca geográfica (hobby "
+                            + hobbyId + "): " + e.getClass().getSimpleName()
+                            + " - " + e.getMessage());
+                    try {
+                        enviarEvento(emitter, "erro", mensagem);
+                        emitter.complete();
+                    } catch (Exception falhaEnvio) {
+                        emitter.completeWithError(falhaEnvio);
+                    }
+                } finally {
+                    overpassService.limparProgresso();
+                    activeSearches.remove(user.getId());
                 }
-
-
-                enviarEvento(
-                        emitter,
-                        "progresso",
-                        "Localizando " + cidade + " - " + estado + "..."
-                );
-
-                var coordenadas =
-                        geocodingService.buscarCoordenadas(cidade, estado);
-
-                overpassService.definirProgresso(
-                        mensagem -> enviarEvento(
-                                emitter,
-                                "progresso",
-                                mensagem
-                        )
-                );
-
-                var locais = overpassService.buscarLocais(
-                        hobby.getId(),
-                        hobby.getNome(),
-                        coordenadas.latitude(),
-                        coordenadas.longitude()
-                );
-
-                HobbyLocationsResponseDTO resultado =
-                        new HobbyLocationsResponseDTO(
-                                cidade,
-                                estado,
-                                coordenadas.latitude(),
-                                coordenadas.longitude(),
-                                locais
-                        );
-
-                enviarEvento(emitter, "resultado", resultado);
-                emitter.complete();
-
-            } catch (Exception e) {
-                // Não expõe mensagens internas de serviços externos ao frontend.
-                String mensagem = mensagemErroBusca(e);
-                System.err.println("Falha na busca geográfica (hobby "
-                        + hobbyId + "): " + e.getClass().getSimpleName()
-                        + " - " + e.getMessage());
-                try {
-                    enviarEvento(emitter, "erro", mensagem);
-                    emitter.complete();
-                } catch (Exception falhaEnvio) {
-                    emitter.completeWithError(falhaEnvio);
-                }
-            } finally {
-                overpassService.limparProgresso();
-                activeSearches.remove(user.getId());
-            }
-        });
+            });
         } catch (java.util.concurrent.RejectedExecutionException ex) {
             activeSearches.remove(user.getId());
             emitter.complete();
@@ -293,26 +181,13 @@ public class HobbyLocationController {
     }
 
 
-    private HobbyLocationSearchStatus verificarConfiguracaoGeografica(
-            Long hobbyId
-    ) {
-        List<HobbyLocationRule> regras =
-                ruleRepository.findByHobbyId(hobbyId);
-
-        if (regras.isEmpty()) {
-            return HobbyLocationSearchStatus.SEM_REGRAS;
+    private void enviarProgresso(SseEmitter emitter, String mensagem) {
+        try {
+            enviarEvento(emitter, "progresso", mensagem);
+        } catch (IllegalStateException desconectado) {
+            // A busca compartilhada ainda pode servir a outras pessoas.
         }
-
-        boolean possuiRegraAtiva = regras.stream()
-                .anyMatch(HobbyLocationRule::isAtivo);
-
-        if (!possuiRegraAtiva) {
-            return HobbyLocationSearchStatus.REGRAS_INATIVAS;
-        }
-
-        return null;
     }
-
 
     private HobbyLocationsResponseDTO respostaSemConfiguracao(
             String cidade,

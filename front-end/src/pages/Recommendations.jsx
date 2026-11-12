@@ -33,7 +33,7 @@ export default function Recommendations() {
           }
 
     return (
-        <main className={abaAtiva === "descobrir" ? "discover-theme" : undefined}>
+        <main className={abaAtiva === "descobrir" ? "recommendations-theme discover-theme" : "recommendations-theme"}>
             {/*ESSA É A PARTE DO CABEÇALHO QUE É COMPARTILHADO ENTRE AS 3 ABAS*/}
             <header className="app-header">
 

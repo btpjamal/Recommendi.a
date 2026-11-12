@@ -1,3 +1,4 @@
+import RecommendationBanner from "./RecommendationBanner";
 import { session } from "../../auth/session.js";
 import { useEffect, useRef , useState } from "react";
 import { api } from "../../api/api";
@@ -163,14 +164,10 @@ export default function DiscoverTab() {
     return (
         <section className="recommendations-page" aria-label="Descobrir hobbies">
             <div className="recommendations-container">
-                <header className="recommendations-header">
-                    <div>
-                        <h1 className="recommendations-title">Descobrir hobbies</h1>
-                        <p className="recommendations-subtitle">
-                            Hobbies sugeridos com base no seu perfil, interesses e preferências.
-                        </p>
-                    </div>
-                </header>
+                <RecommendationBanner
+                    title="Descobrir hobbies"
+                    description="Hobbies sugeridos com base no seu perfil, interesses e preferências."
+                />
 
                 {recommendations.length === 0 ? (
                     <div className="recommendation-empty">
