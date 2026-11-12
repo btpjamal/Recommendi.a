@@ -3,7 +3,7 @@ import SocialFollowButton from "../components/social/SocialFollowButton.jsx";
 import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { API_BASE_URL } from "../api/config.js";
 import { session, revokeSession } from "../auth/session.js";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import axios from "axios";
 
@@ -22,7 +22,8 @@ export default function Community() {
     const [searchParams] = useSearchParams();
 
     const [status, setStatus] = useState(null);
-    const [usuarios, setUsuarios] = useState([]);
+    const [resultadoPessoas, setResultadoPessoas] = useState(null);
+    const [paginaPessoas, setPaginaPessoas] = useState(0);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
     const [ativando, setAtivando] = useState(false);
@@ -46,8 +47,6 @@ export default function Community() {
     const [comunidadesMunicipais, setComunidadesMunicipais] = useState([]);
     const [configLocal, setConfigLocal] = useState(null);
     const [filtroPessoas, setFiltroPessoas] = useState("GERAL");
-    const [carregandoPessoas, setCarregandoPessoas] = useState(false);
-    const [erroPessoas, setErroPessoas] = useState("");
     const [carregandoRegiao, setCarregandoRegiao] = useState(false);
     const [erroRegiao, setErroRegiao] = useState("");
     const [salvandoVisibilidade, setSalvandoVisibilidade] = useState(false);
@@ -57,28 +56,35 @@ export default function Community() {
 
     const nome = session.getItem("nome");
     const token = session.getItem("token");
+    const pessoasAtiva = Boolean(status?.elegivel && status?.participa && abaAtiva === "pessoas");
+    const consultaPessoas = useMemo(() => pessoasAtiva ? {
+        escopo: filtroPessoas, pagina: paginaPessoas, revisao: revisaoLocal, token
+    } : null, [pessoasAtiva, filtroPessoas, paginaPessoas, revisaoLocal, token]);
+    const resultadoAtual = resultadoPessoas?.consulta === consultaPessoas ? resultadoPessoas : null;
+    const usuarios = resultadoAtual?.pessoas ?? [];
+    const maisPessoas = resultadoAtual?.temMais ?? false;
+    const carregandoPessoas = pessoasAtiva && !resultadoAtual;
+    const erroPessoas = resultadoAtual?.erro ?? "";
 
     useEffect(() => {
-        if (!status?.elegivel || !status?.participa) return;
+        if (!consultaPessoas) return;
         const controller = new AbortController();
-        setUsuarios([]);
-        setCarregandoPessoas(true);
-        setErroPessoas("");
-        axios.get(API_BASE_URL + "/community/users", {
-            headers: { Authorization: `Bearer ${token}` },
-            params: { escopo: filtroPessoas },
+        axios.get(API_BASE_URL + "/community/users/page", {
+            headers: { Authorization: `Bearer ${consultaPessoas.token}` },
+            params: { escopo: consultaPessoas.escopo, pagina: consultaPessoas.pagina },
             signal: controller.signal
         }).then((resposta) => {
-            if (!controller.signal.aborted) setUsuarios(resposta.data);
+            if (!controller.signal.aborted) {
+                setResultadoPessoas({ consulta: consultaPessoas, ...resposta.data });
+            }
         }).catch((error) => {
-            if (!controller.signal.aborted) setErroPessoas(
-                error.response?.data?.error || "Não foi possível carregar as pessoas."
-            );
-        }).finally(() => {
-            if (!controller.signal.aborted) setCarregandoPessoas(false);
+            if (!controller.signal.aborted) setResultadoPessoas({
+                consulta: consultaPessoas,
+                erro: error.response?.data?.error || "Não foi possível carregar as pessoas."
+            });
         });
         return () => controller.abort();
-    }, [status?.elegivel, status?.participa, filtroPessoas, revisaoLocal, token]);
+    }, [consultaPessoas]);
 
     useEffect(() => {
         setErroRegiao("");
@@ -247,7 +253,6 @@ export default function Community() {
             );
 
             window.dispatchEvent(new Event("social-participation-changed"));
-            setUsuarios([]);
 
             setStatus({
                 elegivel: true,
@@ -599,7 +604,10 @@ export default function Community() {
                                 <>
                                     <div className="social-location-controls">
                                         <label htmlFor="filtro-local-pessoas">Encontrar pessoas</label>
-                                        <select id="filtro-local-pessoas" value={filtroPessoas} onChange={(event) => setFiltroPessoas(event.target.value)}>
+                                        <select id="filtro-local-pessoas" value={filtroPessoas} onChange={(event) => {
+                                            setPaginaPessoas(0);
+                                            setFiltroPessoas(event.target.value);
+                                        }}>
                                             <option value="GERAL">Geral</option>
                                             <option value="ESTADUAL" disabled={!configLocal?.estadoDisponivel}>No meu estado</option>
                                             <option value="MUNICIPAL" disabled={!configLocal?.cidadeDisponivel}>Na minha cidade</option>
@@ -640,16 +648,28 @@ export default function Community() {
 
                                 <div className="community-grid">
 
-                                    {usuarios.map(usuario => (
+                                    {usuarios.map(({ perfil, seguindo }) => (
 
                                         <SocialUserCard
-                                            key={usuario.userId}
-                                            usuario={usuario}
+                                            key={perfil.userId}
+                                            usuario={perfil}
+                                            seguindo={seguindo}
                                             onSolicitada={abrirSolicitacao}
                                             onBloqueado={participanteBloqueado}
                                         />
                                     ))}
                                 </div>
+                            )}
+                            {(paginaPessoas > 0 || maisPessoas) && (
+                                <nav className="community-suggestions-actions" aria-label="Páginas de pessoas">
+                                    <button className="community-secondary-button" type="button"
+                                        disabled={paginaPessoas === 0 || carregandoPessoas}
+                                        onClick={() => setPaginaPessoas(pagina => pagina - 1)}>Anterior</button>
+                                    <span aria-live="polite">Página {paginaPessoas + 1}</span>
+                                    <button className="community-secondary-button" type="button"
+                                        disabled={!maisPessoas || carregandoPessoas}
+                                        onClick={() => setPaginaPessoas(pagina => pagina + 1)}>Próxima</button>
+                                </nav>
                             )}
                         </>
                     )}
@@ -766,7 +786,7 @@ export default function Community() {
 }
 
 
-function SocialUserCard({ usuario, onSolicitada, onBloqueado }) {
+function SocialUserCard({ usuario, seguindo, onSolicitada, onBloqueado }) {
     const navigate = useNavigate();
 
     const afinidade = usuario.afinidade;
@@ -846,7 +866,7 @@ function SocialUserCard({ usuario, onSolicitada, onBloqueado }) {
                     mas talvez descubram novos hobbies juntos.
                 </p>
             )}
-            <SocialFollowButton userId={usuario.userId} />
+            <SocialFollowButton userId={usuario.userId} initialFollowing={seguindo} />
             <SocialContactRequestButton usuario={usuario} onSolicitada={onSolicitada} onBloqueado={onBloqueado} />
 
         </article>

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../../api/api.js";
 
-export default function SocialFollowButton({ userId }) {
-    const [following, setFollowing] = useState(null);
+export default function SocialFollowButton({ userId, initialFollowing = null }) {
+    const [following, setFollowing] = useState(initialFollowing);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
     const [revision, setRevision] = useState(0);
@@ -14,13 +14,14 @@ export default function SocialFollowButton({ userId }) {
         const controller = new AbortController();
         current.current = controller;
         occupied.current = false;
+        if (initialFollowing !== null) return () => controller.abort();
         api.get(base, { signal: controller.signal }).then(({ data }) => {
             if (!controller.signal.aborted) setFollowing(data.seguindo);
         }).catch(e => {
             if (!controller.signal.aborted) setError(e.response?.data?.error || "Não foi possível consultar o acompanhamento.");
         });
         return () => controller.abort();
-    }, [base, revision]);
+    }, [base, initialFollowing, revision]);
 
     async function toggle() {
         const controller = current.current;
