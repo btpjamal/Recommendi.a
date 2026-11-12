@@ -1,25 +1,25 @@
 .social-contact-actions-area { display: grid; gap: 10px; margin-top: 16px; }
 .social-contact-compose { display: grid; gap: 8px; }
 .social-contact-compose label { font-size: 14px; font-weight: 600; }
-.social-contact-compose textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 85px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; font: inherit; }
-.social-contact-compose small, .social-contact-help, .social-contact-date { color: #64748b; font-size: 13px; line-height: 1.5; }
+.social-contact-compose textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 85px; border: 1px solid var(--border-control); border-radius: 8px; padding: 10px; font: inherit; }
+.social-contact-compose small, .social-contact-help, .social-contact-date { color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
 .social-contacts-panel { display: grid; gap: 18px; }
 .social-contacts-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-.social-contacts-heading h2 { margin: 0 0 8px; color: #1e293b; }
-.social-contacts-heading p { margin: 0; color: #64748b; }
+.social-contacts-heading h2 { margin: 0 0 8px; color: var(--text-primary); }
+.social-contacts-heading p { margin: 0; color: var(--text-secondary); }
 .social-contact-boxes, .social-contact-actions, .social-contact-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.social-contacts-panel button, .social-contact-actions-area button { padding: 10px 14px; min-height: 40px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #334155; cursor: pointer; font: inherit; font-size: 13px; }
-.social-contact-boxes button[aria-pressed="true"], button.social-contact-primary { background: #6366f1; border-color: #6366f1; color: white; }
-button.social-contact-block { color: #b91c1c; background: #fff; border-color: #fecaca; }
+.social-contacts-panel button, .social-contact-actions-area button { padding: 10px 14px; min-height: 40px; border: 1px solid var(--border-control); border-radius: 8px; background: var(--surface); color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 13px; }
+.social-contact-boxes button[aria-pressed="true"], button.social-contact-primary { background: var(--primary); border-color: var(--primary); color: var(--on-accent); }
+button.social-contact-block { color: var(--danger); background: var(--surface); border-color: var(--danger-border); }
 .social-contacts-panel button:disabled, .social-contact-actions-area button:disabled { cursor: not-allowed; opacity: .55; }
-.social-contacts-panel button:focus-visible, .social-contact-actions-area button:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
-.social-contact-card { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 22px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; overflow-wrap: anywhere; }
+.social-contacts-panel button:focus-visible, .social-contact-actions-area button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.social-contact-card { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow-wrap: anywhere; }
 .social-contact-card h3, .social-contact-card p { margin: 0; }
 .social-contact-card > p { line-height: 1.6; }
-.social-contact-card blockquote { margin: 0; width: 100%; box-sizing: border-box; padding: 12px; border-left: 3px solid #a5b4fc; border-radius: 6px; background: #f8fafc; white-space: pre-wrap; }
+.social-contact-card blockquote { margin: 0; width: 100%; box-sizing: border-box; padding: 12px; border-left: 3px solid var(--border-accent); border-radius: 6px; background: var(--surface-raised); white-space: pre-wrap; }
 .social-contact-card .social-contact-actions { margin-top: auto; }
-.social-contact-status { padding: 5px 9px; border-radius: 6px; color: #4338ca; background: #eef2ff; font-size: 12px; font-weight: 600; }
-.social-contact-error { color: #b91c1c; }
-.social-contact-success { color: #166534; padding: 12px; background: #dcfce7; border-radius: 8px; }
+.social-contact-status { padding: 5px 9px; border-radius: 6px; color: var(--primary); background: var(--surface-accent); font-size: 12px; font-weight: 600; }
+.social-contact-error { color: var(--danger); }
+.social-contact-success { color: var(--success); padding: 12px; background: var(--success-bg); border-radius: 8px; }
 .community-tabs { flex-wrap: wrap; }
 @media(max-width: 520px) { .social-contacts-heading { flex-direction: column; align-items: flex-start; } }

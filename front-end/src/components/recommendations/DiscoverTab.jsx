@@ -142,35 +142,34 @@ export default function DiscoverTab() {
 
     if (loading) {
         return (
-            <main className="recommendations-page">
+            <section className="recommendations-page" aria-label="Descobrir hobbies">
                 <div className="recommendation-loading">
                     <p>Carregando recomendações...</p>
                 </div>
-            </main>
+            </section>
         );
     }
 
     if (erro) {
         return (
-            <main className="recommendations-page">
+            <section className="recommendations-page" aria-label="Descobrir hobbies">
                 <div className="recommendation-error">
                     <p>{erro}</p>
                 </div>
-            </main>
+            </section>
         );
     }
 
     return (
-        <main className="recommendations-page">
+        <section className="recommendations-page" aria-label="Descobrir hobbies">
             <div className="recommendations-container">
                 <header className="recommendations-header">
                     <div>
+                        <h1 className="recommendations-title">Descobrir hobbies</h1>
                         <p className="recommendations-subtitle">
                             Hobbies sugeridos com base no seu perfil, interesses e preferências.
                         </p>
                     </div>
-
-
                 </header>
 
                 {recommendations.length === 0 ? (
@@ -388,6 +387,6 @@ export default function DiscoverTab() {
                     </div>
                 </div>
             )}
-        </main>
+        </section>
     );
 }

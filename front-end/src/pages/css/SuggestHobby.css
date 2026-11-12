@@ -2,7 +2,7 @@
 .suggest-hobby-page {
     min-height: 100vh;
     padding: 40px 20px 80px;
-    background: #f4f7fb;
+    background: var(--background);
 }
 
 .suggest-hobby-container {
@@ -13,10 +13,10 @@
 .suggest-back-button {
     margin-bottom: 24px;
     padding: 10px 16px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
     border-radius: 10px;
-    background: #ffffff;
-    color: #475569;
+    background: var(--surface);
+    color: var(--text-secondary);
     font-weight: 600;
     cursor: pointer;
 }
@@ -27,12 +27,12 @@
 
 .suggest-hobby-header h1 {
     margin: 0 0 10px;
-    color: #1e293b;
+    color: var(--text-primary);
     font-size: 32px;
 }
 
 .suggest-hobby-header p {
-    color: #64748b;
+    color: var(--text-secondary);
     line-height: 1.6;
 }
 
@@ -41,10 +41,10 @@
     flex-direction: column;
     gap: 22px;
     padding: 32px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
     border-radius: 18px;
-    background: #ffffff;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+    background: var(--surface);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .suggest-field {
@@ -54,7 +54,7 @@
 }
 
 .suggest-field label {
-    color: #334155;
+    color: var(--text-secondary);
     font-size: 14px;
     font-weight: 700;
 }
@@ -64,10 +64,10 @@
 .suggest-field select {
     width: 100%;
     padding: 12px 14px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border-control);
     border-radius: 10px;
-    background: #ffffff;
-    color: #1e293b;
+    background: var(--surface);
+    color: var(--text-primary);
     font: inherit;
     box-sizing: border-box;
 }
@@ -75,12 +75,12 @@
 .suggest-field input:focus,
 .suggest-field textarea:focus,
 .suggest-field select:focus {
-    outline: 2px solid #c7d2fe;
-    border-color: #6366f1;
+    outline: 2px solid var(--border-accent);
+    border-color: var(--primary);
 }
 
 .suggest-field small {
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 12px;
 }
 
@@ -94,7 +94,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    color: #334155;
+    color: var(--text-secondary);
     font-size: 14px;
 }
 
@@ -102,15 +102,15 @@
     padding: 14px 20px;
     border: none;
     border-radius: 11px;
-    background: #6366f1;
-    color: #ffffff;
+    background: var(--primary);
+    color: var(--on-accent);
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
 }
 
 .suggest-submit-button:hover:not(:disabled) {
-    background: #4f46e5;
+    background: var(--primary-hover);
 }
 
 .suggest-submit-button:disabled {
@@ -126,13 +126,13 @@
 }
 
 .suggest-error {
-    background: #fef2f2;
-    color: #b91c1c;
+    background: var(--danger-bg);
+    color: var(--danger);
 }
 
 .suggest-success {
-    background: #f0fdf4;
-    color: #15803d;
+    background: var(--success-bg);
+    color: var(--success);
 }
 
 @media (max-width: 600px) {
@@ -146,6 +146,6 @@
 }
 
 .suggest-category-error {
-    color: #dc2626 !important;
+    color: var(--danger) !important;
     font-weight: 500;
 }

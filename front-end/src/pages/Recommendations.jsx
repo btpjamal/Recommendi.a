@@ -6,7 +6,8 @@ import RecommendationTabs from "../components/recommendations/RecommendationTabs
 import DiscoverTab from "../components/recommendations/DiscoverTab";
 import InterestedTab from "../components/recommendations/InterestedTab";
 import NotInterestedTab from "../components/recommendations/NotInterestedTab";
-import "./css/RecommendationsLayout.css"
+import "./css/RecommendationsLayout.css";
+import "./css/DiscoverTheme.css";
 
 
 export default function Recommendations() {
@@ -32,7 +33,7 @@ export default function Recommendations() {
           }
 
     return (
-        <main>
+        <main className={abaAtiva === "descobrir" ? "discover-theme" : undefined}>
             {/*ESSA É A PARTE DO CABEÇALHO QUE É COMPARTILHADO ENTRE AS 3 ABAS*/}
             <header className="app-header">
 

@@ -3,9 +3,9 @@
     display: grid;
     gap: 14px;
     padding: 18px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border-control);
     border-radius: 12px;
-    background: #f8fafc;
+    background: var(--surface-raised);
 }
 .admin-hobby-recommendation h3,
 .admin-hobby-recommendation > p { margin: 0; }
@@ -13,7 +13,7 @@
     min-width: 0;
     margin: 0;
     padding: 12px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border-control);
     border-radius: 8px;
 }
 .admin-hobby-weight-group legend { font-weight: 600; padding: 0 5px; }
@@ -25,7 +25,7 @@
     padding: 10px 0;
 }
 .admin-hobby-weight-row + .admin-hobby-weight-row {
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--border);
 }
 .admin-hobby-form .admin-hobby-weight-choice {
     display: flex;

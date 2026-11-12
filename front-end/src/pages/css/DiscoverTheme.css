@@ -1,0 +1,164 @@
+.discover-theme {
+    min-height: 100vh;
+    color: var(--text-primary);
+    background:
+        var(--ambient-glow),
+        var(--background);
+}
+
+.discover-theme .app-header {
+    background: var(--background);
+    border-color: var(--border);
+}
+
+.discover-theme :is(.app-brand-name, .recommendations-title, .recommendation-name) {
+    font-family: var(--heading-font);
+    color: var(--text-primary);
+}
+
+.discover-theme :is(.app-brand-subtitle, .app-user-greeting, .recommendations-subtitle, .recommendation-description) {
+    color: var(--text-secondary);
+}
+
+.discover-theme :is(.app-brand-icon, .recommendation-category) {
+    background: #20372e;
+    color: var(--success);
+}
+
+.discover-theme :is(.app-header-button, .app-logout-button, .social-notification-bell, .recommendation-button-secondary, .recommendation-explanation-button) {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid #65786d;
+}
+
+.discover-theme :is(.app-header-button, .app-logout-button, .social-notification-bell, .recommendation-button-secondary, .recommendation-explanation-button):hover {
+    background: #26342d;
+    border-color: var(--success);
+    color: var(--text-primary);
+}
+
+.discover-theme .recommendation-tabs {
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+.discover-theme .recommendation-tabs button {
+    color: var(--text-secondary);
+}
+
+.discover-theme .recommendation-tabs button:hover {
+    color: var(--text-primary);
+}
+
+.discover-theme .recommendation-tabs button.active {
+    background: #304439;
+    color: var(--text-primary);
+}
+
+.discover-theme .recommendations-page {
+    background: transparent;
+    padding-block: 28px 56px;
+}
+
+.discover-theme .recommendations-header {
+    min-height: 186px;
+    padding: clamp(22px, 5vw, 52px);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background:
+        var(--glass-light);
+}
+
+.discover-theme .recommendations-title {
+    font-size: clamp(30px, 5vw, 54px);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+}
+
+.discover-theme .recommendations-subtitle {
+    margin: 12px 0 0;
+    max-width: 44ch;
+    line-height: 1.55;
+}
+
+.discover-theme .recommendation-card {
+    background: var(--surface);
+    border-color: var(--border);
+    box-shadow: none;
+}
+
+.discover-theme .recommendation-card:hover {
+    transform: none;
+    border-color: #65786d;
+}
+
+.discover-theme .recommendation-score {
+    color: var(--success);
+}
+
+.discover-theme .recommendation-hobby-image {
+    margin-top: auto;
+    background: linear-gradient(145deg, #263b31, #171e1b);
+}
+
+.discover-theme .recommendation-hobby-image-placeholder {
+    color: var(--text-secondary);
+}
+
+.discover-theme .recommendation-explanation-action {
+    padding: 0;
+}
+
+.discover-theme :is(.recommendation-card-actions button, .recommendation-explanation-button) {
+    min-height: 44px;
+}
+
+.discover-theme .recommendation-button-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #26120c;
+}
+
+.discover-theme .recommendation-button-primary:hover {
+    background: #ffa587;
+    border-color: #ffa587;
+}
+
+.discover-theme .explanation-overlay {
+    background: #060a08d9;
+}
+
+.discover-theme .explanation-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+.discover-theme .explanation-modal :is(h2, h3) {
+    color: var(--text-primary);
+}
+
+.discover-theme :is(.explanation-header button, .explanation-criterion, .explanation-bar-track) {
+    background: #26342d;
+    border-color: var(--border);
+    color: var(--text-primary);
+}
+
+.discover-theme .explanation-header button:hover {
+    background: #3a5044;
+}
+
+.discover-theme .explanation-criterion strong {
+    color: var(--success);
+}
+
+.discover-theme .criterion-positive { color: var(--success) !important; }
+.discover-theme .criterion-negative { color: #ff9b89 !important; }
+.discover-theme .criterion-neutral { color: var(--text-secondary) !important; }
+.discover-theme .explanation-bar-positive { background: var(--success); }
+.discover-theme .explanation-bar-negative { background: #ff9b89; }
+
+.discover-theme :is(.app-header, .recommendation-tabs, .recommendations-page) button:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+}

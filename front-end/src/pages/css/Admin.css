@@ -2,8 +2,8 @@
 .admin-layout {
     display: flex;
     min-height: 100vh;
-    background: #f4f7fb;
-    color: #1e293b;
+    background: var(--background);
+    color: var(--text-primary);
 }
 
 .admin-sidebar {
@@ -12,8 +12,8 @@
     display: flex;
     flex-direction: column;
     padding: 28px 18px;
-    background: #ffffff;
-    border-right: 1px solid #e2e8f0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
 }
 
 .admin-brand {
@@ -29,8 +29,8 @@
     width: 44px;
     height: 44px;
     border-radius: 14px;
-    background: #eef2ff;
-    color: #6366f1;
+    background: var(--surface-accent);
+    color: var(--primary);
     font-size: 26px;
 }
 
@@ -46,7 +46,7 @@
 
 .admin-brand small {
     margin-top: 4px;
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 12px;
 }
 
@@ -62,7 +62,7 @@
     gap: 12px;
     padding: 13px 14px;
     border-radius: 10px;
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 14px;
     font-weight: 600;
     text-decoration: none;
@@ -70,13 +70,13 @@
 }
 
 .admin-nav-link:hover {
-    background: #f8fafc;
-    color: #4f46e5;
+    background: var(--surface-raised);
+    color: var(--primary);
 }
 
 .admin-nav-link.active {
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--surface-accent);
+    color: var(--primary);
 }
 
 .admin-sidebar-footer {
@@ -85,7 +85,7 @@
     gap: 12px;
     margin-top: auto;
     padding: 24px 10px 0;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--border);
     font-size: 13px;
     font-weight: 600;
 }
@@ -94,8 +94,8 @@
     padding: 11px;
     border: none;
     border-radius: 10px;
-    background: #fef2f2;
-    color: #dc2626;
+    background: var(--danger-bg);
+    color: var(--danger);
     font-weight: 600;
     cursor: pointer;
 }
@@ -111,8 +111,8 @@
     align-items: center;
     gap: 16px;
     padding: 22px 36px;
-    background: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
 }
 
 .admin-topbar strong,
@@ -122,14 +122,14 @@
 
 .admin-topbar small {
     margin-top: 5px;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 .admin-role-badge {
     padding: 7px 13px;
     border-radius: 999px;
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--surface-accent);
+    color: var(--primary);
     font-size: 12px;
     font-weight: 700;
 }
@@ -147,12 +147,12 @@
 .admin-page-heading h1 {
     margin: 0;
     font-size: 32px;
-    color: #1f2937;
+    color: var(--text-primary);
 }
 
 .admin-page-heading p {
     margin-top: 10px;
-    color: #64748b;
+    color: var(--text-secondary);
     line-height: 1.6;
 }
 
@@ -167,18 +167,18 @@
     flex-direction: column;
     gap: 14px;
     padding: 26px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
     border-radius: 18px;
-    background: #ffffff;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+    background: var(--surface);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     text-decoration: none;
     transition: 0.2s ease;
 }
 
 .admin-card:hover {
     transform: translateY(-4px);
-    border-color: #c7d2fe;
-    box-shadow: 0 12px 30px rgba(99, 102, 241, 0.10);
+    border-color: var(--border-accent);
+    box-shadow: 0 12px 30px rgba(255, 131, 92, 0.10);
 }
 
 .admin-card-icon {
@@ -187,28 +187,28 @@
     width: 48px;
     height: 48px;
     border-radius: 14px;
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--surface-accent);
+    color: var(--primary);
     font-size: 25px;
 }
 
 .admin-card h2 {
     margin: 0;
     font-size: 19px;
-    color: #1e293b;
+    color: var(--text-primary);
 }
 
 .admin-card p {
     flex: 1;
     margin: 0;
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 14px;
     line-height: 1.6;
 }
 
 .admin-card-link {
     margin-top: 10px;
-    color: #4f46e5;
+    color: var(--primary);
     font-size: 13px;
     font-weight: 700;
 }
@@ -228,7 +228,7 @@
         width: 100%;
         padding: 18px;
         border-right: none;
-        border-bottom: 1px solid #e2e8f0;
+        border-bottom: 1px solid var(--border);
     }
 
     .admin-brand {
@@ -272,10 +272,10 @@
 
 .admin-refresh-button {
     padding: 11px 18px;
-    border: 1px solid #c7d2fe;
+    border: 1px solid var(--border-accent);
     border-radius: 10px;
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--surface-accent);
+    color: var(--primary);
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
@@ -293,10 +293,10 @@
 
 .admin-suggestion-card {
     padding: 26px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 18px;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .admin-suggestion-header {
@@ -309,15 +309,15 @@
 .admin-suggestion-header h2 {
     margin: 0 0 10px;
     font-size: 21px;
-    color: #1e293b;
+    color: var(--text-primary);
 }
 
 .admin-suggestion-category {
     display: inline-block;
     padding: 6px 11px;
     border-radius: 999px;
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--surface-accent);
+    color: var(--primary);
     font-size: 12px;
     font-weight: 700;
 }
@@ -325,15 +325,15 @@
 .admin-pending-badge {
     padding: 7px 12px;
     border-radius: 999px;
-    background: #fffbeb;
-    color: #92400e;
+    background: var(--warning-bg);
+    color: var(--warning);
     font-size: 12px;
     font-weight: 700;
 }
 
 .admin-suggestion-description {
     margin: 22px 0;
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 14px;
     line-height: 1.7;
 }
@@ -350,16 +350,16 @@
     gap: 8px;
     padding: 15px;
     border-radius: 12px;
-    background: #f8fafc;
+    background: var(--surface-raised);
 }
 
 .admin-suggestion-details small {
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 12px;
 }
 
 .admin-suggestion-details strong {
-    color: #1e293b;
+    color: var(--text-primary);
     font-size: 14px;
 }
 
@@ -370,8 +370,8 @@
     gap: 12px;
     margin-top: 24px;
     padding-top: 18px;
-    border-top: 1px solid #e2e8f0;
-    color: #64748b;
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
     font-size: 13px;
 }
 
@@ -379,21 +379,21 @@
 .admin-empty-state {
     padding: 32px;
     border-radius: 14px;
-    background: #ffffff;
+    background: var(--surface);
     text-align: center;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 .admin-empty-state h2 {
-    color: #1e293b;
+    color: var(--text-primary);
 }
 
 .admin-error {
     padding: 16px;
-    border: 1px solid #fecaca;
+    border: 1px solid var(--danger-border);
     border-radius: 12px;
-    background: #fef2f2;
-    color: #b91c1c;
+    background: var(--danger-bg);
+    color: var(--danger);
 }
 
 @media (max-width: 900px) {
@@ -426,7 +426,7 @@
     margin-bottom: 24px;
     padding: 6px;
     width: fit-content;
-    background: #e9edf5;
+    background: var(--surface-raised);
     border-radius: 14px;
 }
 
@@ -435,7 +435,7 @@
     border: none;
     border-radius: 10px;
     background: transparent;
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -443,13 +443,13 @@
 }
 
 .admin-suggestions-filters button:hover {
-    color: #4f46e5;
+    color: var(--primary);
 }
 
 .admin-suggestions-filters button.active {
-    background: #ffffff;
-    color: #4f46e5;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    background: var(--surface);
+    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* STATUS DOS CARTÕES */
@@ -463,18 +463,18 @@
 }
 
 .admin-status-badge.pendente {
-    background: #fffbeb;
-    color: #92400e;
+    background: var(--warning-bg);
+    color: var(--warning);
 }
 
 .admin-status-badge.aprovada {
-    background: #f0fdf4;
-    color: #15803d;
+    background: var(--success-bg);
+    color: var(--success);
 }
 
 .admin-status-badge.rejeitada {
-    background: #fef2f2;
-    color: #dc2626;
+    background: var(--danger-bg);
+    color: var(--danger);
 }
 
 @media (max-width: 600px) {
@@ -509,22 +509,22 @@
 
 .admin-approve-button {
     border: none;
-    background: #16a34a;
-    color: #ffffff;
+    background: var(--success);
+    color: var(--on-accent);
 }
 
 .admin-approve-button:hover {
-    background: #15803d;
+    background: var(--success);
 }
 
 .admin-reject-button {
-    border: 1px solid #fecaca;
-    background: #fef2f2;
-    color: #dc2626;
+    border: 1px solid var(--danger-border);
+    background: var(--danger-bg);
+    color: var(--danger);
 }
 
 .admin-reject-button:hover {
-    background: #fee2e2;
+    background: var(--danger-bg);
 }
 
 .admin-review-overlay {
@@ -535,7 +535,7 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: rgba(15, 23, 42, 0.55);
+    background: rgba(0, 0, 0, 0.55);
 }
 
 .admin-review-modal {
@@ -545,25 +545,25 @@
     overflow-y: auto;
     padding: 28px;
     border-radius: 18px;
-    background: #ffffff;
-    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+    background: var(--surface);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 
 .admin-review-modal h2 {
     margin: 0 0 12px;
-    color: #1e293b;
+    color: var(--text-primary);
     font-size: 23px;
 }
 
 .admin-review-modal p {
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 14px;
 }
 
 .admin-review-modal label {
     display: block;
     margin: 24px 0 9px;
-    color: #334155;
+    color: var(--text-secondary);
     font-size: 13px;
     font-weight: 700;
 }
@@ -572,7 +572,7 @@
     width: 100%;
     box-sizing: border-box;
     padding: 13px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border-control);
     border-radius: 10px;
     font: inherit;
     font-size: 13px;
@@ -581,7 +581,7 @@
 
 .admin-review-modal textarea:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: var(--primary);
 }
 
 .admin-review-actions {
@@ -592,9 +592,9 @@
 }
 
 .admin-review-cancel {
-    border: 1px solid #e2e8f0;
-    background: #ffffff;
-    color: #475569;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
 }
 
 .admin-review-actions button:disabled {
@@ -616,10 +616,10 @@
 .admin-success {
     margin-bottom: 24px;
     padding: 15px 18px;
-    border: 1px solid #bbf7d0;
+    border: 1px solid var(--success-border);
     border-radius: 12px;
-    background: #f0fdf4;
-    color: #166534;
+    background: var(--success-bg);
+    color: var(--success);
     font-size: 13px;
     font-weight: 600;
 }
@@ -638,7 +638,7 @@
     flex-direction: column;
     gap: 8px;
     margin: 0;
-    color: #334155;
+    color: var(--text-secondary);
     font-size: 13px;
     font-weight: 700;
 }
@@ -649,10 +649,10 @@
     width: 100%;
     box-sizing: border-box;
     padding: 11px 12px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border-control);
     border-radius: 10px;
-    background: #ffffff;
-    color: #1e293b;
+    background: var(--surface);
+    color: var(--text-primary);
     font: inherit;
     font-weight: 400;
 }
@@ -661,7 +661,7 @@
 .admin-approval-form select:focus,
 .admin-approval-form textarea:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: var(--primary);
 }
 
 .admin-approval-grid {
@@ -686,7 +686,7 @@
 }
 
 .admin-category-error {
-    color: #dc2626;
+    color: var(--danger);
     font-size: 12px;
     font-weight: 500;
 }
@@ -696,9 +696,9 @@
 .admin-suggestion-review {
     margin-top: 22px;
     padding: 20px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
     border-radius: 14px;
-    background: #f8fafc;
+    background: var(--surface-raised);
 }
 
 .admin-suggestion-review-heading {
@@ -711,7 +711,7 @@
 
 .admin-suggestion-review-heading h3 {
     margin: 0;
-    color: #334155;
+    color: var(--text-secondary);
     font-size: 15px;
     font-weight: 800;
 }
@@ -731,23 +731,23 @@
 
 .admin-suggestion-review-details small,
 .admin-suggestion-review-notes small {
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 12px;
 }
 
 .admin-suggestion-review-details strong {
-    color: #1e293b;
+    color: var(--text-primary);
     font-size: 13px;
 }
 
 .admin-suggestion-review-notes {
     padding-top: 16px;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--border);
 }
 
 .admin-suggestion-review-notes p {
     margin: 8px 0 0;
-    color: #475569;
+    color: var(--text-secondary);
     font-size: 13px;
     line-height: 1.7;
     overflow-wrap: anywhere;
@@ -778,22 +778,22 @@
     flex: 1;
     min-width: 0;
     padding: 12px 16px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border-control);
     border-radius: 10px;
-    background: #ffffff;
-    color: #1e293b;
+    background: var(--surface);
+    color: var(--text-primary);
     font: inherit;
     font-size: 14px;
 }
 
 .admin-hobbies-toolbar input:focus {
     outline: none;
-    border-color: #6366f1;
+    border-color: var(--primary);
 }
 
 .admin-hobbies-count {
     margin-bottom: 18px;
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 13px;
     font-weight: 600;
 }
@@ -805,14 +805,14 @@
 
 .admin-hobby-card {
     padding: 26px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
     border-radius: 18px;
-    background: #ffffff;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+    background: var(--surface);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .admin-hobby-id {
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-size: 13px;
     font-weight: 700;
 }
@@ -830,19 +830,19 @@
 
 .admin-hobby-new-button {
     border: 0; border-radius: 10px; padding: 12px 18px;
-    background: #4f46e5; color: #fff; font: inherit; font-weight: 600;
+    background: var(--primary); color: var(--on-accent); font: inherit; font-weight: 600;
     cursor: pointer;
 }
 .admin-hobby-new-button:disabled { opacity: .55; cursor: not-allowed; }
-.admin-hobby-success { color: #166534; font-weight: 600; margin-bottom: 16px; }
+.admin-hobby-success { color: var(--success); font-weight: 600; margin-bottom: 16px; }
 .admin-hobby-overlay {
     position: fixed; inset: 0; z-index: 1000;
-    background: rgba(15,23,42,.65); display: flex;
+    background: rgba(0, 0, 0,.65); display: flex;
     justify-content: center; align-items: center; padding: 20px;
 }
 .admin-hobby-modal {
     width: min(100%, 700px); max-height: 90vh; overflow-y: auto;
-    border-radius: 16px; background: #fff; padding: 24px;
+    border-radius: 16px; background: var(--surface); padding: 24px;
     box-shadow: 0 20px 60px rgba(0,0,0,.25);
 }
 .admin-hobby-modal-heading, .admin-hobby-actions {
@@ -858,15 +858,15 @@
 .admin-hobby-form input:not([type="checkbox"]),
 .admin-hobby-form select, .admin-hobby-form textarea {
     width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px;
-    border: 1px solid #cbd5e1; border-radius: 8px;
-    font: inherit; color: #1e293b; background: #fff;
+    border: 1px solid var(--border-control); border-radius: 8px;
+    font: inherit; color: var(--text-primary); background: var(--surface);
 }
 .admin-hobby-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .admin-hobby-form .admin-hobby-checkbox { display: flex; align-items: center; gap: 8px; }
 .admin-hobby-actions { justify-content: flex-end; margin-top: 8px; }
 .admin-hobby-actions > button:first-child {
-    border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 18px;
-    background: #fff; cursor: pointer;
+    border: 1px solid var(--border-control); border-radius: 10px; padding: 12px 18px;
+    background: var(--surface); cursor: pointer;
 }
 @media (max-width: 600px) {
     .admin-hobby-form-grid { grid-template-columns: 1fr; }
@@ -882,16 +882,16 @@
 }
 .admin-hobby-edit-button {
     padding: 8px 14px;
-    border: 1px solid #6366f1;
+    border: 1px solid var(--primary);
     border-radius: 9px;
-    background: #fff;
-    color: #4f46e5;
+    background: var(--surface);
+    color: var(--primary);
     font: inherit;
     font-weight: 600;
     cursor: pointer;
 }
-.admin-hobby-edit-button:hover { background: #eef2ff; }
-.admin-hobby-edit-button:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+.admin-hobby-edit-button:hover { background: var(--surface-accent); }
+.admin-hobby-edit-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 .admin-hobby-status {
     display: inline-block;
@@ -903,13 +903,13 @@
 }
 
 .admin-hobby-status-active {
-    background: #dcfce7;
-    color: #166534;
+    background: var(--success-bg);
+    color: var(--success);
 }
 
 .admin-hobby-status-inactive {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--danger-bg);
+    color: var(--danger);
 }
 
 .admin-hobby-deactivate-button,
@@ -922,15 +922,15 @@
 }
 
 .admin-hobby-deactivate-button {
-    background: #fff1f2;
-    color: #be123c;
-    border-color: #fecdd3;
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: var(--danger-border);
 }
 
 .admin-hobby-reactivate-button {
-    background: #ecfdf5;
-    color: #047857;
-    border-color: #a7f3d0;
+    background: var(--success-bg);
+    color: var(--success);
+    border-color: var(--success-border);
 }
 
 .admin-hobby-deactivate-button:disabled,
@@ -948,27 +948,27 @@
 
 .admin-hobbies-filter-button {
     padding: 9px 16px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--border-control);
     border-radius: 8px;
-    background: #fff;
-    color: #374151;
+    background: var(--surface);
+    color: var(--text-secondary);
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s;
 }
 
 .admin-hobbies-filter-button:hover {
-    background: #f3f4f6;
+    background: var(--surface-raised);
 }
 
 .admin-hobbies-filter-button.active {
-    background: #2563eb;
-    color: #fff;
-    border-color: #2563eb;
+    background: var(--primary);
+    color: var(--on-accent);
+    border-color: var(--primary);
 }
 
 .admin-hobbies-filter-button:focus-visible {
-    outline: 3px solid #93c5fd;
+    outline: 3px solid var(--border-accent);
     outline-offset: 2px;
 }
 
@@ -982,7 +982,7 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: rgba(15, 23, 42, 0.65);
+    background: rgba(0, 0, 0, 0.65);
 }
 
 .admin-hobby-confirm-modal {
@@ -990,8 +990,8 @@
     box-sizing: border-box;
     padding: 30px;
     border-radius: 18px;
-    background: #ffffff;
-    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+    background: var(--surface);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     text-align: center;
 }
 
@@ -1002,26 +1002,26 @@
     height: 54px;
     margin: 0 auto 20px;
     border-radius: 50%;
-    background: #fff1f2;
-    color: #be123c;
+    background: var(--danger-bg);
+    color: var(--danger);
     font-size: 28px;
     font-weight: 700;
 }
 
 .admin-hobby-confirm-modal h2 {
     margin: 0 0 14px;
-    color: #1e293b;
+    color: var(--text-primary);
     font-size: 23px;
 }
 
 .admin-hobby-confirm-modal p {
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 14px;
     line-height: 1.7;
 }
 
 .admin-hobby-confirm-modal strong {
-    color: #1e293b;
+    color: var(--text-primary);
 }
 
 .admin-hobby-confirm-actions {
@@ -1042,19 +1042,19 @@
 }
 
 .admin-hobby-confirm-cancel {
-    border: 1px solid #cbd5e1;
-    background: #ffffff;
-    color: #475569;
+    border: 1px solid var(--border-control);
+    background: var(--surface);
+    color: var(--text-secondary);
 }
 
 .admin-hobby-confirm-submit {
     border: none;
-    background: #dc2626;
-    color: #ffffff;
+    background: var(--danger);
+    color: var(--on-accent);
 }
 
 .admin-hobby-confirm-submit:hover {
-    background: #b91c1c;
+    background: var(--danger);
 }
 
 .admin-hobby-confirm-actions button:disabled {
@@ -1083,24 +1083,24 @@
 }
 
 .admin-hobbies-sort label {
-    color: #475569;
+    color: var(--text-secondary);
     font-size: 13px;
     font-weight: 600;
 }
 
 .admin-hobbies-sort select {
     padding: 10px 14px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border-control);
     border-radius: 10px;
-    background: #ffffff;
-    color: #334155;
+    background: var(--surface);
+    color: var(--text-secondary);
     font: inherit;
     font-size: 13px;
     cursor: pointer;
 }
 
 .admin-hobbies-sort select:focus-visible {
-    outline: 2px solid #6366f1;
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
 }
 
@@ -1120,17 +1120,17 @@
 .admin-hobbies-page-size, .admin-hobbies-pagination {
     display: flex; align-items: center; justify-content: flex-end;
     flex-wrap: wrap; gap: 12px; margin: 16px 0;
-    color: #475569; font-size: 13px; font-weight: 600;
+    color: var(--text-secondary); font-size: 13px; font-weight: 600;
 }
 .admin-hobbies-page-size select, .admin-hobbies-pagination button {
-    padding: 9px 14px; border: 1px solid #cbd5e1; border-radius: 9px;
-    background: #fff; color: #334155; font: inherit;
+    padding: 9px 14px; border: 1px solid var(--border-control); border-radius: 9px;
+    background: var(--surface); color: var(--text-secondary); font: inherit;
 }
 .admin-hobbies-pagination button { cursor: pointer; }
 .admin-hobbies-pagination button:disabled { opacity: .5; cursor: not-allowed; }
 .admin-hobbies-pagination button:focus-visible,
 .admin-hobbies-page-size select:focus-visible {
-    outline: 2px solid #6366f1; outline-offset: 2px;
+    outline: 2px solid var(--primary); outline-offset: 2px;
 }
 @media (max-width: 500px) {
     .admin-hobbies-pagination { justify-content: space-between; }

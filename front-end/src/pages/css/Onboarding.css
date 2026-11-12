@@ -11,7 +11,7 @@
 
     padding: 40px 20px;
 
-    background: #f5f7fb;
+    background: var(--background);
 }
 
 .onboarding-card {
@@ -20,12 +20,12 @@
 
     padding: 38px 40px;
 
-    background: #ffffff;
+    background: var(--surface);
 
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
     border-radius: 20px;
 
-    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
 }
 
 
@@ -41,7 +41,7 @@
 
     margin-bottom: 20px;
 
-    background: #e2e8f0;
+    background: var(--border);
 
     border-radius: 999px;
 }
@@ -49,7 +49,7 @@
 .onboarding-progress-value {
     height: 100%;
 
-    background: #6366f1;
+    background: var(--primary);
 
     border-radius: 999px;
 
@@ -62,8 +62,8 @@
     margin-bottom: 12px;
     padding: 5px 9px;
 
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--surface-accent);
+    color: var(--primary);
 
     border-radius: 999px;
 
@@ -80,7 +80,7 @@
 .onboarding-card h1 {
     margin: 0;
 
-    color: #0f172a;
+    color: var(--text-primary);
 
     font-size: 29px;
     font-weight: 800;
@@ -92,7 +92,7 @@
 .onboarding-description {
     margin: 10px 0 28px;
 
-    color: #64748b;
+    color: var(--text-secondary);
 
     font-size: 14px;
     line-height: 1.6;
@@ -116,10 +116,10 @@
 
     padding: 15px 17px;
 
-    background: #ffffff;
-    color: #334155;
+    background: var(--surface);
+    color: var(--text-secondary);
 
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border-control);
     border-radius: 11px;
 
     font-size: 14px;
@@ -138,22 +138,22 @@
 }
 
 .onboarding-option:hover:not(:disabled) {
-    background: #f8faff;
+    background: var(--surface-raised);
 
-    border-color: #a5b4fc;
+    border-color: var(--border-accent);
 
     transform: translateY(-1px);
 
-    box-shadow: 0 3px 10px rgba(99, 102, 241, 0.07);
+    box-shadow: 0 3px 10px rgba(255, 131, 92, 0.07);
 }
 
 .onboarding-option.selected {
-    background: #eef2ff;
-    color: #4338ca;
+    background: var(--surface-accent);
+    color: var(--primary);
 
-    border-color: #6366f1;
+    border-color: var(--primary);
 
-    box-shadow: inset 0 0 0 1px #6366f1;
+    box-shadow: inset 0 0 0 1px var(--primary);
 }
 
 .onboarding-option.selected::after {
@@ -173,8 +173,8 @@
     width: 21px;
     height: 21px;
 
-    background: #6366f1;
-    color: #ffffff;
+    background: var(--primary);
+    color: var(--on-accent);
 
     border-radius: 50%;
 
@@ -205,10 +205,10 @@
     margin-top: 22px;
     padding: 11px 18px;
 
-    background: #6366f1;
-    color: #ffffff;
+    background: var(--primary);
+    color: var(--on-accent);
 
-    border: 1px solid #6366f1;
+    border: 1px solid var(--primary);
     border-radius: 10px;
 
     font-size: 14px;
@@ -224,12 +224,12 @@
 }
 
 .onboarding-card > button:not(.onboarding-back):hover:not(:disabled) {
-    background: #4f46e5;
-    border-color: #4f46e5;
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
 
     transform: translateY(-1px);
 
-    box-shadow: 0 5px 16px rgba(99, 102, 241, 0.18);
+    box-shadow: 0 5px 16px rgba(255, 131, 92, 0.18);
 }
 
 .onboarding-card > button:not(.onboarding-back):disabled {
@@ -254,7 +254,7 @@
     min-width: 0;
     gap: 7px;
 
-    color: #334155;
+    color: var(--text-secondary);
     font-size: 13px;
     font-weight: 650;
 }
@@ -265,10 +265,10 @@
     height: 46px;
     padding: 0 14px;
 
-    background: #ffffff;
-    color: #1e293b;
+    background: var(--surface);
+    color: var(--text-primary);
 
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--border-control);
     border-radius: 10px;
     outline: none;
 
@@ -283,17 +283,17 @@
 }
 
 .onboarding-location select:hover:not(:disabled) {
-    border-color: #a5b4fc;
+    border-color: var(--border-accent);
 }
 
 .onboarding-location select:focus-visible {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(255, 131, 92, 0.12);
 }
 
 .onboarding-location select:disabled {
-    background: #f8fafc;
-    color: #94a3b8;
+    background: var(--surface-raised);
+    color: var(--text-secondary);
     cursor: not-allowed;
 }
 
@@ -312,10 +312,10 @@
     margin: 18px 0 0;
     padding: 11px 13px;
 
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--surface-accent);
+    color: var(--primary);
 
-    border: 1px solid #c7d2fe;
+    border: 1px solid var(--border-accent);
     border-radius: 9px;
 
     font-size: 13px;
@@ -328,10 +328,10 @@
     margin: 18px 0 0;
     padding: 11px 13px;
 
-    background: #fef2f2;
-    color: #b91c1c;
+    background: var(--danger-bg);
+    color: var(--danger);
 
-    border: 1px solid #fecaca;
+    border: 1px solid var(--danger-border);
     border-radius: 9px;
 
     font-size: 13px;
@@ -354,10 +354,10 @@
     margin-top: 24px;
     padding: 10px 14px;
 
-    background: #f8fafc;
-    color: #475569;
+    background: var(--surface-raised);
+    color: var(--text-secondary);
 
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
     border-radius: 9px;
 
     font-size: 14px;
@@ -378,9 +378,9 @@
 }
 
 .onboarding-back:hover:not(:disabled) {
-    color: #4f46e5;
-    background: #eef2ff;
-    border-color: #c7d2fe;
+    color: var(--primary);
+    background: var(--surface-accent);
+    border-color: var(--border-accent);
 
     transform: translateY(-1px);
 }

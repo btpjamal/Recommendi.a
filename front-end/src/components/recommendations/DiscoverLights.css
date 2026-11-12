@@ -1,0 +1,207 @@
+.app-atmosphere {
+    isolation: isolate;
+    min-height: 100vh;
+    background: var(--ambient-glow), var(--background);
+}
+
+.discover-lights {
+    --floor-line: 68dvh;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse 74% 21% at 33% var(--floor-line), #e7552a80, #a633194a 55%, transparent 100%),
+        radial-gradient(ellipse at 19% 31%, #2a514435, transparent 56%);
+}
+
+.discover-lights-wall,
+.discover-lights-floor {
+    position: absolute;
+    inset-inline: 0;
+    overflow: hidden;
+}
+
+.discover-lights-wall {
+    inset-block: 0 auto;
+    height: var(--floor-line);
+    background:
+        linear-gradient(90deg, transparent 23%, #030806b3 23.2% 24%, #b2d7c434 24.1%, transparent 24.4% 55%, #05090799 55.3% 56%, #b2d7c429 56.1%, transparent 56.4%),
+        repeating-linear-gradient(90deg, transparent 0 69px, #99cbb91c 70px, transparent 71px 112px);
+}
+
+.discover-lights-wall::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 52%;
+    border-right: 1px solid #b1e5c94d;
+    background:
+        linear-gradient(180deg, #08120d4a, #56877144 48%, #727b4540 80%, #ee844825),
+        linear-gradient(115deg, #a4d8bd26, transparent 36%, #b2d4ac23 78%, #0b1b1466);
+    box-shadow: inset -5px 0 9px #03080580, 3px 0 12px #03080580;
+}
+
+.discover-lights-plane {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.discover-lights-floor {
+    inset-block: var(--floor-line) 0;
+    border-top: 1px solid #ff9c6259;
+    background:
+        linear-gradient(180deg, #d74c282e, transparent 66%),
+        radial-gradient(ellipse at 31% 0%, #e34b2340, transparent 68%);
+}
+
+.discover-lights-floor::before {
+    content: "";
+    position: absolute;
+    inset: 0 -50% -160%;
+    transform: perspective(280px) rotateX(52deg);
+    transform-origin: center top;
+    background:
+        repeating-linear-gradient(90deg, transparent 0 114px, #a7b9a23d 115px, transparent 117px),
+        repeating-linear-gradient(180deg, transparent 0 68px, #d3845838 69px, transparent 71px);
+    mask-image: linear-gradient(#0009, transparent 68%);
+}
+
+.discover-lights-floor .discover-lights-plane {
+    inset-block-end: auto;
+    height: var(--floor-line);
+    transform: scaleY(-0.47) translateY(-100%);
+    transform-origin: center top;
+    opacity: 0.90;
+    mask-image: linear-gradient(transparent 6%, #0006 58%, #000 100%);
+}
+
+.discover-lights-track {
+    position: absolute;
+    inset: 0;
+    height: 200%;
+}
+
+.discover-lights-field {
+    position: relative;
+    height: 50%;
+}
+
+.discover-light {
+    position: absolute;
+    border-radius: 50%;
+    background: linear-gradient(transparent, #76bfa876 63%, #dfffee 92%, transparent);
+}
+
+.discover-light:nth-child(7n) {
+    background: linear-gradient(transparent, #eb815178 64%, #ffc38c 92%, transparent);
+}
+
+@keyframes discover-light-fall {
+    from { transform: translateY(-50%); }
+    to { transform: translateY(0); }
+}
+
+.atmosphere-controls {
+    display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .app-atmosphere {
+        --atmosphere-controls-height: 44px;
+    }
+
+    .atmosphere-controls {
+        display: flex;
+        justify-content: flex-end;
+        padding-inline: clamp(12px, 3vw, 32px);
+        background: #0c100fc4;
+        border-bottom: 1px solid #9ac6b42b;
+    }
+
+    .atmosphere-toggle {
+        min-height: 43px;
+        padding: 0 12px;
+        border: 0;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+
+    .atmosphere-toggle:hover {
+        color: var(--text-primary);
+        background: var(--surface-accent);
+    }
+
+    .atmosphere-toggle:focus-visible {
+        outline-offset: -3px;
+    }
+
+    .discover-lights-track {
+        animation: discover-light-fall var(--fall-duration) linear var(--fall-delay) infinite;
+    }
+
+    .discover-lights[data-paused="true"] .discover-lights-track {
+        animation-play-state: paused;
+    }
+}
+
+.app-atmosphere :is(.auth-page, .onboarding-page, .profile-questionnaire,
+    .community-page, .community-details-page, .profile-page, .discover-theme,
+    .general-plan-page, .recommendation-details-page, .suggest-hobby-page, .ai-settings-page,
+    .admin-layout) {
+    min-height: calc(100vh - var(--atmosphere-controls-height, 0px));
+    background: transparent;
+}
+
+.app-atmosphere .recommendations-page {
+    background: transparent;
+}
+
+.app-atmosphere :is(.app-header, .admin-topbar, .admin-sidebar) {
+    background: #101813eb;
+}
+
+.app-atmosphere :is(.recommendation-card, .social-user-card, .hobby-community-card,
+    .social-contact-card, .community-post-card, .my-suggestion-card,
+    .admin-card, .admin-hobby-card, .admin-suggestion-card, .moderation-card,
+    .profile-section, .profile-header, .recommendation-details-header, .recommendation-details-section) {
+    border-color: #9ac6b455;
+    background:
+        radial-gradient(ellipse at 100% 100%, #bd6c4830, transparent 47%),
+        linear-gradient(145deg, #36594bd9, #111c17e8 50%, #1b241ee0);
+    box-shadow: inset 0 1px 1px #d4ffed3d, inset -1px -1px 1px #ffd1af22, 0 10px 28px #0005;
+}
+
+.app-atmosphere :is(.auth-card, .onboarding-card, .profile-questionnaire-card,
+    .social-profile-editor, .community-chat, .community-post-composer, .general-plan-content,
+    .suggest-hobby-form, .ai-settings-card, .social-notification-panel) {
+    border-color: #9ac6b455;
+    background: linear-gradient(145deg, #263c33f2, #131d17f5 64%);
+    box-shadow: inset 0 1px 1px #d4ffed29, 0 10px 28px #0005;
+}
+
+.app-atmosphere .profile-questionnaire-card {
+    border: 1px solid #9ac6b455;
+}
+
+.app-atmosphere :is(.auth-card, .onboarding-card, .profile-questionnaire-card) {
+    border-top-color: var(--primary);
+}
+
+@media (min-width: 651px) {
+    @supports (backdrop-filter: blur(1px)) {
+        .app-atmosphere .discover-theme .recommendations-grid > .recommendation-card {
+            backdrop-filter: blur(6px) saturate(1.22);
+        }
+    }
+}
+
+@media (max-width: 650px) {
+    .discover-lights-track:first-child .discover-light:nth-child(even) {
+        visibility: hidden;
+    }
+}
+
