@@ -11,6 +11,7 @@ import dev.jamal.projetotcc.Service.recommendation.criteria.RecommendationCriter
 import dev.jamal.projetotcc.Service.recommendation.model.CriterionResult;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import dev.jamal.projetotcc.DTO.Recommendation.CriterionScoreDTO;
 
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional
 public class RecommendationService {
     private final HobbyRepository hobbyRepository;
@@ -126,13 +128,11 @@ public class RecommendationService {
                         )
                         .toList();
 
-        for (int i = 0; i < criterios.size(); i++) {
-            System.out.printf(
-                    "[RECOMMENDATION] Hobby: %s | Critério: %s | Pontos: %.2f%n",
-                    hobby.getNome(),
-                    criterios.get(i).getClass().getSimpleName(),
-                    resultados.get(i).pontos()
-            );
+        if (log.isDebugEnabled()) {
+            for (int i = 0; i < criterios.size(); i++) {
+                log.debug("Hobby: {} | Critério: {} | Pontos: {}",
+                        hobby.getNome(), criterios.get(i).getClass().getSimpleName(), resultados.get(i).pontos());
+            }
         }
 
         double score =

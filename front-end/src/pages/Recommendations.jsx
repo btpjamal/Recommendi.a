@@ -1,7 +1,6 @@
 import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { session, revokeSession } from "../auth/session.js";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 
 import RecommendationTabs from "../components/recommendations/RecommendationTabs";
 import DiscoverTab from "../components/recommendations/DiscoverTab";
@@ -13,7 +12,18 @@ import "./css/RecommendationsLayout.css"
 export default function Recommendations() {
 
     const navigate = useNavigate();
-    const [abaAtiva, setAbaAtiva] = useState("descobrir");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const aba = searchParams.get("aba");
+    const abaAtiva = ["interessados", "nao-interessados"].includes(aba) ? aba : "descobrir";
+
+    function setAbaAtiva(value) {
+        setSearchParams(current => {
+            const next = new URLSearchParams(current);
+            if (value === "descobrir") next.delete("aba");
+            else next.set("aba", value);
+            return next;
+        }, { replace: true });
+    }
     const nome = session.getItem("nome");
 
     async function logout() {

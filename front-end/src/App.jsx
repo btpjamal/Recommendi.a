@@ -3,9 +3,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
-import Interests from "./pages/Interests";
 import Recommendations from "./pages/Recommendations";
-import Feedbacks from "./pages/Feedbacks";
 import RecommendationDetails from "./pages/RecommendationDetails.jsx";
 import Onboarding from "./pages/Onboarding";
 import GeneralPlan from "./pages/GeneralPlan.jsx";
@@ -33,9 +31,9 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route element={<ProtectedRoute />}>
         <Route path="/profile" element={<Profile />} />
-        <Route path="/interests" element={<Interests />} />
+        <Route path="/interests" element={<Navigate to="/myProfile" replace />} />
         <Route path="/recommendations" element={<Recommendations />} />
-        <Route path="/feedbacks" element={<Feedbacks />} />
+        <Route path="/feedbacks" element={<Navigate to="/recommendations?aba=interessados" replace />} />
         <Route path="/recommendations/:hobbyId" element={<RecommendationDetails />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/general-plan" element={<GeneralPlan />} />

@@ -1,6 +1,7 @@
 package dev.jamal.projetotcc.security;
 
 import dev.jamal.projetotcc.Entities.*;
+import dev.jamal.projetotcc.Enum.UserHobbyStatus;
 import dev.jamal.projetotcc.DTO.Feedback.FeedbackCreateRequestDTO;
 import dev.jamal.projetotcc.Repository.*;
 import dev.jamal.projetotcc.Mapper.FeedbackMapper;
@@ -56,6 +57,10 @@ class OwnershipSecurityTest {
         var dto = new FeedbackCreateRequestDTO(); dto.setHobbyId(3L); dto.setRating(4);
         when(context.getBean(UserRepository.class).findById(1L)).thenReturn(Optional.of(user));
         when(context.getBean(HobbyRepository.class).findById(3L)).thenReturn(Optional.of(hobby));
+        var practiced = new UserHobby();
+        practiced.setStatusAtual(UserHobbyStatus.PRATICANDO);
+        when(context.getBean(UserHobbyRepository.class).findByUser_IdAndHobby_Id(1L, 3L))
+                .thenReturn(Optional.of(practiced));
         when(repo.findByUserIdAndHobbyId(1L,3L)).thenReturn(Optional.of(feedback));
         context.getBean(FeedbackService.class).avaliar(1L,dto);
         verify(repo).save(feedback); assertEquals(4,feedback.getRating());
