@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./DiscoverLights.css";
+import { AtmosphereContext } from "./atmosphereContext.js";
 
 const lightLayers = [
     // Camada 1: Mais luzes (90) e maior fator de comprimento (8)
@@ -68,20 +69,23 @@ function DiscoverLights({ paused }) {
 
 export default function AppAtmosphere({ children }) {
     const [paused, setPaused] = useState(false);
+    const toggleLights = () => setPaused(value => !value);
 
     return (
-        <div className="app-atmosphere">
-            <DiscoverLights paused={paused} />
-            <div className="atmosphere-controls">
-                <button
-                    type="button"
-                    className="atmosphere-toggle"
-                    onClick={() => setPaused(value => !value)}
-                >
-                    {paused ? "Retomar luzes" : "Pausar luzes"}
-                </button>
+        <AtmosphereContext.Provider value={{ paused, toggleLights }}>
+            <div className="app-atmosphere">
+                <DiscoverLights paused={paused} />
+                <div className="atmosphere-controls">
+                    <button
+                        type="button"
+                        className="atmosphere-toggle"
+                        onClick={toggleLights}
+                    >
+                        {paused ? "Retomar luzes" : "Pausar luzes"}
+                    </button>
+                </div>
+                {children}
             </div>
-            {children}
-        </div>
+        </AtmosphereContext.Provider>
     );
 }

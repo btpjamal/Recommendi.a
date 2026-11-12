@@ -4,7 +4,7 @@ import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { API_BASE_URL } from "../api/config.js";
 import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useNavigate, useOutletContext, useSearchParams } from "react-router";
 import axios from "axios";
 
 import "./css/Community.css";
@@ -19,7 +19,8 @@ import usePrivateUnread from "../components/social/usePrivateUnread.js";
 export default function Community() {
 
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const { mobile, unread } = useOutletContext();
 
     const [status, setStatus] = useState(null);
     const [resultadoPessoas, setResultadoPessoas] = useState(null);
@@ -27,19 +28,33 @@ export default function Community() {
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
     const [ativando, setAtivando] = useState(false);
-    const [abaAtiva, setAbaAtiva] = useState(() => ["feed", "pessoas", "comunidades", "conversas"].includes(searchParams.get("aba")) ? searchParams.get("aba") : "pessoas");
-    const [caixaContato, setCaixaContato] = useState(() => ["RECEBIDAS", "ENVIADAS", "ACEITAS", "HISTORICO", "BLOQUEADOS"].includes(searchParams.get("caixa")) ? searchParams.get("caixa") : "RECEBIDAS");
+    const aba = searchParams.get("aba");
+    const caixa = searchParams.get("caixa");
+    const abaAtiva = ["feed", "pessoas", "comunidades", "conversas"].includes(aba) ? aba : "pessoas";
+    const caixaContato = ["RECEBIDAS", "ENVIADAS", "ACEITAS", "HISTORICO", "BLOQUEADOS"].includes(caixa) ? caixa : "RECEBIDAS";
+
+    function setAbaAtiva(value) {
+        const next = new URLSearchParams(searchParams);
+        next.set("aba", value);
+        setSearchParams(next);
+    }
+
+    function setCaixaContato(value) {
+        const next = new URLSearchParams(searchParams);
+        next.set("aba", "conversas");
+        next.set("caixa", value);
+        setSearchParams(next);
+    }
 
     function abrirSolicitacao(contato) {
         setCaixaContato(contato.status === "ACEITA" ? "ACEITAS" : contato.direcao === "RECEBIDA" ? "RECEBIDAS" : "ENVIADAS");
-        setAbaAtiva("conversas");
     }
 
     function participanteBloqueado() {
-        setRevisaoLocal((atual) => atual + 1);
+        setRevisaoLocal(atual => atual + 1);
         setCaixaContato("BLOQUEADOS");
-        setAbaAtiva("conversas");
     }
+
     const [comunidades, setComunidades] = useState([]);
     const [alterandoComunidade, setAlterandoComunidade] = useState(null);
     const [comunidadesRegionais, setComunidadesRegionais] = useState([]);
@@ -52,7 +67,8 @@ export default function Community() {
     const [salvandoVisibilidade, setSalvandoVisibilidade] = useState(false);
     const [erroVisibilidade, setErroVisibilidade] = useState("");
     const [revisaoLocal, setRevisaoLocal] = useState(0);
-    const naoLidas = usePrivateUnread(Boolean(status?.elegivel && status?.participa), revisaoLocal);
+    const unreadDesktop = usePrivateUnread(!mobile && Boolean(status?.elegivel && status?.participa), revisaoLocal);
+    const naoLidas = mobile ? unread : unreadDesktop;
 
     const nome = session.getItem("nome");
     const token = session.getItem("token");
@@ -572,9 +588,9 @@ export default function Community() {
                                 </div>
                             </div>
 
-                            <button className="community-secondary-button" onClick={() => navigate("/community/profile")}>Meu perfil social</button>
+                            <button className="community-secondary-button community-social-profile-link" onClick={() => navigate("/community/profile")}>Meu perfil social</button>
                             <div className="community-tabs social-hub-tabs">
-                                <button className={abaAtiva === "feed" ? "active" : ""} onClick={() => setAbaAtiva("feed")}>
+                                <button data-mobile-shortcut className={abaAtiva === "feed" ? "active" : ""} onClick={() => setAbaAtiva("feed")}>
                                     Feed
                                 </button>
 
@@ -591,7 +607,7 @@ export default function Community() {
                                 >
                                     Comunidades
                                 </button>
-                                <button className={abaAtiva === "conversas" ? "active" : ""}
+                                <button data-mobile-shortcut className={abaAtiva === "conversas" ? "active" : ""}
                                     onClick={() => setAbaAtiva("conversas")}>
                                     Conversas
                                     {naoLidas.total > 0 && <span className="private-unread-badge" aria-label={`${naoLidas.total} mensagens não lidas`}>{naoLidas.total}</span>}

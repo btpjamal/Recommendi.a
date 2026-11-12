@@ -1,0 +1,177 @@
+.mobile-navigation-layout {
+    --mobile-nav-height: 64px;
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px));
+}
+
+.mobile-primary-content .app-header,
+.app-atmosphere:has(.mobile-app-header) > .atmosphere-controls {
+    display: none;
+}
+
+.mobile-app-header {
+    position: relative;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-bottom: 1px solid var(--border);
+    background: #101813f2;
+}
+
+.mobile-app-brand {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-inline-end: auto;
+    font: 800 18px var(--heading-font);
+    text-decoration: none;
+}
+
+.mobile-app-brand span {
+    color: var(--success);
+}
+
+.mobile-app-header .social-notifications {
+    position: static;
+}
+
+.mobile-app-header .social-notification-panel,
+.mobile-account-menu {
+    inset-inline: auto 12px;
+    width: min(380px, calc(100% - 24px));
+    max-height: min(65dvh, 420px);
+    overflow: auto;
+}
+
+.mobile-account summary {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    list-style: none;
+}
+
+.mobile-account summary::-webkit-details-marker {
+    display: none;
+}
+
+.mobile-account-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    z-index: 1500;
+    display: grid;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+}
+
+.mobile-account-menu :is(a, button) {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-primary);
+    text-align: left;
+    text-decoration: none;
+}
+
+.mobile-account-menu :is(a, button):hover {
+    background: var(--surface-accent);
+}
+
+.mobile-account-menu button:last-child {
+    color: var(--danger);
+}
+
+.mobile-bottom-nav {
+    position: fixed;
+    z-index: 30;
+    inset: auto 0 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    min-height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px));
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--border);
+    background: #101813fa;
+}
+
+.mobile-bottom-nav a {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 2px;
+    min-height: 44px;
+    padding: 3px 1px;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: clamp(9px, 2.7vw, 12px);
+    text-decoration: none;
+}
+
+.mobile-nav-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 28px;
+    border-radius: 999px;
+}
+
+:is(.mobile-nav-icon, .mobile-account summary) svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.mobile-bottom-nav a[aria-current="page"] {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.mobile-bottom-nav a[aria-current="page"] .mobile-nav-icon {
+    background: var(--surface-accent);
+}
+
+.mobile-nav-badge {
+    position: absolute;
+    inset: -2px -4px auto auto;
+    min-width: 16px;
+    padding: 2px 3px;
+    border-radius: 999px;
+    background: var(--danger);
+    color: var(--on-accent);
+    font-size: 9px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.mobile-primary-content .social-hub-tabs [data-mobile-shortcut],
+.mobile-social-destination :is(.community-heading, .community-suggestions, .community-social-profile-link, .social-hub-tabs) {
+    display: none;
+}
+
+.mobile-social-destination .community-container {
+    padding-top: 18px;
+}
+
+.mobile-social-destination .social-feed-section {
+    margin-top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mobile-account-menu .mobile-lights-control {
+        display: none;
+    }
+}
