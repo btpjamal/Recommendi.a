@@ -1,0 +1,39 @@
+body {
+    min-width: 0;
+}
+
+.social-profile-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.social-profile-editor,
+.social-profile-editor fieldset,
+.social-profile-editor input[type="file"] {
+    min-width: 0;
+}
+
+.social-profile-editor input[type="file"] {
+    width: 100%;
+}
+
+@media (max-width: 760px) {
+    .social-profile-columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .app-header {
+        position: relative;
+    }
+
+    .app-header .social-notifications {
+        position: static;
+    }
+
+    .app-header .social-notification-panel {
+        inset-inline: auto 16px;
+        width: min(380px, calc(100% - 32px));
+        max-height: min(50dvh, 420px);
+    }
+}

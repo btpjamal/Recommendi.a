@@ -125,7 +125,7 @@ public class HobbyLocationController {
             );
         }
 
-        SseEmitter emitter = new SseEmitter(120_000L);
+        SseEmitter emitter = new SseEmitter(130_000L);
 
         if (!activeSearches.add(user.getId())) {
             throw new dev.jamal.projetotcc.Exception.TooManyRequestsException();

@@ -273,6 +273,17 @@ export default function DiscoverTab() {
                         ))}
                     </section>
                 )}
+                <footer className="discover-design-credit">
+                    Inspiração visual <span aria-hidden="true">·</span>{" "}
+                    <a
+                        href="https://open.spotify.com/intl-pt/album/4PIVdqvL1Rc7T7Vfsr8n8Q"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Koi No Yokan, de Deftones, no Spotify (abre em nova aba)"
+                    >
+                        Koi No Yokan, de Deftones
+                    </a>
+                </footer>
             </div>
             {hobbyExplicacao && (
                 <div

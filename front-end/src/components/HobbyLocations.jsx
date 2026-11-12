@@ -63,7 +63,7 @@ export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador =
 
         const timeout = setTimeout(() => {
             controller.abort();
-        }, 115000);
+        }, 135_000);
 
         try {
             const token = session.getItem("token");

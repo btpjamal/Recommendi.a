@@ -58,7 +58,7 @@ public class OverpassService {
         JdkClientHttpRequestFactory requestFactory =
                 new JdkClientHttpRequestFactory(httpClient);
 
-        requestFactory.setReadTimeout(Duration.ofSeconds(35));
+        requestFactory.setReadTimeout(Duration.ofSeconds(50));
 
         this.servidores = List.of(
                 criarCliente("https://overpass-api.de", requestFactory),

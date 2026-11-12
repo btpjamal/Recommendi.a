@@ -162,3 +162,21 @@
     outline: 2px solid var(--primary);
     outline-offset: 3px;
 }
+
+.discover-design-credit {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.discover-design-credit a {
+    text-underline-offset: 0.2em;
+}
+
+.discover-design-credit a:hover {
+    color: var(--primary);
+}
