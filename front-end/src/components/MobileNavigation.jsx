@@ -43,6 +43,8 @@ function MobileHeader() {
                 </summary>
                 <div className="mobile-account-menu">
                     <Link to="/myProfile">Meu perfil</Link>
+
+                    <Link to="/my-suggestions">Minhas sugestões</Link>
                     <Link to="/onboarding?editar=true">Atualizar preferências</Link>
                     <button type="button" className="mobile-lights-control" onClick={toggleLights}>
                         {paused ? "Retomar luzes" : "Pausar luzes"}
@@ -60,7 +62,7 @@ export default function MobileNavigation() {
     const path = location.pathname.toLowerCase();
     const privateChat = path.startsWith("/community/conversations/");
     const showNavigation = mobile && !privateChat && path !== "/onboarding" && path !== "/profile";
-    const showHeader = showNavigation && ["/recommendations", "/community", "/myprofile"].includes(path);
+    const showHeader = showNavigation && (path.startsWith("/community/communities/") || ["/recommendations", "/community", "/myprofile", "/my-suggestions", "/suggest-hobby"].includes(path));
     const unread = usePrivateUnread(showNavigation, location.key);
     const aba = new URLSearchParams(location.search).get("aba");
     let active = "discover";
@@ -68,7 +70,7 @@ export default function MobileNavigation() {
         active = aba === "feed" ? "feed" : aba === "conversas" ? "chat" : "community";
     } else if (path.startsWith("/community/")) {
         active = "community";
-    } else if (["/myprofile", "/ai-settings"].includes(path)) {
+    } else if (["/myprofile", "/ai-settings", "/my-suggestions", "/suggest-hobby"].includes(path)) {
         active = "profile";
     }
 

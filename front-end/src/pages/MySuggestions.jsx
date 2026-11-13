@@ -1,3 +1,4 @@
+import RecommendationBanner from "../components/recommendations/RecommendationBanner";
 import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useState } from "react";
@@ -73,7 +74,7 @@ export default function MySuggestions() {
     }
 
     return (
-        <main className="community-page">
+        <main className="community-page recommendations-theme suggestions-theme">
             <header className="app-header">
                 <div className="app-header-content">
                     <div className="app-brand">
@@ -118,31 +119,23 @@ export default function MySuggestions() {
             </header>
 
             <section className="community-container">
-                <div className="my-suggestions-heading">
-                    <div>
-                        <span className="community-label">
-                            CONTRIBUIÇÕES
-                        </span>
-                        <h1>Minhas sugestões</h1>
-                        <p>
-                            Acompanhe a análise dos hobbies que você
-                            sugeriu para o Recommendi.a.
-                        </p>
-                    </div>
-
+                <RecommendationBanner title="Minhas sugestões"
+                    description="Acompanhe a análise dos hobbies que você sugeriu para o Recommendi.a.">
                     <button
                         className="community-primary-button"
                         onClick={() => navigate("/suggest-hobby")}
                     >
                         + Nova sugestão
                     </button>
-                </div>
+                </RecommendationBanner>
 
-                <div className="my-suggestions-filters">
+                <div className="my-suggestions-filters" role="group" aria-label="Filtrar sugestões">
                     {["TODAS", "PENDENTE", "APROVADA", "REJEITADA"].map(
                         opcao => (
                             <button
                                 key={opcao}
+                                type="button"
+                                aria-pressed={filtro === opcao}
                                 className={filtro === opcao ? "active" : ""}
                                 onClick={() => setFiltro(opcao)}
                             >

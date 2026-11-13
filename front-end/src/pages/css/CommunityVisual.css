@@ -1,0 +1,51 @@
+.community-visual .recommendations-header {
+    gap: 16px;
+}
+
+.community-visual .community-segments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.community-visual .community-scope-filters {
+    margin-bottom: 20px;
+}
+
+.mobile-social-destination .community-visual .social-hub-tabs {
+    display: none;
+}
+
+.community-visual .community-segments button {
+    flex: 1 1 0;
+    min-height: 44px;
+    margin: 0;
+    padding: 6px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.community-visual .community-segments button:is(.active, [aria-pressed="true"]) {
+    background: #304439;
+    color: var(--text-primary);
+}
+
+.community-visual .community-segments button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.community-visual .social-location-controls h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+

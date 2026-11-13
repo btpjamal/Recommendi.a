@@ -158,7 +158,9 @@
 }
 
 .mobile-primary-content .social-hub-tabs [data-mobile-shortcut],
-.mobile-social-destination :is(.community-heading, .community-suggestions, .community-social-profile-link, .social-hub-tabs) {
+.mobile-primary-content .community-social-profile-link,
+.mobile-primary-content .community-page .community-suggestions,
+.mobile-social-destination :is(.community-heading, .social-hub-tabs) {
     display: none;
 }
 

@@ -14,12 +14,12 @@ const fields = [["fotoVisibilidade", "Foto"], ["biografiaVisibilidade", "Biograf
 const options = [["PARTICIPANTES", "Participantes"], ["CONTATOS", "Contatos aceitos"], ["SOMENTE_EU", "Somente eu"]];
 const errorText = (error) => error.response?.data?.detail || error.response?.data?.error || "Não foi possível concluir. Tente novamente.";
 
-export default function SocialProfile() {
+export default function SocialProfile({ embedded = false }) {
     const { userId } = useParams();
-    return <SocialProfileContent key={userId || "me"} userId={userId} />;
+    return <SocialProfileContent key={userId || "me"} userId={userId} embedded={embedded} />;
 }
 
-function SocialProfileContent({ userId }) {
+function SocialProfileContent({ userId, embedded }) {
     const own = !userId;
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
@@ -29,6 +29,7 @@ function SocialProfileContent({ userId }) {
     const [busy, setBusy] = useState(false);
     const [revision, setRevision] = useState(0);
     const [loaded, setLoaded] = useState(false);
+    const [participa, setParticipa] = useState(false);
     const token = session.getItem("token");
     const headers = { Authorization: `Bearer ${token}` };
 
@@ -47,6 +48,36 @@ function SocialProfileContent({ userId }) {
         }
         load(); return () => controller.abort();
     }, [own, userId, token]);
+
+    useEffect(() => {
+        if (!own) return;
+        const controller = new AbortController();
+        axios.get(API_BASE_URL + "/social/me/status", {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal
+        }).then(({ data }) => {
+            if (!controller.signal.aborted) setParticipa(data.participa);
+        }).catch(e => {
+            if (!controller.signal.aborted) setError(errorText(e));
+        });
+        return () => controller.abort();
+    }, [own, token]);
+
+    async function sairDaComunidade() {
+        if (busy || !window.confirm("Deseja sair da comunidade? Seu perfil deixará de aparecer para outros participantes.")) return;
+        setBusy(true);
+        setError("");
+        setMessage("");
+        try {
+            await axios.post(API_BASE_URL + "/social/me/disable", {}, { headers });
+            window.dispatchEvent(new Event("social-participation-changed"));
+            navigate("/community", { replace: true });
+        } catch (e) {
+            setError(errorText(e));
+        } finally {
+            setBusy(false);
+        }
+    }
 
     async function refresh() {
         const { data } = await axios.get(API_BASE_URL + "/social/me/profile/preview", { headers });
@@ -76,7 +107,7 @@ function SocialProfileContent({ userId }) {
         } catch (e) { setError(errorText(e)); } finally { setBusy(false); }
     }
     return <main className="community-page"><section className="social-profile-page">
-        <button className="community-secondary-button" onClick={() => navigate("/community")}>Voltar ao Hub Social</button>
+        {!embedded && <button className="community-secondary-button" onClick={() => navigate("/community")}>Voltar ao Hub Social</button>}
         <h1>{own ? "Meu perfil social" : "Perfil social"}</h1>
         {error && <p role="alert" className="community-error">{error}</p>}
         {message && <p role="status">{message}</p>}
@@ -115,6 +146,14 @@ function SocialProfileContent({ userId }) {
                     onBloqueado={() => navigate("/community?aba=conversas&caixa=BLOQUEADOS")} />}
             </article>
         </div>}
+        {own && participa && (
+            <section className="social-profile-editor social-profile-participation">
+                <h2>Participação na comunidade</h2>
+                <button type="button" className="community-leave-button" disabled={busy} onClick={sairDaComunidade}>
+                    Sair da comunidade
+                </button>
+            </section>
+        )}
     </section></main>;
 }
 

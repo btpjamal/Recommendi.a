@@ -7,7 +7,7 @@ import Recommendations from "./pages/Recommendations";
 import RecommendationDetails from "./pages/RecommendationDetails.jsx";
 import Onboarding from "./pages/Onboarding";
 import GeneralPlan from "./pages/GeneralPlan.jsx";
-import MyProfile from "./pages/MyProfile";
+import ProfileTabs from "./pages/ProfileTabs.jsx";
 import SocialProfile from "./pages/SocialProfile";
 import Community from "./pages/Community";
 import CommunityDetails from "./pages/CommunityDetails";
@@ -37,8 +37,8 @@ export default function App() {
         <Route path="/recommendations/:hobbyId" element={<RecommendationDetails />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/general-plan" element={<GeneralPlan />} />
-        <Route path="/myProfile" element={<MyProfile />} />
-        <Route path="/community/profile" element={<SocialProfile />} />
+        <Route path="/myProfile" element={<ProfileTabs />} />
+        <Route path="/community/profile" element={<Navigate to="/myProfile?aba=social" replace />} />
         <Route path="/community/users/:userId" element={<SocialProfile />} />
         <Route path="/community" element={<Community />} />
         <Route path="/community/communities/:communityId" element={<CommunityDetails />} />

@@ -1,3 +1,4 @@
+import RecommendationBanner from "../recommendations/RecommendationBanner";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { api } from "../../api/api.js";
@@ -11,9 +12,9 @@ import "./SocialFeed.css";
 export default function SocialFeed() {
     const [filter, setFilter] = useState("todos");
     return <section className="social-feed-section" aria-label="Feed social">
-        <h2>Feed</h2>
-        <p>Publicações das comunidades das quais você participa, das mais recentes às mais antigas.</p>
-        <div className="community-type-tabs" aria-label="Filtro do feed">
+        <RecommendationBanner title="Feed"
+            description="Publicações das comunidades das quais você participa, das mais recentes às mais antigas." />
+        <div className="community-segments community-scope-filters" role="group" aria-label="Filtro do feed">
             <button type="button" className={filter === "todos" ? "active" : ""} aria-pressed={filter === "todos"}
                 onClick={() => setFilter("todos")}>Minhas comunidades</button>
             <button type="button" className={filter === "seguindo" ? "active" : ""} aria-pressed={filter === "seguindo"}

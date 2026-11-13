@@ -1,3 +1,5 @@
+import RecommendationBanner from "../components/recommendations/RecommendationBanner";
+import "./css/CommunityVisual.css";
 import SocialFeed from "../components/social/SocialFeed.jsx";
 import SocialFollowButton from "../components/social/SocialFollowButton.jsx";
 import NotificationBell from "../components/social/SocialNotifications.jsx";
@@ -246,46 +248,6 @@ export default function Community() {
     }
 
 
-    async function desativarParticipacao() {
-
-        const confirmar = window.confirm(
-            "Deseja sair da comunidade? Seu perfil deixará de aparecer para outros participantes."
-        );
-
-        if (!confirmar) {
-            return;
-        }
-
-        try {
-
-            await axios.post(
-                API_BASE_URL + "/social/me/disable",
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
-
-            window.dispatchEvent(new Event("social-participation-changed"));
-
-            setStatus({
-                elegivel: true,
-                participa: false
-            });
-
-        } catch (error) {
-
-
-            setErro(
-                error.response?.data?.error ||
-                "Não foi possível desativar sua participação."
-            );
-        }
-    }
-
-
     async function logout() {
         await revokeSession();
         navigate("/login");
@@ -372,7 +334,7 @@ export default function Community() {
             : comunidades;
 
     return (
-        <main className="community-page">
+        <main className="community-page recommendations-theme community-visual">
 
             <header className="app-header">
 
@@ -528,33 +490,6 @@ export default function Community() {
                     status.participa && (
 
                         <>
-                            <div className="community-heading">
-
-                                <div>
-                                <span className="community-label">
-                                    COMUNIDADE
-                                </span>
-
-                                    <h1>
-                                        Hub Social
-                                    </h1>
-
-                                    <p>
-                                        Descubra participantes que
-                                        compartilham hobbies e interesses
-                                        com você.
-                                    </p>
-                                </div>
-
-                                <button
-                                    className="community-leave-button"
-                                    onClick={desativarParticipacao}
-                                >
-                                    Sair da comunidade
-                                </button>
-
-                            </div>
-
                             <div className="community-suggestions">
                                 <div className="community-suggestions-info">
                                     <span className="community-label">
@@ -589,25 +524,25 @@ export default function Community() {
                             </div>
 
                             <button className="community-secondary-button community-social-profile-link" onClick={() => navigate("/community/profile")}>Meu perfil social</button>
-                            <div className="community-tabs social-hub-tabs">
-                                <button data-mobile-shortcut className={abaAtiva === "feed" ? "active" : ""} onClick={() => setAbaAtiva("feed")}>
+                            <div className="community-tabs social-hub-tabs community-segments">
+                                <button data-mobile-shortcut className={abaAtiva === "feed" ? "active" : ""} aria-pressed={abaAtiva === "feed"} onClick={() => setAbaAtiva("feed")}>
                                     Feed
                                 </button>
 
                                 <button
-                                    className={abaAtiva === "pessoas" ? "active" : ""}
+                                    className={abaAtiva === "pessoas" ? "active" : ""} aria-pressed={abaAtiva === "pessoas"}
                                     onClick={() => setAbaAtiva("pessoas")}
                                 >
                                     Pessoas
                                 </button>
 
                                 <button
-                                    className={abaAtiva === "comunidades" ? "active" : ""}
+                                    className={abaAtiva === "comunidades" ? "active" : ""} aria-pressed={abaAtiva === "comunidades"}
                                     onClick={() => setAbaAtiva("comunidades")}
                                 >
                                     Comunidades
                                 </button>
-                                <button data-mobile-shortcut className={abaAtiva === "conversas" ? "active" : ""}
+                                <button data-mobile-shortcut className={abaAtiva === "conversas" ? "active" : ""} aria-pressed={abaAtiva === "conversas"}
                                     onClick={() => setAbaAtiva("conversas")}>
                                     Conversas
                                     {naoLidas.total > 0 && <span className="private-unread-badge" aria-label={`${naoLidas.total} mensagens não lidas`}>{naoLidas.total}</span>}
@@ -619,15 +554,22 @@ export default function Community() {
                             {abaAtiva === "pessoas" && (
                                 <>
                                     <div className="social-location-controls">
-                                        <label htmlFor="filtro-local-pessoas">Encontrar pessoas</label>
-                                        <select id="filtro-local-pessoas" value={filtroPessoas} onChange={(event) => {
-                                            setPaginaPessoas(0);
-                                            setFiltroPessoas(event.target.value);
-                                        }}>
-                                            <option value="GERAL">Geral</option>
-                                            <option value="ESTADUAL" disabled={!configLocal?.estadoDisponivel}>No meu estado</option>
-                                            <option value="MUNICIPAL" disabled={!configLocal?.cidadeDisponivel}>Na minha cidade</option>
-                                        </select>
+                                        <h2 id="filtro-local-pessoas">Encontrar pessoas</h2>
+                                        <div className="community-segments" role="group" aria-labelledby="filtro-local-pessoas">
+                                            {[
+                                                ["GERAL", "Geral", true],
+                                                ["ESTADUAL", "No meu estado", configLocal?.estadoDisponivel],
+                                                ["MUNICIPAL", "Na minha cidade", configLocal?.cidadeDisponivel],
+                                            ].map(([value, label, available]) => (
+                                                <button key={value} type="button" aria-pressed={filtroPessoas === value}
+                                                    disabled={!available} onClick={() => {
+                                                        setPaginaPessoas(0);
+                                                        setFiltroPessoas(value);
+                                                    }}>
+                                                    {label}
+                                                </button>
+                                            ))}
+                                        </div>
                                         {!configLocal?.cidadeDisponivel && <p>Preencha cidade e UF no seu perfil para habilitar todos os filtros regionais.</p>}
                                         <label className="social-location-optin">
                                             <input type="checkbox" checked={configLocal?.compartilharRegiao ?? false}
@@ -698,18 +640,12 @@ export default function Community() {
 
                                 <div className="communities-section">
 
-                                    <div className="communities-intro">
-                                        <h2>Comunidades por hobby</h2>
+                                    <RecommendationBanner title="Comunidades por hobby"
+                                        description="Participe de espaços dedicados aos hobbies que você pratica, já conhece ou deseja descobrir." />
 
-                                        <p>
-                                            Participe de espaços dedicados aos hobbies
-                                            que você pratica, já conhece ou deseja descobrir.
-                                        </p>
-                                    </div>
-
-                                    <div className="community-type-tabs">
-
+                                    <div className="community-segments community-scope-filters" role="group" aria-label="Abrangência das comunidades">
                                         <button
+                                            type="button" aria-pressed={tipoComunidade === "geral"}
                                             className={
                                                 tipoComunidade === "geral"
                                                     ? "active"
@@ -723,6 +659,7 @@ export default function Community() {
                                         </button>
 
                                         <button
+                                            type="button" aria-pressed={tipoComunidade === "regional"}
                                             className={
                                                 tipoComunidade === "regional"
                                                     ? "active"
@@ -736,6 +673,7 @@ export default function Community() {
                                             No seu estado
                                         </button>
                                         <button className={tipoComunidade === "municipal" ? "active" : ""}
+                                            type="button" aria-pressed={tipoComunidade === "municipal"}
                                             disabled={!configLocal?.cidadeDisponivel}
                                             onClick={() => setTipoComunidade("municipal")}>
                                             Na sua cidade

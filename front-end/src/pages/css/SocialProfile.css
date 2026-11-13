@@ -9,3 +9,10 @@
 .social-profile-bio { white-space: pre-wrap; overflow-wrap: anywhere; }
 .social-profile-columns > .social-user-card { min-width: 0; overflow-wrap: anywhere; }
 @media(max-width: 760px) { .social-profile-columns { grid-template-columns: 1fr; } }
+.social-profile-participation {
+    margin-top: 24px;
+}
+
+.social-profile-participation .community-leave-button {
+    min-height: 44px;
+}

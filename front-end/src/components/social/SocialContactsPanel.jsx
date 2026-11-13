@@ -1,3 +1,4 @@
+import RecommendationBanner from "../recommendations/RecommendationBanner";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../../api/api";
 import { useNavigate } from "react-router";
@@ -102,10 +103,11 @@ export default function SocialContactsPanel({ caixa, onCaixaChange, onBloqueioAl
 
     return (
         <section className="social-contacts-panel" aria-labelledby="titulo-contatos">
-            <div className="social-contacts-heading"><div><h2 id="titulo-contatos">Solicitações de conversa</h2>
-                <p>Confira quem deseja conversar com você e escolha quais contatos aceitar.</p></div>
-                <button type="button" disabled={carregando || processando} onClick={() => setRevisao((atual) => atual + 1)}>Atualizar</button>
-            </div>
+            <RecommendationBanner id="titulo-contatos" title="Solicitações de conversa"
+                description="Confira quem deseja conversar com você e escolha quais contatos aceitar.">
+                <button className="social-contact-refresh" type="button" disabled={carregando || processando}
+                    onClick={() => setRevisao(atual => atual + 1)}>Atualizar</button>
+            </RecommendationBanner>
             <nav className="social-contact-boxes" aria-label="Organizar contatos">
                 {Object.entries(CAIXAS).map(([valor, rotulo]) => (
                     <button type="button" key={valor} aria-pressed={caixa === valor}

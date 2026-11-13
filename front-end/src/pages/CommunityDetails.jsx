@@ -1,3 +1,5 @@
+import RecommendationBanner from "../components/recommendations/RecommendationBanner";
+import "./css/SocialScreenTheme.css";
 import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -209,7 +211,7 @@ function CommunityChat({ communityId, active, onTabChange }) {
     async function logout() { await revokeSession(); navigate("/login"); }
 
     return (
-        <main className="community-details-page">
+        <main className="community-details-page recommendations-theme social-screen-theme">
             <header className="app-header"><div className="app-header-content">
                 <div className="app-brand"><span className="app-brand-icon">✦</span><div><span className="app-brand-name">Recommendi.a</span><span className="app-brand-subtitle">Descubra seu próximo hobby</span></div></div>
                 <div className="app-header-actions"><NotificationBell /><span className="app-user-greeting">Olá, {nome}!</span>
@@ -220,13 +222,10 @@ function CommunityChat({ communityId, active, onTabChange }) {
             </div></header>
             <section className="community-details-container">
                 <button className="community-back-button" onClick={() => navigate("/community")}>← Voltar</button>
+                <RecommendationBanner title={comunidade?.hobbyNome || "Comunidade"}
+                    description="Converse com os participantes e compartilhe experiências sobre esse hobby."
+                    detail={comunidade && `${comunidade.membros} ${comunidade.membros === 1 ? "membro" : "membros"}`} />
                 <div className="community-chat">
-                    <div className="community-chat-header">
-                        <span>{comunidade?.tipo === "MUNICIPAL" ? "COMUNIDADE MUNICIPAL" : comunidade?.tipo === "REGIONAL" ? "COMUNIDADE REGIONAL" : "COMUNIDADE GERAL"}</span>
-                        <h1>{comunidade?.hobbyNome || "Comunidade"}</h1>
-                        <p>Converse com os participantes e compartilhe experiências sobre esse hobby.</p>
-                        {comunidade && <div className="community-chat-info"><span>{comunidade.membros} {comunidade.membros === 1 ? "membro" : "membros"}</span></div>}
-                    </div>
                     <CommunityTabs active="chat" onChange={onTabChange} disabled={enviando} />
                     {erro && <div className="community-chat-error" role="alert">{erro}</div>}
                     {erroAtualizacao && <p className="community-chat-update-note" role="status">{erroAtualizacao}</p>}
