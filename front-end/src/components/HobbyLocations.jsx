@@ -1,246 +1,25 @@
-import { API_BASE_URL } from "../api/config.js";
-import { session } from "../auth/session.js";
-import { useEffect, useRef , useState } from "react";
-import { api } from "../api/api.js";
+import { useSyncExternalStore } from "react";
+import { getLocationSearch, startLocationSearch, subscribeLocationSearch } from "./hobbyLocationSearch.js";
 import HobbyMap from "./HobbyMap";
 import "./HobbyLocations.css";
 
 export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador = false }) {
-    const [locais, setLocais] = useState([]);
-    const [carregando, setCarregando] = useState(false);
-    const [erro, setErro] = useState("");
-    const [buscaRealizada, setBuscaRealizada] = useState(false);
-    const [centro, setCentro] = useState(null);
-    const [cidade, setCidade] = useState("");
-    const [estado, setEstado] = useState("");
-    const [progresso, setProgresso] = useState("");
-    const [tentativaAtual, setTentativaAtual] = useState(0);
-    const [statusBusca, setStatusBusca] = useState(null);
-    const [mensagemBusca, setMensagemBusca] = useState("");
-    const [dataResultadoSalvo, setDataResultadoSalvo] = useState(null);
-
-    const requisicaoAtual = useRef(null);
-
-    useEffect(() => {
-        return () => {
-            requisicaoAtual.current?.abort();
-        };
-    }, [hobbyId]);
-
-    useEffect(() => {
-        setLocais([]);
-        setErro("");
-        setBuscaRealizada(false);
-        setCentro(null);
-        setCidade("");
-        setEstado("");
-        setProgresso("");
-        setTentativaAtual(0);
-        setCarregando(false);
-        setStatusBusca(null);
-        setMensagemBusca("");
-        setDataResultadoSalvo(null);
-    }, [hobbyId]);
-
-
-    const buscarLocais = async () => {
-        if (requisicaoAtual.current) {
-            return;
-        }
-
-        const controller = new AbortController();
-        requisicaoAtual.current = controller;
-
-        setCarregando(true);
-        setErro("");
-        setProgresso("Iniciando busca de locais...");
-        setTentativaAtual(0);
-        setBuscaRealizada(false);
-        setStatusBusca(null);
-        setMensagemBusca("");
-        setDataResultadoSalvo(null);
-        setLocais([]);
-        setCentro(null);
-
-        let recebeuResultado = false;
-
-        const timeout = setTimeout(() => {
-            controller.abort();
-        }, 135_000);
-
-        try {
-            const token = session.getItem("token");
-
-            const response = await fetch(
-                `${API_BASE_URL}/hobbies/${hobbyId}/locations/stream`,
-                {
-                    method: "GET",
-                    headers: {
-                        Accept: "text/event-stream",
-                        ...(token
-                            ? { Authorization: `Bearer ${token}` }
-                            : {})
-                    },
-                    signal: controller.signal
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(
-                    `Erro HTTP ${response.status}`
-                );
-            }
-
-            if (!response.body) {
-                throw new Error(
-                    "O navegador não disponibilizou o streaming."
-                );
-            }
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-
-            let buffer = "";
-
-            const processarEvento = (bloco) => {
-                const linhas = bloco.split("\n");
-
-                let tipo = "message";
-                const dados = [];
-
-                for (const linha of linhas) {
-                    if (linha.startsWith("event:")) {
-                        tipo = linha.slice(6).trim();
-                    } else if (linha.startsWith("data:")) {
-                        dados.push(linha.slice(5).trimStart());
-                    }
-                }
-
-                const conteudo = dados.join("\n");
-
-                if (tipo === "progresso") {
-                    setProgresso(conteudo);
-
-                    if (conteudo.includes("tentativa")) {
-                        setTentativaAtual((atual) =>
-                            Math.min(atual + 1, 2)
-                        );
-                    }
-                }
-
-
-                if (tipo === "resultado") {
-                    const resultado = JSON.parse(conteudo);
-
-                    const status = resultado.status ??
-                        ((resultado.locais ?? []).length > 0
-                            ? "SUCESSO"
-                            : "SEM_RESULTADOS");
-
-                    setStatusBusca(status);
-                    setMensagemBusca(resultado.mensagem ?? "");
-                    setDataResultadoSalvo(
-                        resultado.dadosDesatualizados && resultado.consultadoEm
-                            ? new Date(resultado.consultadoEm).toLocaleString("pt-BR", {
-                                dateStyle: "short",
-                                timeStyle: "short"
-                            })
-                            : null
-                    );
-                    setLocais(resultado.locais ?? []);
-
-                    const coordenadasValidas =
-                        resultado.latitude != null &&
-                        resultado.longitude != null &&
-                        Number.isFinite(Number(resultado.latitude)) &&
-                        Number.isFinite(Number(resultado.longitude));
-
-                    setCentro(
-                        coordenadasValidas
-                            ? {
-                                latitude: Number(resultado.latitude),
-                                longitude: Number(resultado.longitude)
-                            }
-                            : null
-                    );
-
-                    setCidade(resultado.cidade ?? "");
-                    setEstado(resultado.estado ?? "");
-                    setBuscaRealizada(true);
-                    setProgresso("Busca concluída!");
-
-                    recebeuResultado = true;
-                }
-
-
-                if (tipo === "erro") {
-                    throw new Error(conteudo);
-                }
-            };
-
-            while (true) {
-                const { value, done } = await reader.read();
-
-                if (done) {
-                    break;
-                }
-
-                buffer += decoder.decode(value, {
-                    stream: true
-                });
-
-                // SSE separa eventos por uma linha vazia.
-                // Normaliza quebras CRLF antes de processar.
-                buffer = buffer.replace(/\r\n/g, "\n");
-
-                let separador;
-
-                while ((separador = buffer.indexOf("\n\n")) !== -1) {
-                    const bloco = buffer.slice(0, separador);
-                    buffer = buffer.slice(separador + 2);
-
-                    processarEvento(bloco);
-                }
-            }
-
-            if (!recebeuResultado) {
-                throw new Error(
-                    "A conexão terminou sem retornar os locais."
-                );
-            }
-
-        } catch (error) {
-
-
-            if (controller.signal.aborted) {
-                setErro(
-                    "A busca foi interrompida ou demorou demais. " +
-                    "Tente novamente."
-                );
-            } else {
-                setErro(
-                    error.message ||
-                    "Não foi possível consultar os locais."
-                );
-            }
-
-            setLocais([]);
-            setCentro(null);
-            setBuscaRealizada(false);
-            setProgresso("");
-            setStatusBusca(null);
-            setMensagemBusca("");
-
-        } finally {
-            clearTimeout(timeout);
-
-            if (requisicaoAtual.current === controller) {
-                requisicaoAtual.current = null;
-                setCarregando(false);
-            }
-        }
-    };
-
+    const { loading: carregando, progress: progresso, attempt: tentativaAtual, result, error: erro } =
+        useSyncExternalStore(subscribeLocationSearch, () => getLocationSearch(hobbyId));
+    const buscarLocais = () => startLocationSearch(hobbyId, hobbyNome, modoAdministrador);
+    const buscaRealizada = result !== null;
+    const locais = result?.locais ?? [];
+    const cidade = result?.cidade ?? "";
+    const estado = result?.estado ?? "";
+    const statusBusca = result?.status ?? (locais.length ? "SUCESSO" : "SEM_RESULTADOS");
+    const mensagemBusca = result?.mensagem ?? "";
+    const centro = result?.latitude != null && result?.longitude != null &&
+        Number.isFinite(Number(result.latitude)) && Number.isFinite(Number(result.longitude))
+        ? { latitude: Number(result.latitude), longitude: Number(result.longitude) }
+        : null;
+    const dataResultadoSalvo = result?.dadosDesatualizados && result.consultadoEm
+        ? new Date(result.consultadoEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
+        : null;
 
     const mensagensStatus = {
         SEM_REGRAS: {
@@ -275,7 +54,7 @@ export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador =
 
 
     return (
-        <div className="hobby-locations">
+        <div className="hobby-locations" id="locais-proximos">
             <p className="hobby-locations-description">
                 Descubra lugares para praticar
                 <strong> {hobbyNome}</strong> na sua região.
@@ -305,6 +84,7 @@ export default function HobbyLocations({ hobbyId, hobbyNome, modoAdministrador =
                     <div className="hobby-locations-spinner" />
 
                     <p>{progresso}</p>
+                    <small>Você pode continuar navegando e voltar aqui para ver o resultado.</small>
 
                     {tentativaAtual > 0 && (
                         <small>

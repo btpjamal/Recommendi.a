@@ -553,23 +553,26 @@ export default function Community() {
                             {abaAtiva === "feed" && <SocialFeed />}
                             {abaAtiva === "pessoas" && (
                                 <>
+                                    <RecommendationBanner title="Encontrar pessoas"
+                                        description="Descubra participantes que compartilham hobbies e interesses com você." />
+
+                                    <div className="community-segments community-scope-filters" role="group" aria-label="Abrangência da busca de pessoas">
+                                        {[
+                                            ["GERAL", "Geral", true],
+                                            ["ESTADUAL", "No meu estado", configLocal?.estadoDisponivel],
+                                            ["MUNICIPAL", "Na minha cidade", configLocal?.cidadeDisponivel],
+                                        ].map(([value, label, available]) => (
+                                            <button key={value} type="button" aria-pressed={filtroPessoas === value}
+                                                disabled={!available} onClick={() => {
+                                                    setPaginaPessoas(0);
+                                                    setFiltroPessoas(value);
+                                                }}>
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+
                                     <div className="social-location-controls">
-                                        <h2 id="filtro-local-pessoas">Encontrar pessoas</h2>
-                                        <div className="community-segments" role="group" aria-labelledby="filtro-local-pessoas">
-                                            {[
-                                                ["GERAL", "Geral", true],
-                                                ["ESTADUAL", "No meu estado", configLocal?.estadoDisponivel],
-                                                ["MUNICIPAL", "Na minha cidade", configLocal?.cidadeDisponivel],
-                                            ].map(([value, label, available]) => (
-                                                <button key={value} type="button" aria-pressed={filtroPessoas === value}
-                                                    disabled={!available} onClick={() => {
-                                                        setPaginaPessoas(0);
-                                                        setFiltroPessoas(value);
-                                                    }}>
-                                                    {label}
-                                                </button>
-                                            ))}
-                                        </div>
                                         {!configLocal?.cidadeDisponivel && <p>Preencha cidade e UF no seu perfil para habilitar todos os filtros regionais.</p>}
                                         <label className="social-location-optin">
                                             <input type="checkbox" checked={configLocal?.compartilharRegiao ?? false}

@@ -75,7 +75,7 @@ export default function MobileNavigation() {
     }
 
     return (
-        <div className={showNavigation ? "mobile-navigation-layout" : undefined}>
+        <div className={showNavigation ? "mobile-navigation-layout" : undefined} data-mobile-destination={showNavigation ? active : undefined}>
             {showHeader && <MobileHeader key={location.key} />}
             <div className={showHeader ? (active === "feed" || active === "chat" ? "mobile-primary-content mobile-social-destination" : "mobile-primary-content") : undefined}>
                 <Outlet context={{ mobile, unread }} />
