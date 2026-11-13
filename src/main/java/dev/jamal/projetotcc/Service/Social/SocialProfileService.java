@@ -100,7 +100,7 @@ public class SocialProfileService {
     }
 
 
-    private boolean maiorDeIdade(User user) {
+    static boolean maiorDeIdade(User user) {
 
         if (user.getDataNascimento() == null) {
             return false;

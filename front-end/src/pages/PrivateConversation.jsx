@@ -81,18 +81,8 @@ function PrivateChat({ contactId }) {
         envioOcupadoRef.current = false;
         leituraOcupadaRef.current = false;
         erroLeituraEmRef.current = 0;
-        setUltimaLeitura(0);
-        setLendoFim(true);
-        setAvisoLeitura("");
         anterioresOcupadoRef.current = false;
         seguirFinalRef.current = true;
-        setCarregando(true);
-        setAcesso(false);
-        setMensagens([]);
-        setContato(null);
-        setErro("");
-        setErroAtualizacao("");
-
         async function atualizar() {
             if (!sessao.isActive() || !inicializada || atualizando) return;
             clearTimeout(timer);
@@ -127,6 +117,17 @@ function PrivateChat({ contactId }) {
         atualizarRef.current = atualizar;
 
         async function iniciar() {
+            await Promise.resolve();
+            if (!sessao.isActive()) return;
+            setUltimaLeitura(0);
+            setLendoFim(true);
+            setAvisoLeitura("");
+            setCarregando(true);
+            setAcesso(false);
+            setMensagens([]);
+            setContato(null);
+            setErro("");
+            setErroAtualizacao("");
             try {
                 const [detalhes, historico] = await Promise.all([
                     api.get(base, { signal: sessao.signal }),

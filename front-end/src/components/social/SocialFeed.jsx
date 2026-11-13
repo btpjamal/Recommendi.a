@@ -140,10 +140,10 @@ function FeedCard({ item, onUnavailable, onAccessLost }) {
                 <time dateTime={post.criadoEm}>{new Date(post.criadoEm).toLocaleString("pt-BR")}</time>
                 {post.editadoEm && <small>Editada</small>}
             </div>
-            {!post.propria && <SocialFollowButton userId={post.autorId} />}
+            {!post.propria && <SocialFollowButton userId={post.autorId} initialFollowing={item.seguindo ?? null} />}
         </header>
         {post.conteudo && <p className="community-post-text">{post.conteudo}</p>}
         {post.possuiImagem && <CommunityPostImage communityId={post.communityId} post={post} onAccessLost={onAccessLost} />}
-        <CommunityPostInteractions communityId={post.communityId} post={post} onUnavailable={onUnavailable} onAccessLost={onAccessLost} />
+        <CommunityPostInteractions initialSummary={item.interacoes} communityId={post.communityId} post={post} onUnavailable={onUnavailable} onAccessLost={onAccessLost} />
     </article>;
 }

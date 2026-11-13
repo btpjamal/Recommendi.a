@@ -50,12 +50,21 @@ public class CommunityModerationService {
   if(r.getPost().getDeletedAt()!=null||!r.getPost().isPossuiImagem())throw error(HttpStatus.NOT_FOUND,"Imagem indisponível.");
   return images.findById(r.getPost().getId()).map(CommunityPostImage::getDados).orElseThrow(()->error(HttpStatus.NOT_FOUND,"Imagem indisponível."));
  }
+ @Transactional(readOnly=true)
+ public byte[] imagemDenunciada(Long admin, Long id) {
+  admin(admin);
+  return reports.findEvidenceImage(id)
+          .orElseThrow(() -> error(HttpStatus.NOT_FOUND, "Imagem da evidência indisponível."));
+ }
  private CommunityReportDTO dto(CommunityReport r) {
   var p=r.getPost();var c=r.getCommentId()==null?null:comments.findById(r.getCommentId()).orElse(null);
   boolean removed=p.getDeletedAt()!=null||(r.getCommentId()!=null&&(c==null||c.getDeletedAt()!=null));
+  var evidence = reports.findEvidence(r.getId())
+          .map(e -> new CommunityReportDTO.Evidence(e.getPublicacao(), e.getComentario(),
+                  e.getSha256(), e.getPossuiImagem())).orElse(null);
   return new CommunityReportDTO(r.getId(),p.getCommunity().getId(),p.getCommunity().getHobby().getNome(),p.getId(),r.getCommentId(),
    r.getReason(),r.getDetalhes(),r.getStatus(),r.getDecision(),r.getNotas(),r.getCreatedAt(),r.getReviewedAt(),r.getVersion(),r.getTargetVersion(),
    c==null?p.getVersion():c.getVersion(),p.getConteudo(),c==null?null:c.getConteudo(),removed,
-   p.getHiddenAt()!=null||(c!=null&&c.getHiddenAt()!=null),p.isPossuiImagem()&&p.getDeletedAt()==null);
+   p.getHiddenAt()!=null||(c!=null&&c.getHiddenAt()!=null),p.isPossuiImagem()&&p.getDeletedAt()==null,evidence);
  }
 }

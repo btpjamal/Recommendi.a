@@ -8,11 +8,7 @@ export default function usePrivateUnread(enabled, revisao) {
         const controller = new AbortController();
         let timer;
         let ocupado = false;
-        if (!enabled) {
-            setResumo({ total: 0, porContato: [] });
-            setErro("");
-            return () => controller.abort();
-        }
+        if (!enabled) return;
         async function carregar() {
             if (controller.signal.aborted || ocupado) return;
             clearTimeout(timer);
@@ -38,5 +34,5 @@ export default function usePrivateUnread(enabled, revisao) {
         carregar();
         return () => { clearTimeout(timer); controller.abort(); document.removeEventListener("visibilitychange", aoVoltar); };
     }, [enabled, revisao]);
-    return { ...resumo, erro };
+    return enabled ? { ...resumo, erro } : { total: 0, porContato: [], erro: "" };
 }

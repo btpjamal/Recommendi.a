@@ -59,6 +59,7 @@ public class SocialProfileEditorService {
     @Transactional
     public SocialProfileEditDTO salvar(Long id, SocialProfileEditDTO dto) {
         var p = bloquear(id);
+        SocialTextValidation.rejectNul(dto.biografia());
         if (dto.biografia() != null && dto.biografia().length() > 500)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A biografia deve ter até 500 caracteres.");
         if (dto.fotoVisibilidade() == null || dto.biografiaVisibilidade() == null ||
@@ -88,7 +89,7 @@ public class SocialProfileEditorService {
         validar(viewer);
         if (blocks.bloqueados(viewer, owner)) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         var p = perfil(owner);
-        if (p.getFoto() == null || !hub.podeVer(p.getFotoVisibilidade(), viewer, owner))
+        if (!SocialProfileService.maiorDeIdade(p.getUser()) || p.getFoto() == null || !hub.podeVer(p.getFotoVisibilidade(), viewer, owner))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         return p.getFoto();
     }

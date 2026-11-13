@@ -45,23 +45,26 @@ export default function SocialContactsPanel({ caixa, onCaixaChange, onBloqueioAl
 
     useEffect(() => {
         const controller = new AbortController();
-        setCarregando(true);
-        setErro("");
-        setDados(null);
-        api.get(caixa === "BLOQUEADOS" ? "/community/contacts/blocks" : "/community/contacts", {
-            params: { caixa: caixa === "BLOQUEADOS" ? undefined : caixa, pagina },
-            signal: controller.signal
-        }).then((resposta) => {
+        Promise.resolve().then(() => {
             if (controller.signal.aborted) return;
-            if (pagina > 0 && pagina >= resposta.data.totalPages) {
-                setPagina(Math.max(0, resposta.data.totalPages - 1));
-                return;
-            }
-            setDados(resposta.data);
-        }).catch((error) => {
-            if (!controller.signal.aborted) setErro(error.response?.data?.error || "Não foi possível carregar seus contatos.");
-        }).finally(() => {
-            if (!controller.signal.aborted) setCarregando(false);
+            setCarregando(true);
+            setErro("");
+            setDados(null);
+            return api.get(caixa === "BLOQUEADOS" ? "/community/contacts/blocks" : "/community/contacts", {
+                params: { caixa: caixa === "BLOQUEADOS" ? undefined : caixa, pagina },
+                signal: controller.signal
+            }).then((resposta) => {
+                if (controller.signal.aborted) return;
+                if (pagina > 0 && pagina >= resposta.data.totalPages) {
+                    setPagina(Math.max(0, resposta.data.totalPages - 1));
+                    return;
+                }
+                setDados(resposta.data);
+            }).catch((error) => {
+                if (!controller.signal.aborted) setErro(error.response?.data?.error || "Não foi possível carregar seus contatos.");
+            }).finally(() => {
+                if (!controller.signal.aborted) setCarregando(false);
+            });
         });
         return () => controller.abort();
     }, [caixa, pagina, revisao]);

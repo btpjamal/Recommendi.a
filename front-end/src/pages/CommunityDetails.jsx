@@ -3,6 +3,7 @@ import "./css/SocialScreenTheme.css";
 import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { pendingSend } from "../components/social/privateChatState.mjs";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { api } from "../api/api";
 import { createChatSession, mergeMessages } from "../components/community/communityChatState.mjs";
@@ -42,6 +43,7 @@ function CommunityChat({ communityId, active, onTabChange }) {
     const cursorNovasRef = useRef(0);
     const cursorAnterioresRef = useRef(null);
     const envioOcupadoRef = useRef(false);
+    const envioPendenteRef = useRef(null);
     const anterioresOcupadoRef = useRef(false);
     const listaRef = useRef(null);
     const seguirFinalRef = useRef(true);
@@ -81,15 +83,6 @@ function CommunityChat({ communityId, active, onTabChange }) {
         envioOcupadoRef.current = false;
         anterioresOcupadoRef.current = false;
         seguirFinalRef.current = true;
-        setCarregando(true);
-        setEnviando(false);
-        setCarregandoAnteriores(false);
-        setAcesso(false);
-        setMensagens([]);
-        setComunidade(null);
-        setErro("");
-        setErroAtualizacao("");
-
         async function atualizar() {
             if (!sessao.isActive() || !inicializada || atualizando) return;
             clearTimeout(timer);
@@ -123,6 +116,16 @@ function CommunityChat({ communityId, active, onTabChange }) {
         atualizarRef.current = atualizar;
 
         async function iniciar() {
+            await Promise.resolve();
+            if (!sessao.isActive()) return;
+            setCarregando(true);
+            setEnviando(false);
+            setCarregandoAnteriores(false);
+            setAcesso(false);
+            setMensagens([]);
+            setComunidade(null);
+            setErro("");
+            setErroAtualizacao("");
             try {
                 const [detalhes, historico] = await Promise.all([
                     api.get(base, { signal: sessao.signal }),
@@ -196,10 +199,12 @@ function CommunityChat({ communityId, active, onTabChange }) {
         setEnviando(true);
         setErro("");
         try {
-            const resposta = await api.post(base + "/messages", { conteudo: mensagem }, { signal: sessao.signal });
+            envioPendenteRef.current = pendingSend(envioPendenteRef.current, mensagem);
+            const resposta = await api.post(base + "/messages", envioPendenteRef.current, { signal: sessao.signal });
             sessao.commit(() => {
                 seguirFinalRef.current = true;
                 setMensagens((atuais) => mergeMessages(atuais, [resposta.data]));
+                envioPendenteRef.current = null;
                 setConteudo("");
                 // O POST nao avanca o cursor: pode haver mensagens intermediarias ainda nao lidas.
                 atualizarRef.current?.();

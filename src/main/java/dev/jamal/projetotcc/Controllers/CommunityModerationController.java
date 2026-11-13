@@ -21,6 +21,11 @@ public class CommunityModerationController {
  @GetMapping("/{reportId}/image") public ResponseEntity<byte[]> imagem(Authentication auth,@PathVariable Long reportId){
   return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.IMAGE_JPEG).header("X-Content-Type-Options","nosniff").body(service.imagem(actor(auth),reportId));
  }
+ @GetMapping("/{reportId}/evidence/image")
+ public ResponseEntity<byte[]> imagemDenunciada(Authentication auth, @PathVariable Long reportId) {
+  return ResponseEntity.ok().cacheControl(CacheControl.noStore()).contentType(MediaType.IMAGE_JPEG)
+          .header("X-Content-Type-Options", "nosniff").body(service.imagemDenunciada(actor(auth), reportId));
+ }
  @ExceptionHandler(ResponseStatusException.class) public ResponseEntity<Map<String,String>> status(ResponseStatusException e){
   return ResponseEntity.status(e.getStatusCode()).cacheControl(CacheControl.noStore()).body(Map.of("error",e.getReason()==null?"Denúncia indisponível.":e.getReason()));
  }

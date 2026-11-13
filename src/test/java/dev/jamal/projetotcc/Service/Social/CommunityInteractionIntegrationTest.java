@@ -159,6 +159,39 @@ class CommunityInteractionIntegrationTest {
         assertEquals(1,service.listar(community,a,null,20).publicacoes().size());assertEquals(0,interactions.resumo(community,a,p.id()).comentarios());
         status(404,()->interactions.editar(community,b,p.id(),c.id(),new EditCommunityCommentDTO("Contorno",1L)));
     }
+    @Test void evidenciaDaPublicacaoSobreviveAEdicaoEExclusaoEAposPrazoExpira() {
+        var p = service.criar(community, a, new CreateCommunityPostDTO("Original", UUID.randomUUID()), new byte[]{1});
+        var r = interactions.denunciar(community, b, p.id(), null, reason());
+        var edit = service.editar(community, a, p.id(), new EditCommunityPostDTO("Editada", p.versao(), false), new byte[]{2});
+        assertEquals("Editada", reportView(r.id()).publicacao());
+        assertEquals("Original", reportView(r.id()).evidencia().publicacao());
+        status(403, () -> moderation.imagemDenunciada(b, r.id()));
+        service.excluir(community, a, p.id(), edit.versao());
+        var evidence = reportView(r.id()).evidencia();
+        assertEquals("Original", evidence.publicacao());
+        assertTrue(evidence.sha256().matches("[a-f0-9]{64}"));
+        assertTrue(evidence.possuiImagem());
+        assertArrayEquals(new byte[]{1}, moderation.imagemDenunciada(outsider, r.id()));
+
+        jdbc.update("UPDATE community_report_evidence SET expires_at = now() - interval '1 second' WHERE report_id = ?", r.id());
+        assertNull(reportView(r.id()).evidencia());
+        status(404, () -> moderation.imagemDenunciada(outsider, r.id()));
+        assertEquals(1, reports.deleteExpiredEvidence());
+        assertTrue(reports.existsById(r.id()));
+    }
+
+    @Test void evidenciaDoComentarioSobreviveAExclusao() {
+        var p = post(a, "Contexto");
+        var c = comment(b, p.id(), "Comentário original");
+        var r = interactions.denunciar(community, a, p.id(), c.id(), reason());
+        var edit = interactions.editar(community, b, p.id(), c.id(), new EditCommunityCommentDTO("Editado", c.versao()));
+        interactions.excluir(community, b, p.id(), c.id(), edit.versao());
+        var evidence = reportView(r.id()).evidencia();
+        assertEquals("Contexto", evidence.publicacao());
+        assertEquals("Comentário original", evidence.comentario());
+        assertFalse(evidence.possuiImagem());
+    }
+
     @Test void moderadorPrecisaRevisarVersaoAtual(){
         var p=post(a,"Texto");var r=interactions.denunciar(community,b,p.id(),null,reason());var old=reportView(r.id());
         service.editar(community,a,p.id(),new EditCommunityPostDTO("Nova versão",0L,false),null);

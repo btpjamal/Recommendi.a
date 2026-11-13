@@ -53,9 +53,18 @@ class SocialProfilePrivacyTest {
 
     private SocialProfile profile(Long id) {
         var user = new User(); user.setId(id); user.setNome("Pessoa " + id);
+        user.setDataNascimento(java.time.LocalDate.of(1990, 1, 1));
         var p = new SocialProfile(); p.setUser(user); p.setEnabled(true);
         p.setBiografia("Minha biografia"); p.setFoto(new byte[]{1,2,3}); return p;
     }
+    @Test void perfilEFotoExigemMaioridadeDoTitular() {
+        b.getUser().setDataNascimento(java.time.LocalDate.now().minusYears(17));
+        assertEquals(404, assertThrows(ResponseStatusException.class,
+                () -> hub.buscarPerfilPublicoPara(1L, 2L)).getStatusCode().value());
+        assertEquals(404, assertThrows(ResponseStatusException.class,
+                () -> editor.foto(1L, 2L)).getStatusCode().value());
+    }
+
     private void privateFields(SocialProfile p, SocialVisibility v) {
         p.setFotoVisibilidade(v); p.setBiografiaVisibilidade(v);
         p.setInteressesVisibilidade(v); p.setHobbiesVisibilidade(v);

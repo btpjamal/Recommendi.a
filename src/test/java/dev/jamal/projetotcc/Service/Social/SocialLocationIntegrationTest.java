@@ -67,6 +67,24 @@ class SocialLocationIntegrationTest {
     @Autowired HobbyRepository hobbies;
     @Autowired HobbyCategoryRepository categorias;
     @Autowired JdbcTemplate jdbc;
+    @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
+
+    @Test
+    void visibilidadeRespeitaDesativacaoConfirmadaDepoisDaLeituraDoPerfil() {
+        Long id = usuario("MG", "São João", true, false);
+        var leitura = new org.springframework.transaction.support.TransactionTemplate(transactions);
+        var desativacao = new org.springframework.transaction.support.TransactionTemplate(transactions);
+        desativacao.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+        assertThrows(IllegalStateException.class, () -> leitura.executeWithoutResult(status -> {
+            assertTrue(sociais.findByUser_Id(id).orElseThrow().isEnabled());
+            desativacao.executeWithoutResult(outra -> sociais.findByUser_Id(id).orElseThrow().setEnabled(false));
+            localizacao.atualizarVisibilidade(id, true);
+        }));
+        var perfil = sociais.findByUser_Id(id).orElseThrow();
+        assertFalse(perfil.isEnabled());
+        assertFalse(perfil.isCompartilharRegiao());
+    }
 
     @BeforeEach
     void prepararBancoDescartavel() {
@@ -142,12 +160,20 @@ class SocialLocationIntegrationTest {
         Long primeiro = usuario("MG", "São João", true, false);
         Long segundo = usuario("mg", " sao joao ", true, false);
         Long outroEstado = usuario("SP", "São João", true, false);
-        var inicial = comunidades.listarMunicipais(primeiro).get(0);
+        var catalogo = comunidades.listarMunicipais(primeiro).get(0);
+        assertNull(catalogo.id());
+        assertFalse(catalogo.participando());
+        assertNull(comunidades.listarMunicipais(segundo).get(0).id());
+        assertEquals(0L, jdbc.queryForObject("SELECT count(*) FROM communities", Long.class));
+        var inicial = comunidades.entrarPeloCatalogo(catalogo.hobbyId(), CommunityType.MUNICIPAL, primeiro);
+        assertTrue(inicial.participando());
+        assertEquals(1L, comunidades.listarMunicipais(segundo).get(0).membros());
         assertEquals("MUNICIPAL", inicial.tipo());
         assertEquals("SAO JOAO", inicial.cidade());
         assertEquals(inicial.id(), comunidades.listarMunicipais(segundo).get(0).id());
         assertEquals(inicial.id(), comunidades.listarMunicipais(primeiro).get(0).id());
-        assertNotEquals(inicial.id(), comunidades.listarMunicipais(outroEstado).get(0).id());
+        assertNull(comunidades.listarMunicipais(outroEstado).get(0).id());
+        assertNotEquals(inicial.id(), comunidades.entrarPeloCatalogo(catalogo.hobbyId(), CommunityType.MUNICIPAL, outroEstado).id());
         assertEquals(2L, jdbc.queryForObject("SELECT count(*) FROM communities WHERE tipo='MUNICIPAL'", Long.class));
     }
 
@@ -155,7 +181,8 @@ class SocialLocationIntegrationTest {
     void entradaMunicipalValidaCidadeNoServidor() {
         Long morador = usuario("MG", "São João", true, false);
         Long externo = usuario("MG", "Outra cidade", true, true);
-        Long comunidadeId = comunidades.listarMunicipais(morador).get(0).id();
+        var catalogo = comunidades.listarMunicipais(morador).get(0);
+        Long comunidadeId = comunidades.entrarPeloCatalogo(catalogo.hobbyId(), CommunityType.MUNICIPAL, morador).id();
         assertThrows(IllegalStateException.class, () -> comunidades.entrar(comunidadeId, externo));
         assertTrue(comunidades.entrar(comunidadeId, morador).participando());
         assertEquals("SAO JOAO", comunidades.buscarDetalhes(comunidadeId, morador).cidade());

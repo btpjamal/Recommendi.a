@@ -55,4 +55,10 @@ public class PrivateMessageController {
         return ResponseEntity.status(erro.getStatusCode()).body(Map.of("error",
                 erro.getReason() == null ? "Não foi possível concluir a operação." : erro.getReason()));
     }
+    @ExceptionHandler(dev.jamal.projetotcc.Service.Social.SocialQuotaExceededException.class)
+    public ResponseEntity<java.util.Map<String, String>> quotaExceeded() {
+        return ResponseEntity.status(429).header("Retry-After", "60")
+                .body(java.util.Map.of("error",
+                        "Limite de novas ações atingido. Aguarde até 60 segundos e tente novamente."));
+    }
 }

@@ -12,7 +12,12 @@ class CommunityInteractionServiceTest {
   access=mock(CommunityPostService.class);comments=mock(CommunityCommentRepository.class);likes=mock(CommunityPostLikeRepository.class);reports=mock(CommunityReportRepository.class);
   users=mock(UserRepository.class);profiles=mock(SocialProfileRepository.class);blocks=mock(SocialUserBlockRepository.class);
   service=new CommunityInteractionService(access,comments,likes,reports,users,profiles,blocks,mock(org.springframework.context.ApplicationEventPublisher.class));
-  ReflectionTestUtils.setField(service,"entityManager",mock(jakarta.persistence.EntityManager.class));
+        var manager = mock(jakarta.persistence.EntityManager.class);
+        var quotaQuery = mock(jakarta.persistence.Query.class);
+        when(manager.createNativeQuery(anyString())).thenReturn(quotaQuery);
+        when(quotaQuery.setParameter(anyString(), any())).thenReturn(quotaQuery);
+        when(quotaQuery.getResultList()).thenReturn(List.of(1));
+        ReflectionTestUtils.setField(service, "entityManager", manager);
   viewer=new User();viewer.setId(1L);viewer.setNome("Pessoa");viewer.setDataNascimento(LocalDate.of(1990,1,1));
   author=new User();author.setId(2L);author.setNome("Autor");author.setDataNascimento(LocalDate.of(1990,1,1));
   post=new CommunityPost();post.setId(10L);post.setUser(author);post.setVersion(0L);

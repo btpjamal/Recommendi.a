@@ -91,6 +91,7 @@ public class SocialContactService {
         bloquearPar(atorId, destino);
         validarDisponibilidade(atorId, destino);
         String texto = pedido.apresentacao() == null ? "" : pedido.apresentacao().strip();
+        SocialTextValidation.rejectNul(texto);
         if (texto.length() > 300) throw erro(HttpStatus.BAD_REQUEST, "A apresentação deve ter até 300 caracteres.");
 
         SocialContact contato = contacts.findByLowUserIdAndHighUserId(

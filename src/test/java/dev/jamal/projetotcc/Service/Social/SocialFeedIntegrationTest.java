@@ -165,6 +165,29 @@ class SocialFeedIntegrationTest {
         assertEquals(newest.id(),feed.listar(a,false,null,10).itens().get(0).publicacao().id());
     }
 
+    @Test void feedIncluiResumoPorPublicacaoSemContarInteracoesBloqueadasOuOcultas() {
+        var target = post(b, "Com interações");
+        var empty = post(b, "Sem interações");
+        follows.alterar(a, b, true);
+        for (Long author : List.of(a, b, outsider)) {
+            jdbc.update("INSERT INTO community_post_likes(post_id,user_id,created_at) VALUES (?,?,now())",
+                    target.id(), author);
+            jdbc.update("""
+                    INSERT INTO community_comments(post_id,user_id,client_id,request_hash,conteudo,created_at,hidden_at)
+                    VALUES (?,?,?,?,?,now(),?)
+                    """, target.id(), author, UUID.randomUUID(), "0".repeat(64), "Comentário",
+                    author.equals(b) ? java.sql.Timestamp.from(Instant.now()) : null);
+        }
+        jdbc.update("INSERT INTO social_user_blocks(blocker_id,blocked_id,created_at) VALUES (?,?,now())",
+                outsider, a);
+
+        var items = feed.listar(a, true, null, 20).itens();
+        assertEquals(List.of(empty.id(), target.id()), items.stream().map(i -> i.publicacao().id()).toList());
+        assertTrue(items.stream().allMatch(SocialFeedItemDTO::seguindo));
+        assertEquals(new CommunityInteractionDTO(0, false, 0), items.get(0).interacoes());
+        assertEquals(new CommunityInteractionDTO(2, true, 1), items.get(1).interacoes());
+    }
+
     @Test void entradasInvalidasSaoRecusadas() {
         status(400,()->follows.alterar(a,a,true));status(400,()->follows.consultar(a,-1L));
         status(404,()->follows.alterar(a,Long.MAX_VALUE,true));

@@ -60,6 +60,9 @@ public class CommunityMessage {
     private LocalDateTime dataEnvio;
 
 
+    @Column(name = "client_message_id", updatable = false)
+    private java.util.UUID clientMessageId;
+
     @PrePersist
     public void prePersist() {
         dataEnvio = LocalDateTime.now();

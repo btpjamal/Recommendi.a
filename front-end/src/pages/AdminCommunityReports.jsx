@@ -5,17 +5,17 @@ import "./css/AdminCommunityReports.css";
 
 const reasons = { SPAM: "Spam", OFENSA: "Ofensa ou assédio", CONTEUDO_INADEQUADO: "Conteúdo inadequado", OUTRO: "Outro" };
 
-function ReportImage({ id }) {
+function ReportImage({ id, evidence = false }) {
     const [image, setImage] = useState(null);
     const [failed, setFailed] = useState(false);
     useEffect(() => {
         const controller = new AbortController(); let url;
-        api.get(`/admin/community-reports/${id}/image`, { signal: controller.signal, responseType: "blob" }).then(({ data }) => {
+        api.get(`/admin/community-reports/${id}${evidence ? "/evidence" : ""}/image`, { signal: controller.signal, responseType: "blob" }).then(({ data }) => {
             if (controller.signal.aborted) return;
             url = URL.createObjectURL(data); setImage(url);
         }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
         return () => { controller.abort(); if (url) URL.revokeObjectURL(url); };
-    }, [id]);
+    }, [id, evidence]);
     if (failed) return <p role="alert">Imagem indisponível ou acesso revogado.</p>;
     return image ? <img src={image} alt="Imagem da publicação denunciada" className="moderation-image" /> : <p role="status">Carregando imagem...</p>;
 }
@@ -24,6 +24,8 @@ function ReportCard({ report, busy, onReview }) {
     const [decision, setDecision] = useState("MANTER");
     const [notes, setNotes] = useState("");
     const [showImage, setShowImage] = useState(false);
+    const [showEvidenceImage, setShowEvidenceImage] = useState(false);
+    const evidence = report.evidencia;
     return <article className="moderation-card">
         <header><div><span>DENÚNCIA #{report.id} · {report.commentId == null ? "PUBLICAÇÃO" : "COMENTÁRIO"}</span>
             <h2>{report.comunidade}</h2><time dateTime={report.criadoEm}>{new Date(report.criadoEm).toLocaleString("pt-BR")}</time></div>
@@ -31,6 +33,20 @@ function ReportCard({ report, busy, onReview }) {
         <p><strong>Motivo:</strong> {reasons[report.motivo]}</p>
         {report.detalhes && <p className="moderation-text">{report.detalhes}</p>}
         {report.versaoDenunciada !== report.versaoConteudo && <p className="moderation-warning">O conteúdo mudou desde a denúncia. Confira a versão atual antes de decidir.</p>}
+        <section className="moderation-context">
+            <h3>Registro da denúncia</h3>
+            {evidence ? <>
+                <p className="moderation-text">{evidence.publicacao || "Publicação sem texto."}</p>
+                {evidence.comentario != null && <><h4>Comentário denunciado</h4>
+                    <p className="moderation-text">{evidence.comentario}</p></>}
+                {evidence.possuiImagem && <>
+                    <button type="button" onClick={() => setShowEvidenceImage(v => !v)}>
+                        {showEvidenceImage ? "Fechar imagem registrada" : "Ver imagem registrada"}
+                    </button>
+                    {showEvidenceImage && <ReportImage id={report.id} evidence />}
+                </>}
+            </> : <p>O registro original expirou ou não foi coletado.</p>}
+        </section>
         {report.excluido && <p>O conteúdo foi excluído pelo autor. Você pode encerrar mantendo o estado atual.</p>}
         {report.oculto && <p>Este conteúdo ou sua publicação já está oculto. Manter não restaura a visibilidade.</p>}
         <section className="moderation-context"><h3>Publicação atual</h3><p className="moderation-text">{report.publicacao || "Sem texto disponível."}</p>

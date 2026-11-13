@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
+
 import java.util.List;
 
 @Service
@@ -29,23 +29,39 @@ public class CommunityService {
         if (chatLocks.lockCommunity(communityId).isEmpty()) throw new IllegalStateException("Comunidade não encontrada.");
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<CommunityDTO> listarMunicipais(Long userId) {
         var local = locationService.buscar(userId);
         locationService.validarEscopo(local, dev.jamal.projetotcc.Enum.SocialLocationScope.MUNICIPAL);
+        return catalogo(userId, CommunityType.MUNICIPAL, local.estado(), local.cidade());
+    }
 
-        for (Hobby hobby : hobbyRepository.findAll()) {
-            communityRepository.insertIfAbsent(hobby.getId(), CommunityType.MUNICIPAL.name(),
-                    local.estado(), local.cidade());
-        }
-
-        return communityRepository.findByTipoAndEstadoAndCidade(
-                        CommunityType.MUNICIPAL, local.estado(), local.cidade()).stream()
-                .map(community -> converterParaDTO(community, userId))
-                .sorted(Comparator.comparing(CommunityDTO::hobbyNome, String.CASE_INSENSITIVE_ORDER))
+    private List<CommunityDTO> catalogo(Long userId, CommunityType tipo, String estado, String cidade) {
+        return communityRepository.catalogo(userId, tipo.name(), estado, cidade).stream()
+                .map(row -> new CommunityDTO(row.getId(), row.getHobbyId(), row.getHobbyNome(),
+                        tipo.name(), estado, row.getMembros(), row.getParticipando(), cidade))
                 .toList();
     }
 
+    @Transactional
+    public CommunityDTO entrarPeloCatalogo(Long hobbyId, CommunityType tipo, Long userId) {
+        if (chatLocks.lockUser(userId).isEmpty()) throw new IllegalStateException("Usuário não encontrado.");
+        var local = locationService.buscar(userId);
+        String estado = tipo == CommunityType.GERAL ? null : normalizarEstado(local.estado());
+        String cidade = tipo == CommunityType.MUNICIPAL ? local.cidade() : null;
+        if (tipo == CommunityType.MUNICIPAL) {
+            locationService.validarEscopo(local, dev.jamal.projetotcc.Enum.SocialLocationScope.MUNICIPAL);
+        }
+        var existing = communityRepository.findByHobby_IdAndTipoAndEstadoAndCidade(hobbyId, tipo, estado, cidade);
+        if (existing.isPresent()) return entrar(existing.get().getId(), userId);
+        if (!hobbyRepository.findById(hobbyId).map(Hobby::isAtivo).orElse(false)) {
+            throw new IllegalStateException("Hobby indisponível para novas comunidades.");
+        }
+        communityRepository.insertIfAbsent(hobbyId, tipo.name(), estado, cidade);
+        var community = communityRepository.findByHobby_IdAndTipoAndEstadoAndCidade(hobbyId, tipo, estado, cidade)
+                .orElseThrow(() -> new IllegalStateException("Comunidade indisponível."));
+        return entrar(community.getId(), userId);
+    }
 
     @Transactional
     public void garantirComunidadesGerais() {
@@ -84,31 +100,9 @@ public class CommunityService {
 
 
     @Transactional(readOnly = true)
-    public List<CommunityDTO> listarGerais(
-            Long userId
-    ) {
-
-        return communityRepository
-                .findByTipo(CommunityType.GERAL)
-                .stream()
-
-                .map(community ->
-                        converterParaDTO(
-                                community,
-                                userId
-                        )
-                )
-
-                .sorted(
-                        Comparator.comparing(
-                                CommunityDTO::hobbyNome,
-                                String.CASE_INSENSITIVE_ORDER
-                        )
-                )
-
-                .toList();
+    public List<CommunityDTO> listarGerais(Long userId) {
+        return catalogo(userId, CommunityType.GERAL, null, null);
     }
-
 
     private CommunityDTO converterParaDTO(
             Community community,
@@ -285,47 +279,8 @@ public class CommunityService {
     }
 
     @Transactional(readOnly = true)
-    public List<CommunityDTO> listarRegionais(
-            Long userId
-    ) {
-
-        RecommendationProfile profile =
-                profileRepository
-                        .findByUserId(userId)
-                        .orElseThrow(() ->
-                                new IllegalStateException(
-                                        "Perfil de recomendação não encontrado."
-                                )
-                        );
-
-        String estado =
-                normalizarEstado(
-                        profile.getEstado()
-                );
-
-
-        return communityRepository
-                .findByTipoAndEstado(
-                        CommunityType.REGIONAL,
-                        estado
-                )
-                .stream()
-
-                .map(community ->
-                        converterParaDTO(
-                                community,
-                                userId
-                        )
-                )
-
-                .sorted(
-                        Comparator.comparing(
-                                CommunityDTO::hobbyNome,
-                                String.CASE_INSENSITIVE_ORDER
-                        )
-                )
-
-                .toList();
+    public List<CommunityDTO> listarRegionais(Long userId) {
+        return catalogo(userId, CommunityType.REGIONAL, normalizarEstado(locationService.buscar(userId).estado()), null);
     }
 
     @Transactional(readOnly = true)

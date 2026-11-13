@@ -68,6 +68,7 @@ public class CommunityInteractionService {
     throw error(HttpStatus.CONFLICT,"Este identificador já foi usado. Confira os comentários antes de reenviar.");
    return dto(c,viewer);
   }
+  SocialWriteQuota.consume(entityManager, viewer, SocialWriteQuota.Action.COMMENT);
   var c=new CommunityComment();c.setPost(parent);c.setUser(users.getReferenceById(viewer));c.setClientId(request.clientId());
   c.setRequestHash(hash);c.setConteudo(text);c.setCreatedAt(Instant.now());comments.saveAndFlush(c);
   if(!parent.getUser().getId().equals(viewer)) publisher.publishEvent(new SocialNotificationEvent(dev.jamal.projetotcc.Enum.SocialNotificationType.COMENTARIO_PUBLICACAO,c.getId(),null));
@@ -108,9 +109,12 @@ public class CommunityInteractionService {
   if(!version.equals(request.versao()))throw error(HttpStatus.CONFLICT,"O conteúdo mudou. Atualize antes de denunciar.");
   var old=reports.findByReporterIdAndPost_IdAndCommentIdAndTargetVersion(viewer,post,comment,version);
   if(old.isPresent())return new CommunityReportReceiptDTO(old.get().getId());
+  SocialWriteQuota.consume(entityManager, viewer, SocialWriteQuota.Action.REPORT);
   var r=new CommunityReport();r.setPost(p);r.setCommentId(comment);r.setReporterId(viewer);r.setTargetVersion(version);
   r.setReason(request.motivo());r.setDetalhes(details);r.setStatus(CommunityReportStatus.ABERTA);r.setCreatedAt(Instant.now());
-  reports.saveAndFlush(r);return new CommunityReportReceiptDTO(r.getId());
+  reports.saveAndFlush(r);
+  reports.captureEvidence(r.getId());
+  return new CommunityReportReceiptDTO(r.getId());
  }
  private String text(String value,int max,boolean required) {
   if(value!=null&&(value.length()>max||value.indexOf('\0')>=0))throw error(HttpStatus.BAD_REQUEST,"Texto inválido ou acima do limite de "+max+" caracteres.");

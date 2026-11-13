@@ -21,6 +21,8 @@ public class PrivateMessageService {
     private final PrivateMessageRepository messages;
     private final PrivateMessageReadRepository reads;
     private final UserRepository users;
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
 
     private ResponseStatusException invalido(String mensagem) {
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, mensagem);
@@ -50,6 +52,7 @@ public class PrivateMessageService {
     public PrivateMessageDTO enviar(Long atorId, Long contatoId, SendPrivateMessageDTO pedido) {
         var contato = contacts.carregarConversaAceitaBloqueada(atorId, contatoId);
         String texto = pedido == null || pedido.conteudo() == null ? "" : pedido.conteudo().strip();
+        SocialTextValidation.rejectNul(texto);
         if (texto.isBlank() || texto.length() > 1000 || pedido.clientMessageId() == null) {
             throw invalido("Informe uma mensagem de até 1000 caracteres e um identificador de envio válido.");
         }
@@ -60,6 +63,7 @@ public class PrivateMessageService {
             }
             return converter(repetida.get(), atorId);
         }
+        SocialWriteQuota.consume(entityManager, atorId, SocialWriteQuota.Action.PRIVATE_MESSAGE);
         var mensagem = new PrivateMessage();
         mensagem.setContactId(contatoId); mensagem.setSenderId(atorId);
         mensagem.setConteudo(texto); mensagem.setClientMessageId(pedido.clientMessageId());

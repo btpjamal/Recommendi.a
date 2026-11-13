@@ -3,11 +3,10 @@ import "./css/CommunityVisual.css";
 import SocialFeed from "../components/social/SocialFeed.jsx";
 import SocialFollowButton from "../components/social/SocialFollowButton.jsx";
 import NotificationBell from "../components/social/SocialNotifications.jsx";
-import { API_BASE_URL } from "../api/config.js";
+import { api } from "../api/api.js";
 import { session, revokeSession } from "../auth/session.js";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useOutletContext, useSearchParams } from "react-router";
-import axios from "axios";
 
 import "./css/Community.css";
 import "./css/RecommendationsLayout.css";
@@ -18,16 +17,53 @@ import SocialContactsPanel from "../components/social/SocialContactsPanel";
 import usePrivateUnread from "../components/social/usePrivateUnread.js";
 
 
+function useCommunityResource(path, fallback) {
+    const [revision, setRevision] = useState(0);
+    const [result, setResult] = useState(null);
+    const request = useMemo(() => path ? { path, revision, fallback } : null, [path, revision, fallback]);
+
+    useEffect(() => {
+        if (!request) return;
+        const controller = new AbortController();
+        api.get(request.path, { signal: controller.signal }).then(({ data }) => {
+            if (!controller.signal.aborted) setResult({ request, data });
+        }).catch(error => {
+            if (!controller.signal.aborted) {
+                setResult({ request, error: error.response?.data?.error || request.fallback });
+            }
+        });
+        return () => controller.abort();
+    }, [request]);
+
+    const current = request && result?.request === request ? result : null;
+    return {
+        data: current?.data ?? null,
+        error: current?.error,
+        loading: Boolean(path && !current),
+        retry: () => setRevision(value => value + 1),
+        update: change => setResult(previous =>
+            previous?.request === request && previous?.data != null
+                ? { ...previous, data: change(previous.data) } : previous),
+    };
+}
+
+function LocationFeedback({ loading, error, retry }) {
+    if (loading) return <p role="status">Carregando localização...</p>;
+    if (!error) return null;
+    return <div role="alert">
+        <p>{error}</p>
+        <button type="button" onClick={retry}>Tentar localização novamente</button>
+    </div>;
+}
+
 export default function Community() {
 
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { mobile, unread } = useOutletContext();
 
-    const [status, setStatus] = useState(null);
     const [resultadoPessoas, setResultadoPessoas] = useState(null);
     const [paginaPessoas, setPaginaPessoas] = useState(0);
-    const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
     const [ativando, setAtivando] = useState(false);
     const aba = searchParams.get("aba");
@@ -57,27 +93,38 @@ export default function Community() {
         setCaixaContato("BLOQUEADOS");
     }
 
-    const [comunidades, setComunidades] = useState([]);
     const [alterandoComunidade, setAlterandoComunidade] = useState(null);
-    const [comunidadesRegionais, setComunidadesRegionais] = useState([]);
     const [tipoComunidade, setTipoComunidade] = useState("geral");
-    const [comunidadesMunicipais, setComunidadesMunicipais] = useState([]);
-    const [configLocal, setConfigLocal] = useState(null);
     const [filtroPessoas, setFiltroPessoas] = useState("GERAL");
-    const [carregandoRegiao, setCarregandoRegiao] = useState(false);
-    const [erroRegiao, setErroRegiao] = useState("");
     const [salvandoVisibilidade, setSalvandoVisibilidade] = useState(false);
     const [erroVisibilidade, setErroVisibilidade] = useState("");
     const [revisaoLocal, setRevisaoLocal] = useState(0);
+    const statusRequest = useCommunityResource("/social/me/status", "Não foi possível carregar o status da comunidade.");
+    const { data: status, loading: carregando, error: erroStatus, retry: retryStatus } = statusRequest;
+    const participa = Boolean(status?.elegivel && status?.participa);
+    const locationRequest = useCommunityResource(participa && (abaAtiva === "pessoas" || abaAtiva === "comunidades")
+        ? "/community/location" : null, "Não foi possível carregar sua localização.");
+    const { data: configLocal, loading: carregandoLocal, error: erroLocal, retry: retryLocal } = locationRequest;
+    const catalogRequest = useCommunityResource(participa && abaAtiva === "comunidades"
+        ? "/community/communities" + (tipoComunidade === "geral" ? "" : "/" + tipoComunidade)
+        : null, "Não foi possível carregar as comunidades.");
+    const { data: catalogo, loading: carregandoRegiao, error: erroRegiao, retry: retryCatalogo } = catalogRequest;
+    const operacoes = useRef(null);
+    useEffect(() => {
+        const controller = new AbortController();
+        operacoes.current = controller;
+        return () => controller.abort();
+    }, []);
+
     const unreadDesktop = usePrivateUnread(!mobile && Boolean(status?.elegivel && status?.participa), revisaoLocal);
     const naoLidas = mobile ? unread : unreadDesktop;
 
     const nome = session.getItem("nome");
-    const token = session.getItem("token");
+
     const pessoasAtiva = Boolean(status?.elegivel && status?.participa && abaAtiva === "pessoas");
     const consultaPessoas = useMemo(() => pessoasAtiva ? {
-        escopo: filtroPessoas, pagina: paginaPessoas, revisao: revisaoLocal, token
-    } : null, [pessoasAtiva, filtroPessoas, paginaPessoas, revisaoLocal, token]);
+        escopo: filtroPessoas, pagina: paginaPessoas, revisao: revisaoLocal
+    } : null, [pessoasAtiva, filtroPessoas, paginaPessoas, revisaoLocal]);
     const resultadoAtual = resultadoPessoas?.consulta === consultaPessoas ? resultadoPessoas : null;
     const usuarios = resultadoAtual?.pessoas ?? [];
     const maisPessoas = resultadoAtual?.temMais ?? false;
@@ -87,8 +134,7 @@ export default function Community() {
     useEffect(() => {
         if (!consultaPessoas) return;
         const controller = new AbortController();
-        axios.get(API_BASE_URL + "/community/users/page", {
-            headers: { Authorization: `Bearer ${consultaPessoas.token}` },
+        api.get("/community/users/page", {
             params: { escopo: consultaPessoas.escopo, pagina: consultaPessoas.pagina },
             signal: controller.signal
         }).then((resposta) => {
@@ -104,39 +150,18 @@ export default function Community() {
         return () => controller.abort();
     }, [consultaPessoas]);
 
-    useEffect(() => {
-        setErroRegiao("");
-        setCarregandoRegiao(false);
-        if (!status?.participa || abaAtiva !== "comunidades" || tipoComunidade === "geral") return;
-        const controller = new AbortController();
-        setCarregandoRegiao(true);
-        axios.get(API_BASE_URL + "/community/communities/" + tipoComunidade, {
-            headers: { Authorization: `Bearer ${token}` },
-            signal: controller.signal
-        }).then((resposta) => {
-            if (controller.signal.aborted) return;
-            if (tipoComunidade === "municipal") setComunidadesMunicipais(resposta.data);
-            else setComunidadesRegionais(resposta.data);
-        }).catch((error) => {
-            if (!controller.signal.aborted) setErroRegiao(
-                error.response?.data?.error || "Não foi possível carregar as comunidades desta região."
-            );
-        }).finally(() => {
-            if (!controller.signal.aborted) setCarregandoRegiao(false);
-        });
-        return () => controller.abort();
-    }, [status?.participa, abaAtiva, tipoComunidade, revisaoLocal, token]);
-
     async function alterarVisibilidade(compartilharRegiao) {
+        const signal = operacoes.current?.signal;
         if (salvandoVisibilidade) return;
         setSalvandoVisibilidade(true);
         setErroVisibilidade("");
         try {
-            const resposta = await axios.put(API_BASE_URL + "/community/location-visibility", {
+            const resposta = await api.put("/community/location-visibility", {
                 compartilharRegiao
-            }, { headers: { Authorization: `Bearer ${token}` } });
-            setConfigLocal(resposta.data);
+            }, { signal });
+            if (!signal?.aborted) locationRequest.update(() => resposta.data);
         } catch (error) {
+            if (signal?.aborted) return;
             setErroVisibilidade(error.response?.data?.error || "Não foi possível salvar sua escolha.");
         } finally {
             setSalvandoVisibilidade(false);
@@ -144,97 +169,28 @@ export default function Community() {
     }
 
 
-    useEffect(() => {
-        carregarComunidade();
-    }, []);
-
-
-    async function carregarComunidade() {
-
-        try {
-
-            setCarregando(true);
-            setErro("");
-
-            const statusResponse = await axios.get(
-                API_BASE_URL + "/social/me/status",
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
-
-            const statusAtual = statusResponse.data;
-
-            setStatus(statusAtual);
-
-
-            if (
-                statusAtual.elegivel &&
-                statusAtual.participa
-            ) {
-                const [locationResponse, communitiesResponse] =
-                    await Promise.all([
-
-                        axios.get(
-                            API_BASE_URL + "/community/location",
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${token}`
-                                }
-                            }
-                        ),
-
-                        axios.get(
-                            API_BASE_URL + "/community/communities",
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${token}`
-                                }
-                            }
-                        )
-                    ]);
-
-                setConfigLocal(locationResponse.data);
-                setComunidades(communitiesResponse.data);
-            }
-
-        } catch (error) {
-
-
-            setErro(
-                error.response?.data?.error ||
-                "Não foi possível carregar a comunidade."
-            );
-
-        } finally {
-            setCarregando(false);
-        }
-    }
-
-
     async function ativarParticipacao() {
+        const signal = operacoes.current?.signal;
 
         try {
 
             setAtivando(true);
             setErro("");
 
-            await axios.post(
-                API_BASE_URL + "/social/me/enable",
+            await api.post(
+                "/social/me/enable",
                 {},
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+                    signal
                 }
             );
 
+            if (signal?.aborted) return;
             window.dispatchEvent(new Event("social-participation-changed"));
-            await carregarComunidade();
+            retryStatus();
 
         } catch (error) {
+            if (signal?.aborted) return;
 
 
             setErro(
@@ -253,24 +209,25 @@ export default function Community() {
         navigate("/login");
     }
 
-    async function entrarComunidade(communityId) {
+    async function entrarComunidade(comunidade) {
+        const signal = operacoes.current?.signal;
+        const caminho = comunidade.id ?? `catalog/${comunidade.tipo}/${comunidade.hobbyId}`;
 
         try {
-            setAlterandoComunidade(communityId);
+            setAlterandoComunidade(chaveComunidade(comunidade));
 
-            const response = await axios.post(
-                `${API_BASE_URL}/community/communities/${communityId}/join`,
+            const response = await api.post(
+                `/community/communities/${caminho}/join`,
                 {},
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+                    signal
                 }
             );
 
-            atualizarComunidade(response.data);
+            if (!signal?.aborted) atualizarComunidade(response.data);
 
         } catch (error) {
+            if (signal?.aborted) return;
 
 
             setErro(
@@ -284,23 +241,24 @@ export default function Community() {
     }
 
 
-    async function sairComunidade(communityId) {
+    async function sairComunidade(comunidade) {
+        const signal = operacoes.current?.signal;
+        const communityId = comunidade.id;
 
         try {
-            setAlterandoComunidade(communityId);
+            setAlterandoComunidade(chaveComunidade(comunidade));
 
-            const response = await axios.delete(
-                `${API_BASE_URL}/community/communities/${communityId}/leave`,
+            const response = await api.delete(
+                `/community/communities/${communityId}/leave`,
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+                    signal
                 }
             );
 
-            atualizarComunidade(response.data);
+            if (!signal?.aborted) atualizarComunidade(response.data);
 
         } catch (error) {
+            if (signal?.aborted) return;
 
 
             setErro(
@@ -315,23 +273,12 @@ export default function Community() {
 
 
     function atualizarComunidade(comunidadeAtualizada) {
-
-        const atualizarLista = lista =>
-            lista.map(comunidade =>
-                comunidade.id === comunidadeAtualizada.id
-                    ? comunidadeAtualizada
-                    : comunidade
-            );
-
-        setComunidades(atualizarLista);
-        setComunidadesRegionais(atualizarLista);
-        setComunidadesMunicipais(atualizarLista);
+        catalogRequest.update(lista => lista.map(comunidade =>
+            chaveComunidade(comunidade) === chaveComunidade(comunidadeAtualizada)
+                ? comunidadeAtualizada : comunidade));
     }
 
-    const comunidadesExibidas =
-        tipoComunidade === "municipal" ? comunidadesMunicipais : tipoComunidade === "regional"
-            ? comunidadesRegionais
-            : comunidades;
+    const comunidadesExibidas = catalogo ?? [];
 
     return (
         <main className="community-page recommendations-theme community-visual">
@@ -410,6 +357,12 @@ export default function Community() {
                 )}
 
 
+                {!carregando && erroStatus && (
+                    <div className="community-error" role="alert">
+                        <p>{erroStatus}</p>
+                        <button type="button" onClick={retryStatus}>Tentar novamente</button>
+                    </div>
+                )}
                 {!carregando && erro && (
                     <div className="community-error">
                         {erro}
@@ -573,7 +526,8 @@ export default function Community() {
                                     </div>
 
                                     <div className="social-location-controls">
-                                        {!configLocal?.cidadeDisponivel && <p>Preencha cidade e UF no seu perfil para habilitar todos os filtros regionais.</p>}
+                                        <LocationFeedback loading={carregandoLocal} error={erroLocal} retry={retryLocal} />
+                                        {configLocal && !configLocal.cidadeDisponivel && <p>Preencha cidade e UF no seu perfil para habilitar todos os filtros regionais.</p>}
                                         <label className="social-location-optin">
                                             <input type="checkbox" checked={configLocal?.compartilharRegiao ?? false}
                                                 disabled={!configLocal || salvandoVisibilidade}
@@ -586,7 +540,7 @@ export default function Community() {
                                         {erroVisibilidade && <p role="alert">{erroVisibilidade}</p>}
                                     </div>
                             {carregandoPessoas ? <p role="status">Carregando pessoas...</p> : erroPessoas ? (
-                                <div role="alert"><p>{erroPessoas}</p><button onClick={() => setRevisaoLocal((atual) => atual + 1)}>Tentar novamente</button></div>
+                                <div role="alert"><p>{erroPessoas}</p><button type="button" onClick={() => setRevisaoLocal(atual => atual + 1)}>Tentar novamente</button></div>
                             ) : usuarios.length === 0 ? (
 
                                 <div className="community-state">
@@ -685,9 +639,10 @@ export default function Community() {
                                     </div>
 
 
-                                    {!configLocal?.cidadeDisponivel && <p>Preencha cidade e UF no seu perfil para acessar as comunidades municipais.</p>}
+                                    <LocationFeedback loading={carregandoLocal} error={erroLocal} retry={retryLocal} />
+                                    {configLocal && !configLocal.cidadeDisponivel && <p>Preencha cidade e UF no seu perfil para acessar as comunidades municipais.</p>}
                                     {carregandoRegiao ? <p role="status">Carregando comunidades...</p> : erroRegiao ? (
-                                        <div role="alert"><p>{erroRegiao}</p><button onClick={() => setRevisaoLocal((atual) => atual + 1)}>Tentar novamente</button></div>
+                                        <div role="alert"><p>{erroRegiao}</p><button type="button" onClick={retryCatalogo}>Tentar novamente</button></div>
                                     ) : comunidadesExibidas.length === 0 ? (
 
                                         <div className="community-state">
@@ -711,10 +666,10 @@ export default function Community() {
                                             {comunidadesExibidas.map(comunidade => (
 
                                                 <CommunityCard
-                                                    key={comunidade.id}
+                                                    key={chaveComunidade(comunidade)}
                                                     comunidade={comunidade}
                                                     alterando={
-                                                        alterandoComunidade === comunidade.id
+                                                        alterandoComunidade === chaveComunidade(comunidade)
                                                     }
                                                     onEntrar={entrarComunidade}
                                                     onSair={sairComunidade}
@@ -852,6 +807,10 @@ function AffinityGroup({ titulo, itens }) {
     );
 }
 
+function chaveComunidade(comunidade) {
+    return [comunidade.tipo, comunidade.estado, comunidade.cidade, comunidade.hobbyId].join(":");
+}
+
 function CommunityCard({
                            comunidade,
                            alterando,
@@ -935,7 +894,7 @@ function CommunityCard({
                             className="community-card-leave"
                             disabled={alterando}
                             onClick={() =>
-                                onSair(comunidade.id)
+                                onSair(comunidade)
                             }
                         >
                             {alterando
@@ -949,7 +908,7 @@ function CommunityCard({
                             className="community-card-join"
                             disabled={alterando}
                             onClick={() =>
-                                onEntrar(comunidade.id)
+                                onEntrar(comunidade)
                             }
                         >
                             {alterando
