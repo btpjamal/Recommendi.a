@@ -20,6 +20,12 @@ export default function AdminDashboard() {
             descricao: "Configure as regras OSM utilizadas na busca de locais.",
             icone: "⌖",
             caminho: "/admin/location-rules"
+        },
+        {
+            titulo: "Denúncias da comunidade",
+            descricao: "Analise publicações e comentários. As decisões e justificativas ficam registradas.",
+            icone: "!",
+            caminho: "/admin/community-reports"
         }
     ];
 
