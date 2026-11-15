@@ -2,11 +2,38 @@ import { API_BASE_URL } from "../api/config.js";
 
 // Credentials live only in this page's memory. Reloading requires a new login.
 const values = new Map();
+const tokenListeners = new Set();
+
+export function subscribeSessionToken(listener) {
+    tokenListeners.add(listener);
+    return () => tokenListeners.delete(listener);
+}
+
+function notifyTokenChange(previous) {
+    if (previous !== values.get("token")) {
+        tokenListeners.forEach(listener => listener());
+    }
+}
+
 export const session = Object.freeze({
     getItem: key => values.get(key) ?? null,
-    setItem: (key, value) => values.set(key, String(value)),
-    removeItem: key => values.delete(key),
-    clear: () => values.clear(),
+    setItem(key, value) {
+        const previous = values.get("token");
+        const result = values.set(key, String(value));
+        notifyTokenChange(previous);
+        return result;
+    },
+    removeItem(key) {
+        const previous = values.get("token");
+        const result = values.delete(key);
+        notifyTokenChange(previous);
+        return result;
+    },
+    clear() {
+        const previous = values.get("token");
+        values.clear();
+        notifyTokenChange(previous);
+    },
 });
 
 // Remove sessions persisted by older releases without migrating their tokens.

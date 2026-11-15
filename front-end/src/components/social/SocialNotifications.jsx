@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router";
 import { api } from "../../api/api.js";
 import { mergeNotifications, safeNotificationDestination } from "./notificationState.mjs";
 import "./SocialNotifications.css";
+import { useSyncExternalStore } from "react";
+import { getLocationSearchNotices, markLocationSearchRead, subscribeLocationSearch } from "../hobbyLocationSearch.js";
 
 const NotificationContext = createContext(null);
 
@@ -46,10 +48,14 @@ export function SocialNotificationsProvider({ children }) {
 export default function NotificationBell() {
     const context = useContext(NotificationContext);
     const location = useLocation();
-    return context?.available ? <NotificationBellPanel key={location.key} context={context} /> : null;
+    const local = useSyncExternalStore(subscribeLocationSearch, getLocationSearchNotices);
+    return context && (context.available || local.length > 0)
+        ? <NotificationBellPanel key={location.key} context={context} local={local} />
+        : null;
 }
 
-function NotificationBellPanel({ context }) {
+function NotificationBellPanel({ context, local }) {
+    const count = context.count + local.filter(item => !item.read).length;
     const { refresh } = context;
     const navigate = useNavigate();
     const [open, setOpen] = useState(false);
@@ -110,15 +116,30 @@ function NotificationBellPanel({ context }) {
     }
     return <div className="social-notifications" ref={root}>
         <button ref={button} className="social-notification-bell" type="button" aria-expanded={open} aria-haspopup="dialog"
-            aria-label={`Notificações, ${context.count} não lidas`} title={context.error || "Notificações"} onClick={() => setOpen(value => !value)}>
+            aria-label={`Notificações, ${count} não lidas`} title={context.error || "Notificações"} onClick={() => setOpen(value => !value)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
-            {context.count > 0 && <span className="social-notification-badge">{context.count > 99 ? "99+" : context.count}</span>}
+            {count > 0 && <span className="social-notification-badge">{count > 99 ? "99+" : count}</span>}
         </button>
         {open && <section className="social-notification-panel" ref={panel} role="dialog" aria-label="Notificações">
             <header><h2>Notificações</h2><button type="button" onClick={() => { setOpen(false); button.current?.focus(); }}>Fechar</button></header>
             <button className="social-notification-refresh" type="button" disabled={loading || busy} onClick={() => { setRevision(v => v + 1); refresh(); }}>Atualizar</button>
             {(error || context.error) && <p className="social-notification-error" role="alert">{error || context.error}</p>}
-            {loading ? <p role="status">Carregando notificações...</p> : rows.length === 0 ? <p>Nenhuma notificação disponível.</p> : <ul>
+            {local.length > 0 && <ul aria-label="Buscas de locais">
+                {local.map(item => <li key={item.hobbyId} className={item.read ? "read" : "unread"}>
+                    <button type="button" className="social-notification-destination" onClick={() => {
+                        markLocationSearchRead(item.hobbyId);
+                        setOpen(false);
+                        navigate(`/recommendations/${item.hobbyId}#locais-proximos`);
+                    }}>
+                        <strong>Busca de locais · {item.hobbyNome}</strong>
+                        <span>{item.message}</span>
+                        <time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString("pt-BR")}</time>
+                        {!item.read && <small>Não lida</small>}
+                    </button>
+                    {!item.read && <button type="button" className="social-notification-read" onClick={() => markLocationSearchRead(item.hobbyId)}>Marcar como lida</button>}
+                </li>)}
+            </ul>}
+            {loading ? <p role="status">Carregando notificações...</p> : rows.length === 0 ? (local.length === 0 && <p>Nenhuma notificação disponível.</p>) : <ul>
                 {rows.map(row => <li key={row.id} className={row.lida ? "read" : "unread"}>
                     <button className="social-notification-destination" type="button" disabled={busy} onClick={() => read(row, true)}>
                         <span>{row.mensagem}</span><time dateTime={row.criadoEm}>{new Date(row.criadoEm).toLocaleString("pt-BR")}</time>

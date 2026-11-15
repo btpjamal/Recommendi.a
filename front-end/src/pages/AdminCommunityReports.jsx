@@ -1,3 +1,4 @@
+import RecommendationBanner from "../components/recommendations/RecommendationBanner";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/api.js";
 import { createChatSession } from "../components/community/communityChatState.mjs";
@@ -5,17 +6,17 @@ import "./css/AdminCommunityReports.css";
 
 const reasons = { SPAM: "Spam", OFENSA: "Ofensa ou assédio", CONTEUDO_INADEQUADO: "Conteúdo inadequado", OUTRO: "Outro" };
 
-function ReportImage({ id }) {
+function ReportImage({ id, evidence = false }) {
     const [image, setImage] = useState(null);
     const [failed, setFailed] = useState(false);
     useEffect(() => {
         const controller = new AbortController(); let url;
-        api.get(`/admin/community-reports/${id}/image`, { signal: controller.signal, responseType: "blob" }).then(({ data }) => {
+        api.get(`/admin/community-reports/${id}${evidence ? "/evidence" : ""}/image`, { signal: controller.signal, responseType: "blob" }).then(({ data }) => {
             if (controller.signal.aborted) return;
             url = URL.createObjectURL(data); setImage(url);
         }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
         return () => { controller.abort(); if (url) URL.revokeObjectURL(url); };
-    }, [id]);
+    }, [id, evidence]);
     if (failed) return <p role="alert">Imagem indisponível ou acesso revogado.</p>;
     return image ? <img src={image} alt="Imagem da publicação denunciada" className="moderation-image" /> : <p role="status">Carregando imagem...</p>;
 }
@@ -24,6 +25,8 @@ function ReportCard({ report, busy, onReview }) {
     const [decision, setDecision] = useState("MANTER");
     const [notes, setNotes] = useState("");
     const [showImage, setShowImage] = useState(false);
+    const [showEvidenceImage, setShowEvidenceImage] = useState(false);
+    const evidence = report.evidencia;
     return <article className="moderation-card">
         <header><div><span>DENÚNCIA #{report.id} · {report.commentId == null ? "PUBLICAÇÃO" : "COMENTÁRIO"}</span>
             <h2>{report.comunidade}</h2><time dateTime={report.criadoEm}>{new Date(report.criadoEm).toLocaleString("pt-BR")}</time></div>
@@ -31,6 +34,20 @@ function ReportCard({ report, busy, onReview }) {
         <p><strong>Motivo:</strong> {reasons[report.motivo]}</p>
         {report.detalhes && <p className="moderation-text">{report.detalhes}</p>}
         {report.versaoDenunciada !== report.versaoConteudo && <p className="moderation-warning">O conteúdo mudou desde a denúncia. Confira a versão atual antes de decidir.</p>}
+        <section className="moderation-context">
+            <h3>Registro da denúncia</h3>
+            {evidence ? <>
+                <p className="moderation-text">{evidence.publicacao || "Publicação sem texto."}</p>
+                {evidence.comentario != null && <><h4>Comentário denunciado</h4>
+                    <p className="moderation-text">{evidence.comentario}</p></>}
+                {evidence.possuiImagem && <>
+                    <button type="button" onClick={() => setShowEvidenceImage(v => !v)}>
+                        {showEvidenceImage ? "Fechar imagem registrada" : "Ver imagem registrada"}
+                    </button>
+                    {showEvidenceImage && <ReportImage id={report.id} evidence />}
+                </>}
+            </> : <p>O registro original expirou ou não foi coletado.</p>}
+        </section>
         {report.excluido && <p>O conteúdo foi excluído pelo autor. Você pode encerrar mantendo o estado atual.</p>}
         {report.oculto && <p>Este conteúdo ou sua publicação já está oculto. Manter não restaura a visibilidade.</p>}
         <section className="moderation-context"><h3>Publicação atual</h3><p className="moderation-text">{report.publicacao || "Sem texto disponível."}</p>
@@ -93,7 +110,7 @@ export default function AdminCommunityReports() {
         } catch (e) { session.commit(() => setError(e.response?.data?.error || "Não foi possível carregar mais denúncias.")); }
         finally { session.commit(() => { occupied.current = false; setBusy(false); }); }
     }
-    return <section className="moderation-page"><h1>Denúncias da comunidade</h1><p>Analise publicações e comentários. As decisões e justificativas ficam registradas.</p>
+    return <section className="moderation-page"><RecommendationBanner title="Denúncias da comunidade" description="Analise publicações e comentários. As decisões e justificativas ficam registradas." />
         <div className="moderation-filters"><label>Status<select value={status} disabled={busy} onChange={e => setStatus(e.target.value)}><option value="ABERTA">Abertas</option><option value="ANALISADA">Analisadas</option></select></label>
             <button type="button" disabled={busy || loading} onClick={() => setRevision(v => v + 1)}>Atualizar lista</button></div>
         {error && <p role="alert" className="interaction-error">{error}</p>}{notice && <p role="status">{notice}</p>}

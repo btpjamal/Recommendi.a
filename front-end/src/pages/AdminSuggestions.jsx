@@ -1,3 +1,4 @@
+import RecommendationBanner from "../components/recommendations/RecommendationBanner";
 import { session } from "../auth/session.js";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -344,14 +345,7 @@ export default function AdminSuggestions() {
 
     return (
         <div className="admin-suggestions">
-            <div className="admin-page-heading">
-                <h1>Sugestões de hobbies</h1>
-
-                <p>
-                    Analise os hobbies sugeridos pela comunidade
-                    antes de adicioná-los ao catálogo oficial.
-                </p>
-            </div>
+            <RecommendationBanner title="Sugestões de hobbies" description="Analise os hobbies sugeridos pela comunidade antes de adicioná-los ao catálogo oficial." />
 
             {sucesso && (
                 <div className="admin-success" role="status">

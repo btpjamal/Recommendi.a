@@ -10,9 +10,9 @@ import java.util.List;
 @Service
 public class SocialAffinityService {
 
-    private static final int PESO_PRATICANDO = 3;
-    private static final int PESO_HOBBY_INTERESSE = 2;
-    private static final int PESO_INTERESSE = 1;
+    static final int PESO_PRATICANDO = 3;
+    static final int PESO_HOBBY_INTERESSE = 2;
+    static final int PESO_INTERESSE = 1;
 
 
     public SocialAffinityDTO calcular(

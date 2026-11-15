@@ -4,10 +4,7 @@ package dev.jamal.projetotcc.Service.Location;
 import dev.jamal.projetotcc.Entities.HobbyLocationCondition;
 import dev.jamal.projetotcc.Entities.HobbyLocationRule;
 import dev.jamal.projetotcc.Enum.OsmMatchType;
-import dev.jamal.projetotcc.Repository.HobbyLocationRuleRepository;
-import dev.jamal.projetotcc.Repository.HobbyRepository;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,7 +12,6 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 @Service
-@RequiredArgsConstructor
 public class HobbyLocationQuery {
 
     private static final int RAIO_METROS = 12000;
@@ -23,26 +19,8 @@ public class HobbyLocationQuery {
     private static final Pattern OSM_TOKEN =
             Pattern.compile("[a-zA-Z0-9_:.-]+");
 
-    private final HobbyRepository hobbyRepository;
-    private final HobbyLocationRuleRepository ruleRepository;
-
-    public Optional<String> construir(
-            Long hobbyId,
-            double latitude,
-            double longitude
-    ) {
+    public Optional<String> construir(List<HobbyLocationRule> regras, double latitude, double longitude) {
         validarCoordenadas(latitude, longitude);
-
-        if (hobbyId == null || !hobbyRepository.existsById(hobbyId)) {
-            return Optional.empty();
-        }
-
-        List<HobbyLocationRule> regras =
-                ruleRepository.findActiveWithConditions(hobbyId);
-
-        if (regras.isEmpty()) {
-            return Optional.empty();
-        }
 
         StringBuilder filtros = new StringBuilder();
 

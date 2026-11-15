@@ -1,3 +1,4 @@
+import { clearLocationSearches } from "../components/hobbyLocationSearch.js";
 import { session } from "../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
@@ -112,9 +113,14 @@ const estados = [
 
 
 
-export default function Onboarding() {
+export default function Onboarding({ admin = false }) {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+
+    const hobbyId = searchParams.get("hobby");
+    const retornoAdmin = hobbyId && /^\d+$/.test(hobbyId)
+        ? `/admin/location-rules?hobby=${hobbyId}`
+        : "/admin/location-rules";
 
     const modoEdicao =
      searchParams.get("editar") === "true";
@@ -160,6 +166,12 @@ export default function Onboarding() {
 
                 if(!token || !userId) {
                     navigate("/login");
+                    return;
+                }
+
+                if (admin) {
+                    const { data } = await api.get("/admin/location-preferences");
+                    setProfile(atual => ({ ...atual, cidade: data.cidade ?? "", estado: data.estado ?? "" }));
                     return;
                 }
 
@@ -295,7 +307,7 @@ export default function Onboarding() {
         }
 
         carregarDados();
-    }, [modoEdicao, navigate]);
+    }, [admin, modoEdicao, navigate]);
 
     useEffect(() => {
         if (!profile.estado) {
@@ -429,7 +441,7 @@ export default function Onboarding() {
 
 
 
-    const perguntaAtual = perguntas[etapa];
+    const perguntaAtual = admin ? perguntas.find(pergunta => pergunta.localizacao) : perguntas[etapa];
     const progresso = ((etapa + 1) / perguntas.length) * 100;
 
     async function selecionarOpcao(valor) {
@@ -464,6 +476,13 @@ export default function Onboarding() {
                 return;
             }
 
+
+            if (admin) {
+                await api.put("/admin/location-preferences", { cidade: dados.cidade, estado: dados.estado });
+                clearLocationSearches();
+                navigate(retornoAdmin);
+                return;
+            }
 
             await api.post(
                 `/recommendation-profiles/${userId}`,
@@ -512,6 +531,8 @@ export default function Onboarding() {
     }
 
     function voltar() {
+        if (admin) { navigate(retornoAdmin); return; }
+
         if (etapa === 0) {
 
             if (modoEdicao) {
@@ -529,6 +550,7 @@ export default function Onboarding() {
     return (
         <main className="onboarding-page">
             <section className="onboarding-card">
+                {!admin && <>
                 <div className="onboarding-progress">
                     <div
                         className="onboarding-progress-value"
@@ -540,10 +562,12 @@ export default function Onboarding() {
           Etapa {etapa + 1} de {perguntas.length}
         </span>
 
-                <h1>{perguntaAtual.titulo}</h1>
+                </>}
+
+                <h1>{admin ? "Localização para testes" : perguntaAtual.titulo}</h1>
 
                 <p className="onboarding-description">
-                    {perguntaAtual.multiplaEscolha
+                    {admin ? "Selecione a cidade e a UF usadas na busca de locais do Admin." : perguntaAtual.multiplaEscolha
                         ? "Você pode selecionar mais de uma opção."
                         : "Escolha a opção que mais combina com você."
                     }
@@ -840,10 +864,11 @@ export default function Onboarding() {
                                 }
 
                                 setErro("");
-                                setEtapa((atual) => atual + 1);
+                                if (admin) finalizarOnboarding(profile);
+                                else setEtapa((atual) => atual + 1);
                             }}
                         >
-                            Continuar
+                            {admin ? "Salvar localização" : "Continuar"}
                         </button>
                     </>
                 )}
@@ -851,7 +876,7 @@ export default function Onboarding() {
 
                 {enviando && (
                     <p className="onboarding-message">
-                        {modoEdicao
+                        {(admin || modoEdicao)
                             ? "Atualizando suas preferências..."
                             : "Preparando suas recomendações..."
                         }

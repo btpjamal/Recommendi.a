@@ -73,6 +73,7 @@ public class SocialHubService {
                 socialProfileRepository
                         .findByUser_Id(userId)
                         .filter(SocialProfile::isEnabled)
+                        .filter(p -> SocialProfileService.maiorDeIdade(p.getUser()))
                         .orElseThrow(() ->
                                 new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND,
                                         "Perfil social não disponível"
@@ -211,6 +212,7 @@ public class SocialHubService {
                                 .equals(requesterId)
                 )
 
+                .filter(perfil -> SocialProfileService.maiorDeIdade(perfil.getUser()))
                 .filter(perfil -> !indisponiveis.contains(perfil.getUser().getId()))
                 .map(perfil -> new Candidato(perfil, locationService.proximidade(localAtual, perfil)))
                 .filter(candidato -> switch (escopo) {

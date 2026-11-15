@@ -210,6 +210,111 @@ class CommunityChatIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void chatFiltraAutoresIndisponiveisAntesDePaginar() {
+        var mensagemA = enviar(a, "Mensagem de A");
+        var mensagemB = enviar(b, "Mensagem de B");
+        jdbc.update("INSERT INTO social_user_blocks (blocker_id, blocked_id, created_at) VALUES (?, ?, now())", a, b);
+
+        var historico = chat.listarPagina(comunidade, a, null, null, 1);
+        assertEquals(mensagemA.id(), historico.mensagens().get(0).id());
+        assertFalse(historico.temMais());
+        var novidades = chat.listarPagina(comunidade, b, null, 0L, 1);
+        assertEquals(mensagemB.id(), novidades.mensagens().get(0).id());
+        assertFalse(novidades.temMais());
+
+        jdbc.update("DELETE FROM social_user_blocks WHERE blocker_id = ? AND blocked_id = ?", a, b);
+        jdbc.update("UPDATE social_profiles SET enabled = false WHERE user_id = ?", b);
+        assertTrue(chat.listarPagina(comunidade, a, null, mensagemA.id(), 1).mensagens().isEmpty());
+        assertThrows(IllegalStateException.class, () -> enviar(b, "Envio indisponível"));
+    }
+
+    @Test
+    void reenviosConcorrentesPreservamUmaMensagemPorTentativa() throws Exception {
+        var tentativa = new CreateCommunityMessageDTO("Olá", UUID.randomUUID());
+        var executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            var primeiro = executor.submit(() -> chat.enviar(comunidade, a, tentativa));
+            var segundo = executor.submit(() -> chat.enviar(comunidade, a, tentativa));
+            assertEquals(primeiro.get(20, TimeUnit.SECONDS).id(),
+                    segundo.get(20, TimeUnit.SECONDS).id());
+        } finally {
+            executor.shutdownNow();
+        }
+        assertEquals(1, chat.listar(comunidade, a).size());
+
+        var conflito = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> chat.enviar(comunidade, a,
+                        new CreateCommunityMessageDTO("Outro texto", tentativa.clientMessageId())));
+        assertEquals(409, conflito.getStatusCode().value());
+        assertEquals(1, chat.listar(comunidade, a).size());
+
+        chat.enviar(comunidade, a, new CreateCommunityMessageDTO("Olá", UUID.randomUUID()));
+        assertEquals(2, chat.listar(comunidade, a).size());
+    }
+
+    @Test
+    void limitePersistePermiteReenvioERecuperaDepoisDaJanela() {
+        var tentativa = new CreateCommunityMessageDTO("Mensagem confirmada", UUID.randomUUID());
+        var original = chat.enviar(comunidade, a, tentativa);
+        jdbc.update("UPDATE social_write_quotas SET used = 120 WHERE user_id = ? AND action = 'COMMUNITY_MESSAGE'", a);
+
+        assertEquals(original.id(), chat.enviar(comunidade, a, tentativa).id());
+        assertThrows(SocialQuotaExceededException.class, () -> enviar(a, "Acima do limite"));
+        assertEquals(1, chat.listar(comunidade, a).size());
+        enviar(b, "Outro participante tem limite independente");
+
+        jdbc.update("UPDATE social_write_quotas SET started_at = now() - interval '61 seconds' WHERE user_id = ?", a);
+        enviar(a, "Depois da janela");
+        assertEquals(1, jdbc.queryForObject(
+                "SELECT used FROM social_write_quotas WHERE user_id = ? AND action = 'COMMUNITY_MESSAGE'",
+                Integer.class, a));
+    }
+
+    @Test
+    void participantesSimultaneosPublicamEReleemSemDuplicatas() throws Exception {
+        var participantes = new java.util.ArrayList<Long>();
+        participantes.add(a);
+        participantes.add(b);
+        for (int i = 0; i < 6; i++) {
+            Long id = usuario();
+            comunidades.entrar(comunidade, id);
+            participantes.add(id);
+        }
+        var executor = java.util.concurrent.Executors.newFixedThreadPool(participantes.size());
+        var inicio = new CountDownLatch(1);
+        try {
+            var envios = new java.util.ArrayList<java.util.concurrent.Future<?>>();
+            for (Long autor : participantes) {
+                envios.add(executor.submit(() -> {
+                    inicio.await();
+                    for (int i = 0; i < 5; i++) {
+                        var pedido = new CreateCommunityMessageDTO("Olá 👋\nMensagem " + i, UUID.randomUUID());
+                        var primeira = chat.enviar(comunidade, autor, pedido);
+                        assertEquals(primeira.id(), chat.enviar(comunidade, autor, pedido).id());
+                    }
+                    return null;
+                }));
+            }
+            inicio.countDown();
+            for (var envio : envios) envio.get(30, TimeUnit.SECONDS);
+            for (Long leitor : participantes) {
+                var historico = chat.listarPagina(comunidade, leitor, null, null, 50);
+                assertEquals(40, historico.mensagens().size());
+                assertFalse(historico.temMais());
+            }
+            for (String texto : java.util.List.of("\0início", "me\0io", "fim\0")) {
+                var erro = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                        () -> enviar(a, texto));
+                assertEquals(400, erro.getStatusCode().value());
+            }
+            assertEquals(40, mensagens.count());
+        } finally {
+            inicio.countDown();
+            executor.shutdownNow();
+        }
+    }
+
     private dev.jamal.projetotcc.DTO.Social.CommunityMessageDTO enviar(Long autor, String texto) {
         return chat.enviar(comunidade, autor, new CreateCommunityMessageDTO(texto));
     }

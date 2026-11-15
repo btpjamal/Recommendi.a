@@ -36,7 +36,12 @@ class CommunityPostServiceTest {
         users=mock(UserRepository.class);profiles=mock(SocialProfileRepository.class);
         blocks=mock(SocialUserBlockRepository.class);locks=mock(CommunityChatLockRepository.class);
         service=new CommunityPostService(posts,images,communities,members,users,profiles,blocks,locks);
-        ReflectionTestUtils.setField(service,"entityManager",mock(EntityManager.class));
+        var manager = mock(jakarta.persistence.EntityManager.class);
+        var quotaQuery = mock(jakarta.persistence.Query.class);
+        when(manager.createNativeQuery(anyString())).thenReturn(quotaQuery);
+        when(quotaQuery.setParameter(anyString(), any())).thenReturn(quotaQuery);
+        when(quotaQuery.getResultList()).thenReturn(List.of(1));
+        ReflectionTestUtils.setField(service, "entityManager", manager);
         user=new User();user.setId(1L);user.setNome("Autora");user.setDataNascimento(LocalDate.of(1990,1,1));
         other=new User();other.setId(2L);other.setNome("Outro");other.setDataNascimento(LocalDate.of(1990,1,1));
         social=new SocialProfile();social.setUser(user);social.setEnabled(true);
@@ -50,6 +55,18 @@ class CommunityPostServiceTest {
             CommunityPost p=call.getArgument(0);p.setId(50L);p.setVersion(p.getVersion()==null?0L:p.getVersion()+1);stored=p;return p;
         });
     }
+    @Test
+    void cotaDeImagemBloqueiaNovaGravacaoSemImpedirPostDeTexto() {
+        when(images.bytesUsed(1L, 0L)).thenReturn(100L * 1024 * 1024);
+
+        var rejected = assertThrows(ResponseStatusException.class,
+                () -> service.criar(10L, 1L, request("Com foto"), new byte[]{1}));
+        assertEquals(413, rejected.getStatusCode().value());
+        verify(posts, never()).saveAndFlush(any());
+
+        assertFalse(service.criar(10L, 1L, request("Só texto"), null).possuiImagem());
+    }
+
     CreateCommunityPostDTO request(String text) {return new CreateCommunityPostDTO(text,UUID.randomUUID());}
     CommunityPost ownPost(boolean image) {
         var p=new CommunityPost();p.setId(50L);p.setCommunity(community);p.setUser(user);p.setConteudo("Inicial");

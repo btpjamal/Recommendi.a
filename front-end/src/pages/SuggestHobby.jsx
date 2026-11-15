@@ -1,3 +1,5 @@
+import RecommendationBanner from "../components/recommendations/RecommendationBanner";
+import "./css/MySuggestions.css";
 import { session } from "../auth/session.js";
 
 import { useEffect, useState } from "react";
@@ -130,23 +132,18 @@ export default function SuggestHobby() {
     }
 
     return (
-        <main className="suggest-hobby-page">
+        <main className="suggest-hobby-page recommendations-theme suggestions-theme">
             <div className="suggest-hobby-container">
                 <button
                     type="button"
                     className="suggest-back-button"
-                    onClick={() => navigate("/community")}
+                    onClick={() => navigate("/my-suggestions")}
                 >
-                    ← Voltar à comunidade
+                    ← Voltar para Minhas sugestões
                 </button>
 
-                <div className="suggest-hobby-header">
-                    <h1>Sugerir novo hobby</h1>
-                    <p>
-                        Compartilhe uma atividade que você gostaria
-                        de ver no catálogo do Recommendi.a.
-                    </p>
-                </div>
+                <RecommendationBanner title="Sugerir novo hobby"
+                    description="Compartilhe uma atividade que você gostaria de ver no catálogo do Recommendi.a." />
 
                 <form
                     className="suggest-hobby-form"

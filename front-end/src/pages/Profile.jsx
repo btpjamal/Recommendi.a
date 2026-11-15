@@ -37,20 +37,20 @@ export default function Profile() {
   }
 
   return (
-    <main style={{minHeight:"100vh",display:"grid",placeItems:"center",background:"#f5f6fa",fontFamily:"Arial",padding:20}}>
-      <section style={{width:"min(620px,100%)",background:"white",borderRadius:24,padding:32,boxShadow:"0 16px 50px rgba(0,0,0,.08)"}}>
-        <div style={{height:8,background:"#eee",borderRadius:8,overflow:"hidden",marginBottom:28}}><div style={{height:"100%",width:`${((step+1)/steps.length)*100}%`,background:"#222"}} /></div>
-        <p style={{color:"#777"}}>Pergunta {step + 1} de {steps.length}</p>
+    <main className="profile-questionnaire" style={{display:"grid",placeItems:"center",padding:20}}>
+      <section className="profile-questionnaire-card" style={{width:"min(620px,100%)",borderRadius:24,padding:32}}>
+        <div style={{height:8,background:"var(--surface-raised)",borderRadius:8,overflow:"hidden",marginBottom:28}}><div style={{height:"100%",width:`${((step+1)/steps.length)*100}%`,background:"var(--primary)"}} /></div>
+        <p style={{color:"var(--text-secondary)"}}>Pergunta {step + 1} de {steps.length}</p>
         <h1 style={{fontSize:32,margin:"8px 0 28px"}}>{current.title}</h1>
         {current.type === "number" ? (
-          <label style={{display:"block"}}><input type="number" min="0" step="0.5" value={selected} onChange={(e)=>choose(Number(e.target.value))} style={{width:"100%",fontSize:28,padding:18,border:"2px solid #ddd",borderRadius:16,boxSizing:"border-box"}}/><span style={{display:"block",marginTop:8,color:"#777"}}>{current.suffix}</span></label>
+          <label style={{display:"block"}}><input type="number" min="0" step="0.5" value={selected} onChange={(e)=>choose(Number(e.target.value))} style={{width:"100%",fontSize:28,padding:18,border:"2px solid var(--border-control)",borderRadius:16,boxSizing:"border-box"}}/><span style={{display:"block",marginTop:8,color:"var(--text-secondary)"}}>{current.suffix}</span></label>
         ) : (
-          <div style={{display:"grid",gap:12}}>{current.options.map(([value,label])=><button key={value} onClick={()=>choose(value)} style={{padding:18,textAlign:"left",fontSize:18,borderRadius:16,border:selected===value?"2px solid #222":"2px solid #e5e5e5",background:selected===value?"#f0f0f0":"white",cursor:"pointer"}}>{label}</button>)}</div>
+          <div style={{display:"grid",gap:12}}>{current.options.map(([value,label])=><button key={value} onClick={()=>choose(value)} style={{padding:18,textAlign:"left",fontSize:18,borderRadius:16,border:selected===value?"2px solid var(--primary)":"2px solid var(--border-control)",background:selected===value?"var(--surface-accent)":"var(--surface)",cursor:"pointer"}}>{label}</button>)}</div>
         )}
-        {erro && <p style={{color:"#b00020"}}>{erro}</p>}
+        {erro && <p style={{color:"var(--danger)"}}>{erro}</p>}
         <div style={{display:"flex",justifyContent:"space-between",marginTop:30}}>
           <button disabled={step===0} onClick={()=>setStep(step-1)} style={{padding:"12px 18px"}}>Voltar</button>
-          <button onClick={next} style={{padding:"14px 24px",border:0,borderRadius:14,background:"#222",color:"white",fontWeight:700}}>{step===steps.length-1?"Ver meus hobbies":"Continuar"}</button>
+          <button onClick={next} style={{padding:"14px 24px",border:0,borderRadius:14,background:"var(--primary)",color:"var(--on-accent)",fontWeight:700}}>{step===steps.length-1?"Ver meus hobbies":"Continuar"}</button>
         </div>
       </section>
     </main>

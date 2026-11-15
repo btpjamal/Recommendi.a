@@ -7,9 +7,9 @@ import "../../pages/css/CommunityInteractions.css";
 const reasons = [["SPAM", "Spam"], ["OFENSA", "Ofensa ou assédio"], ["CONTEUDO_INADEQUADO", "Conteúdo inadequado"], ["OUTRO", "Outro motivo"]];
 const msg = (e, fallback) => e.response?.data?.error || fallback;
 
-export default function CommunityPostInteractions({ communityId, post, onUnavailable, onAccessLost, targetCommentId }) {
+export default function CommunityPostInteractions({ communityId, post, onUnavailable, onAccessLost, targetCommentId, initialSummary = null }) {
     const base = `/community/communities/${communityId}/posts/${post.id}`;
-    const [summary, setSummary] = useState(null);
+    const [summary, setSummary] = useState(initialSummary);
     const target = /^[1-9]\d*$/.test(targetCommentId || "") ? targetCommentId : null;
     const [open, setOpen] = useState(Boolean(target));
     const [comments, setComments] = useState([]);
@@ -44,8 +44,13 @@ export default function CommunityPostInteractions({ communityId, post, onUnavail
                 else session.commit(() => setError(msg(e, "Não foi possível carregar as interações.")));
             }
         }
-        load(); return () => session.close();
-    }, [base, post.id, post.versao, summaryRevision, onUnavailable, onAccessLost]);
+        if (initialSummary != null && summaryRevision === 0) {
+            session.commit(() => { setSummary(initialSummary); setBusy(false); setError(""); });
+        } else {
+            load();
+        }
+        return () => session.close();
+    }, [base, post.id, post.versao, summaryRevision, onUnavailable, onAccessLost, initialSummary]);
 
     useEffect(() => {
         if (!open) return;

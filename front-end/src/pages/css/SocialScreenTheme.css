@@ -1,0 +1,50 @@
+.social-screen-theme .community-back-button {
+    min-height: 44px;
+    margin-bottom: 16px;
+}
+
+.social-screen-theme .community-post-tabs,
+.community-visual .social-contact-boxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 5px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+}
+
+.social-screen-theme .community-post-tabs button,
+.community-visual .social-contact-boxes button {
+    flex: 1 1 auto;
+    min-height: 44px;
+    padding: 8px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.social-screen-theme .community-post-tabs button[aria-current="page"],
+.community-visual .social-contact-boxes button[aria-pressed="true"] {
+    background: #304439;
+    color: var(--text-primary);
+}
+
+.community-visual .social-contacts-panel .recommendations-header {
+    margin-bottom: 0;
+}
+
+.community-visual .social-contacts-panel .social-contact-refresh {
+    min-height: 44px;
+    border-color: var(--border-control);
+    color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+    .social-screen-theme .community-details-container {
+        padding-top: 16px;
+    }
+}

@@ -1,6 +1,9 @@
+import RecommendationBanner from "../components/recommendations/RecommendationBanner";
+import "./css/SocialScreenTheme.css";
 import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { pendingSend } from "../components/social/privateChatState.mjs";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { api } from "../api/api";
 import { createChatSession, mergeMessages } from "../components/community/communityChatState.mjs";
@@ -40,6 +43,7 @@ function CommunityChat({ communityId, active, onTabChange }) {
     const cursorNovasRef = useRef(0);
     const cursorAnterioresRef = useRef(null);
     const envioOcupadoRef = useRef(false);
+    const envioPendenteRef = useRef(null);
     const anterioresOcupadoRef = useRef(false);
     const listaRef = useRef(null);
     const seguirFinalRef = useRef(true);
@@ -79,15 +83,6 @@ function CommunityChat({ communityId, active, onTabChange }) {
         envioOcupadoRef.current = false;
         anterioresOcupadoRef.current = false;
         seguirFinalRef.current = true;
-        setCarregando(true);
-        setEnviando(false);
-        setCarregandoAnteriores(false);
-        setAcesso(false);
-        setMensagens([]);
-        setComunidade(null);
-        setErro("");
-        setErroAtualizacao("");
-
         async function atualizar() {
             if (!sessao.isActive() || !inicializada || atualizando) return;
             clearTimeout(timer);
@@ -121,6 +116,16 @@ function CommunityChat({ communityId, active, onTabChange }) {
         atualizarRef.current = atualizar;
 
         async function iniciar() {
+            await Promise.resolve();
+            if (!sessao.isActive()) return;
+            setCarregando(true);
+            setEnviando(false);
+            setCarregandoAnteriores(false);
+            setAcesso(false);
+            setMensagens([]);
+            setComunidade(null);
+            setErro("");
+            setErroAtualizacao("");
             try {
                 const [detalhes, historico] = await Promise.all([
                     api.get(base, { signal: sessao.signal }),
@@ -194,10 +199,12 @@ function CommunityChat({ communityId, active, onTabChange }) {
         setEnviando(true);
         setErro("");
         try {
-            const resposta = await api.post(base + "/messages", { conteudo: mensagem }, { signal: sessao.signal });
+            envioPendenteRef.current = pendingSend(envioPendenteRef.current, mensagem);
+            const resposta = await api.post(base + "/messages", envioPendenteRef.current, { signal: sessao.signal });
             sessao.commit(() => {
                 seguirFinalRef.current = true;
                 setMensagens((atuais) => mergeMessages(atuais, [resposta.data]));
+                envioPendenteRef.current = null;
                 setConteudo("");
                 // O POST nao avanca o cursor: pode haver mensagens intermediarias ainda nao lidas.
                 atualizarRef.current?.();
@@ -209,7 +216,7 @@ function CommunityChat({ communityId, active, onTabChange }) {
     async function logout() { await revokeSession(); navigate("/login"); }
 
     return (
-        <main className="community-details-page">
+        <main className="community-details-page recommendations-theme social-screen-theme">
             <header className="app-header"><div className="app-header-content">
                 <div className="app-brand"><span className="app-brand-icon">✦</span><div><span className="app-brand-name">Recommendi.a</span><span className="app-brand-subtitle">Descubra seu próximo hobby</span></div></div>
                 <div className="app-header-actions"><NotificationBell /><span className="app-user-greeting">Olá, {nome}!</span>
@@ -220,13 +227,10 @@ function CommunityChat({ communityId, active, onTabChange }) {
             </div></header>
             <section className="community-details-container">
                 <button className="community-back-button" onClick={() => navigate("/community")}>← Voltar</button>
+                <RecommendationBanner title={comunidade?.hobbyNome || "Comunidade"}
+                    description="Converse com os participantes e compartilhe experiências sobre esse hobby."
+                    detail={comunidade && `${comunidade.membros} ${comunidade.membros === 1 ? "membro" : "membros"}`} />
                 <div className="community-chat">
-                    <div className="community-chat-header">
-                        <span>{comunidade?.tipo === "MUNICIPAL" ? "COMUNIDADE MUNICIPAL" : comunidade?.tipo === "REGIONAL" ? "COMUNIDADE REGIONAL" : "COMUNIDADE GERAL"}</span>
-                        <h1>{comunidade?.hobbyNome || "Comunidade"}</h1>
-                        <p>Converse com os participantes e compartilhe experiências sobre esse hobby.</p>
-                        {comunidade && <div className="community-chat-info"><span>{comunidade.membros} {comunidade.membros === 1 ? "membro" : "membros"}</span></div>}
-                    </div>
                     <CommunityTabs active="chat" onChange={onTabChange} disabled={enviando} />
                     {erro && <div className="community-chat-error" role="alert">{erro}</div>}
                     {erroAtualizacao && <p className="community-chat-update-note" role="status">{erroAtualizacao}</p>}

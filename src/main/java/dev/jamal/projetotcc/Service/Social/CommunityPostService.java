@@ -51,6 +51,12 @@ public class CommunityPostService {
     @Transactional(readOnly=true)
     public void validarAcesso(Long communityId,Long userId) {acesso(communityId,userId,false);}
 
+    @Transactional
+    public void reservarProcessamentoImagem(Long communityId, Long userId) {
+        acesso(communityId, userId, false);
+        SocialWriteQuota.consume(entityManager, userId, SocialWriteQuota.Action.POST_IMAGE_PROCESSING);
+    }
+
     @Transactional(readOnly=true)
     public CommunityPostPageDTO listar(Long communityId,Long viewer,Long antesDe,int limite) {
         acesso(communityId,viewer,false);
@@ -75,6 +81,8 @@ public class CommunityPostService {
                 throw erro(HttpStatus.CONFLICT,"O identificador de envio já foi usado. Atualize a lista antes de tentar novamente.");
             return dto(p,userId);
         }
+        validarEspacoImagem(userId, 0L, image);
+        SocialWriteQuota.consume(entityManager, userId, SocialWriteQuota.Action.POST);
         var p=new CommunityPost();p.setCommunity(communities.getReferenceById(communityId));p.setUser(user);
         p.setClientId(request.clientId());p.setRequestHash(fingerprint);p.setConteudo(text);
         p.setPossuiImagem(image!=null);p.setCreatedAt(Instant.now());
@@ -93,6 +101,7 @@ public class CommunityPostService {
         String text=texto(request.conteudo());
         boolean hasImage=image!=null || (p.isPossuiImagem() && !request.removerImagem());
         conteudoValido(text,hasImage);
+        validarEspacoImagem(userId, postId, image);
         p.setConteudo(text);p.setPossuiImagem(hasImage);p.setEditedAt(Instant.now());
         if(image!=null) guardarImagem(postId,image);
         else if(request.removerImagem()) images.deleteById(postId);
@@ -154,6 +163,16 @@ public class CommunityPostService {
     private void conteudoValido(String text,boolean image) {
         if(text.isBlank() && !image) throw erro(HttpStatus.BAD_REQUEST,"Escreva um texto ou envie uma imagem.");
     }
+    private static final long IMAGE_STORAGE_LIMIT = 100L * 1024 * 1024;
+
+    // The author lock held by create/edit serializes quota checks across communities.
+    private void validarEspacoImagem(Long userId, long excludedPostId, byte[] image) {
+        if (image != null && images.bytesUsed(userId, excludedPostId) + image.length > IMAGE_STORAGE_LIMIT) {
+            throw erro(HttpStatus.PAYLOAD_TOO_LARGE,
+                    "Limite de 100 MiB de imagens atingido. Remova imagens de publicações para liberar espaço.");
+        }
+    }
+
     private void guardarImagem(Long id,byte[] image) {
         var row=new CommunityPostImage();row.setPostId(id);row.setDados(image);images.save(row);
     }

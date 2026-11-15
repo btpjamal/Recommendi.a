@@ -31,22 +31,6 @@ public class CommunityController {
     private final SocialLocationService locationService;
 
 
-    @GetMapping("/users")
-    public ResponseEntity<List<SocialProfileDTO>> usuarios(
-            Authentication authentication,
-            @RequestParam(defaultValue = "GERAL") SocialLocationScope escopo
-    ) {
-
-        Long userId = obterUserId(authentication);
-
-        validarAcessoSocial(userId);
-
-        return ResponseEntity.ok(
-                socialHubService.buscarUsuarios(userId, escopo)
-        );
-    }
-
-
     @GetMapping("/users/{userId}")
     public ResponseEntity<SocialProfileDTO> usuario(
             @PathVariable Long userId,
@@ -72,11 +56,17 @@ public class CommunityController {
 
         validarAcessoSocial(userId);
 
-        communityService.garantirComunidadesGerais();
-
         return ResponseEntity.ok(
                 communityService.listarGerais(userId)
         );
+    }
+
+    @PostMapping("/communities/catalog/{tipo}/{hobbyId}/join")
+    public CommunityDTO entrarPeloCatalogo(Authentication authentication, @PathVariable Long hobbyId,
+            @PathVariable dev.jamal.projetotcc.Enum.CommunityType tipo) {
+        Long userId = obterUserId(authentication);
+        validarAcessoSocial(userId);
+        return communityService.entrarPeloCatalogo(hobbyId, tipo, userId);
     }
 
     @PostMapping("/communities/{communityId}/join")
@@ -174,12 +164,6 @@ public class CommunityController {
                 obterUserId(authentication);
 
         validarAcessoSocial(userId);
-
-
-        communityService
-                .garantirComunidadesRegionais(
-                        userId
-                );
 
 
         return ResponseEntity.ok(
@@ -289,5 +273,11 @@ public class CommunityController {
                         userId
                 )
         );
+    }
+    @ExceptionHandler(dev.jamal.projetotcc.Service.Social.SocialQuotaExceededException.class)
+    public ResponseEntity<java.util.Map<String, String>> quotaExceeded() {
+        return ResponseEntity.status(429).header("Retry-After", "60")
+                .body(java.util.Map.of("error",
+                        "Limite de novas ações atingido. Aguarde até 60 segundos e tente novamente."));
     }
 }

@@ -22,6 +22,9 @@ public class SocialLocationService {
 
     private final RecommendationProfileRepository profileRepository;
     private final SocialProfileRepository socialRepository;
+    private final dev.jamal.projetotcc.Repository.UserRepository users;
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
 
     public record Localizacao(String estado, String cidade) {
         public boolean temEstado() { return estado != null; }
@@ -79,9 +82,16 @@ public class SocialLocationService {
 
     @Transactional
     public SocialLocationSettingsDTO atualizarVisibilidade(Long userId, boolean compartilhar) {
+        users.lockTokenVersion(userId)
+                .orElseThrow(() -> new IllegalStateException("Participação social indisponível."));
         SocialProfile perfil = socialRepository.findByUser_Id(userId)
                 .filter(SocialProfile::isEnabled)
                 .orElseThrow(() -> new IllegalStateException("Ative sua participação social primeiro."));
+        entityManager.refresh(perfil);
+        entityManager.refresh(perfil.getUser());
+        if (!perfil.isEnabled() || !SocialProfileService.maiorDeIdade(perfil.getUser())) {
+            throw new IllegalStateException("Participação social indisponível.");
+        }
         perfil.setCompartilharRegiao(compartilhar);
         return configuracao(userId);
     }

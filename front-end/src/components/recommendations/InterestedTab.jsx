@@ -1,3 +1,4 @@
+import RecommendationBanner from "./RecommendationBanner";
 import { session } from "../../auth/session.js";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -253,7 +254,11 @@ export default function InterestedTab() {
 
     if (hobbies.length === 0) {
         return (
-            <section>
+            <section className="interested-section">
+                <RecommendationBanner
+                    title="Tenho interesse"
+                    description="Acompanhe seus hobbies salvos e organize sua evolução pessoal."
+                />
 
                 <div className="interested-empty">
                     <div className="interested-empty-icon">
@@ -275,16 +280,10 @@ export default function InterestedTab() {
     return (
         <section className="interested-section">
 
-            <div className="interested-header">
-                <div>
-                    <h2>Tenho interesse</h2>
-
-                    <p>
-                        Acompanhe seus hobbies salvos e organize
-                        sua evolução pessoal.
-                    </p>
-                </div>
-
+            <RecommendationBanner
+                title="Tenho interesse"
+                description="Acompanhe seus hobbies salvos e organize sua evolução pessoal."
+            >
                 <button
                     type="button"
                     className="general-plan-button"
@@ -294,7 +293,7 @@ export default function InterestedTab() {
                         ? "📋 Ver plano geral"
                         : "✨ Criar plano geral"}
                 </button>
-            </div>
+            </RecommendationBanner>
 
             <div className="hobby-status-info">
                 <p>

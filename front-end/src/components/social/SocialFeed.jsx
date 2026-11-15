@@ -1,3 +1,4 @@
+import RecommendationBanner from "../recommendations/RecommendationBanner";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { api } from "../../api/api.js";
@@ -11,9 +12,9 @@ import "./SocialFeed.css";
 export default function SocialFeed() {
     const [filter, setFilter] = useState("todos");
     return <section className="social-feed-section" aria-label="Feed social">
-        <h2>Feed</h2>
-        <p>Publicações das comunidades das quais você participa, das mais recentes às mais antigas.</p>
-        <div className="community-type-tabs" aria-label="Filtro do feed">
+        <RecommendationBanner title="Feed"
+            description="Publicações das comunidades das quais você participa, das mais recentes às mais antigas." />
+        <div className="community-segments community-scope-filters" role="group" aria-label="Filtro do feed">
             <button type="button" className={filter === "todos" ? "active" : ""} aria-pressed={filter === "todos"}
                 onClick={() => setFilter("todos")}>Minhas comunidades</button>
             <button type="button" className={filter === "seguindo" ? "active" : ""} aria-pressed={filter === "seguindo"}
@@ -139,10 +140,10 @@ function FeedCard({ item, onUnavailable, onAccessLost }) {
                 <time dateTime={post.criadoEm}>{new Date(post.criadoEm).toLocaleString("pt-BR")}</time>
                 {post.editadoEm && <small>Editada</small>}
             </div>
-            {!post.propria && <SocialFollowButton userId={post.autorId} />}
+            {!post.propria && <SocialFollowButton userId={post.autorId} initialFollowing={item.seguindo ?? null} />}
         </header>
         {post.conteudo && <p className="community-post-text">{post.conteudo}</p>}
         {post.possuiImagem && <CommunityPostImage communityId={post.communityId} post={post} onAccessLost={onAccessLost} />}
-        <CommunityPostInteractions communityId={post.communityId} post={post} onUnavailable={onUnavailable} onAccessLost={onAccessLost} />
+        <CommunityPostInteractions initialSummary={item.interacoes} communityId={post.communityId} post={post} onUnavailable={onUnavailable} onAccessLost={onAccessLost} />
     </article>;
 }

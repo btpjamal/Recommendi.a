@@ -2,8 +2,7 @@
     font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
         "Segoe UI", sans-serif;
 
-    color: #1e293b;
-    background: #f5f7fb;
+    color: var(--text-primary);
 
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -11,28 +10,41 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
-    /* Identidade visual */
 
-    --primary: #6366f1;
-    --primary-hover: #4f46e5;
-    --primary-light: #eef2ff;
-
-    --background: #f5f7fb;
-    --surface: #ffffff;
-
-    --text-primary: #1e293b;
-    --text-secondary: #64748b;
-
-    --border: #e2e8f0;
-
-    --success: #16a34a;
-    --warning: #d97706;
-    --danger: #dc2626;
+    color-scheme: dark;
+    --background: #0c100f;
+    --surface: #171e1b;
+    --surface-raised: #202b25;
+    --surface-accent: #25392f;
+    --border: #36443e;
+    --border-control: #65786d;
+    --border-accent: #82a796;
+    --text-primary: #f3f4ee;
+    --text-secondary: #becac2;
+    --primary: #ff835c;
+    --primary-hover: #ffa587;
+    --primary-light: var(--surface-accent);
+    --on-accent: #26120c;
+    --success: #9fd6be;
+    --success-bg: #20372e;
+    --success-border: #567f6b;
+    --danger: #ff9b89;
+    --danger-bg: #402520;
+    --danger-border: #a46357;
+    --warning: #ffd18e;
+    --warning-bg: #3b2e1b;
+    --warning-border: #997443;
+    --heading-font: "Barlow Semi Condensed", "Arial Narrow", Inter, sans-serif;
+    --ambient-glow: radial-gradient(ellipse at 16% 10rem, #263e3480, transparent 42rem);
+    --glass-light:
+        linear-gradient(90deg, #0d1411 12%, #0d1411ee 37%, #0d141122 100%),
+        repeating-linear-gradient(90deg, transparent 0 37px, #b1ddc72e 38px 39px, transparent 40px 72px),
+        linear-gradient(145deg, #0d1713 40%, #284338 63%, #9d3620 86%, #dc6033 100%);
 
     --radius: 16px;
 
     --shadow:
-        0 4px 20px rgba(15, 23, 42, 0.05);
+        0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 * {
@@ -78,4 +90,12 @@ h3,
 h4,
 p {
     margin-top: 0;
+}
+h1, h2, h3 {
+    font-family: var(--heading-font);
+}
+
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
 }

@@ -13,10 +13,15 @@ import java.util.*;
 
 @Service
 public class CommunityPostImageService {
+    private final java.util.concurrent.Semaphore imageSlots = new java.util.concurrent.Semaphore(2);
     public byte[] preparar(MultipartFile file) {
         if (file == null) return null;
         if (file.isEmpty() || file.getSize() > 1024 * 1024) throw invalida();
-        try (var input=new MemoryCacheImageInputStream(file.getInputStream())) {
+        if (!imageSlots.tryAcquire()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "O processamento de imagens está ocupado. Tente novamente em instantes.");
+        }
+        try (var stream = file.getInputStream(); var input = new MemoryCacheImageInputStream(stream)) {
             var readers=ImageIO.getImageReaders(input);
             if (!readers.hasNext()) throw invalida();
             var reader=readers.next();
@@ -25,7 +30,10 @@ public class CommunityPostImageService {
                 reader.setInput(input,true,true);
                 int w=reader.getWidth(0), h=reader.getHeight(0);
                 if(w<1 || h<1 || (long)w*h>16_000_000) throw invalida();
-                var source=reader.read(0);
+                var params = reader.getDefaultReadParam();
+                int step = Math.max(1, Math.max(w, h) / 1200);
+                params.setSourceSubsampling(step, step, 0, 0);
+                var source = reader.read(0, params);
                 double scale=Math.min(1,1200.0/Math.max(w,h));
                 var image=new BufferedImage(Math.max(1,(int)(w*scale)),Math.max(1,(int)(h*scale)),BufferedImage.TYPE_INT_RGB);
                 var g=image.createGraphics();
@@ -44,7 +52,11 @@ public class CommunityPostImageService {
                 } finally {writer.dispose();}
                 return bytes.toByteArray();
             } finally {reader.dispose();}
-        } catch(IOException | IllegalArgumentException e) {throw invalida();}
+        } catch(IOException | IllegalArgumentException e) {
+            throw invalida();
+        } finally {
+            imageSlots.release();
+        }
     }
     private ResponseStatusException invalida() {
         return new ResponseStatusException(HttpStatus.BAD_REQUEST,"Use uma imagem PNG ou JPEG de até 1 MB e 16 megapixels.");

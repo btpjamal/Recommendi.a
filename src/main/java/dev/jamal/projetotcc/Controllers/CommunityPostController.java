@@ -33,7 +33,12 @@ public class CommunityPostController {
     public ResponseEntity<CommunityPostDTO> criar(@PathVariable Long communityId,Authentication auth,
         @Valid @RequestPart("publicacao") CreateCommunityPostDTO dto,
         @RequestPart(value="imagem",required=false) MultipartFile image) {
-        Long id=ator(auth);service.validarAcesso(communityId,id);
+        Long id = ator(auth);
+        if (image == null) {
+            service.validarAcesso(communityId, id);
+        } else {
+            service.reservarProcessamentoImagem(communityId, id);
+        }
         byte[] data=imageService.preparar(image);
         return ResponseEntity.status(201).cacheControl(CacheControl.noStore()).body(service.criar(communityId,id,dto,data));
     }
@@ -41,7 +46,12 @@ public class CommunityPostController {
     public ResponseEntity<CommunityPostDTO> editar(@PathVariable Long communityId,@PathVariable Long postId,Authentication auth,
         @Valid @RequestPart("publicacao") EditCommunityPostDTO dto,
         @RequestPart(value="imagem",required=false) MultipartFile image) {
-        Long id=ator(auth);service.validarAcesso(communityId,id);
+        Long id = ator(auth);
+        if (image == null) {
+            service.validarAcesso(communityId, id);
+        } else {
+            service.reservarProcessamentoImagem(communityId, id);
+        }
         byte[] data=imageService.preparar(image);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.editar(communityId,id,postId,dto,data));
     }
@@ -63,5 +73,11 @@ public class CommunityPostController {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String,String>> tamanho() {
         return ResponseEntity.status(413).body(Map.of("error","Envie uma imagem PNG ou JPEG de até 1 MB."));
+    }
+    @ExceptionHandler(dev.jamal.projetotcc.Service.Social.SocialQuotaExceededException.class)
+    public ResponseEntity<java.util.Map<String, String>> quotaExceeded() {
+        return ResponseEntity.status(429).header("Retry-After", "60")
+                .body(java.util.Map.of("error",
+                        "Limite de novas ações atingido. Aguarde até 60 segundos e tente novamente."));
     }
 }

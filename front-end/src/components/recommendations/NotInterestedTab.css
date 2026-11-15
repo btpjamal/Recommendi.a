@@ -18,7 +18,7 @@
 .not-interested-header h2 {
     margin: 0 0 8px;
 
-    color: #1e293b;
+    color: var(--text-primary);
     font-size: 28px;
     font-weight: 750;
     letter-spacing: -0.6px;
@@ -28,7 +28,7 @@
     max-width: 650px;
     margin: 0;
 
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 14px;
     line-height: 1.6;
 }
@@ -46,10 +46,10 @@
 .not-interested-badge {
     padding: 6px 10px;
 
-    background: #f1f5f9;
-    color: #64748b;
+    background: var(--surface-raised);
+    color: var(--text-secondary);
 
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border);
     border-radius: 999px;
 
     font-size: 11px;
@@ -66,10 +66,10 @@
     margin-top: auto;
     padding: 11px 16px;
 
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--surface-accent);
+    color: var(--primary);
 
-    border: 1px solid #c7d2fe;
+    border: 1px solid var(--border-accent);
     border-radius: 10px;
 
     font-size: 13px;
@@ -82,8 +82,8 @@
 }
 
 .not-interested-restore-button:hover {
-    background: #e0e7ff;
-    border-color: #a5b4fc;
+    background: var(--surface-accent);
+    border-color: var(--border-accent);
 
     transform: translateY(-1px);
 }
@@ -112,13 +112,13 @@
 
     padding: 48px 32px;
 
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 18px;
 
     text-align: center;
 
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .not-interested-empty-icon {
@@ -131,14 +131,14 @@
 .not-interested-empty h2 {
     margin-bottom: 12px;
 
-    color: #1e293b;
+    color: var(--text-primary);
     font-size: 24px;
 }
 
 .not-interested-empty p {
     margin: 0;
 
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 14px;
     line-height: 1.7;
 }

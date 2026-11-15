@@ -10,8 +10,21 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface SocialFeedRepository extends Repository<CommunityPost, Long> {
+    interface FeedRow {
+        Long getId();
+        boolean getSeguindo();
+    }
+
+    @Query("""
+        SELECT p FROM CommunityPost p JOIN FETCH p.user JOIN FETCH p.community c JOIN FETCH c.hobby
+        WHERE p.id IN :ids
+        """)
+    List<CommunityPost> carregar(@Param("ids") List<Long> ids);
+
     @Query(value = """
-        SELECT p.* FROM community_posts p
+        SELECT p.id, EXISTS (SELECT 1 FROM social_follows f
+            WHERE f.follower_id = :viewer AND f.followed_id = p.user_id) AS seguindo
+        FROM community_posts p
         JOIN users u ON u.id = p.user_id
         JOIN social_profiles s ON s.user_id = u.id
         WHERE p.id < :before AND p.deleted_at IS NULL AND p.hidden_at IS NULL
@@ -25,7 +38,7 @@ public interface SocialFeedRepository extends Repository<CommunityPost, Long> {
                        WHERE f.follower_id = :viewer AND f.followed_id = p.user_id))
         ORDER BY p.id DESC
         """, nativeQuery = true)
-    List<CommunityPost> buscar(@Param("viewer") Long viewer, @Param("before") Long before,
+    List<FeedRow> buscar(@Param("viewer") Long viewer, @Param("before") Long before,
                               @Param("cutoff") LocalDate cutoff, @Param("following") boolean following,
                               Pageable page);
 }

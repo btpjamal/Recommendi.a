@@ -1,3 +1,4 @@
+import RecommendationBanner from "./RecommendationBanner";
 import { session } from "../../auth/session.js";
 import { useEffect, useRef , useState } from "react";
 import { api } from "../../api/api";
@@ -142,36 +143,31 @@ export default function DiscoverTab() {
 
     if (loading) {
         return (
-            <main className="recommendations-page">
+            <section className="recommendations-page" aria-label="Descobrir hobbies">
                 <div className="recommendation-loading">
                     <p>Carregando recomendações...</p>
                 </div>
-            </main>
+            </section>
         );
     }
 
     if (erro) {
         return (
-            <main className="recommendations-page">
+            <section className="recommendations-page" aria-label="Descobrir hobbies">
                 <div className="recommendation-error">
                     <p>{erro}</p>
                 </div>
-            </main>
+            </section>
         );
     }
 
     return (
-        <main className="recommendations-page">
+        <section className="recommendations-page" aria-label="Descobrir hobbies">
             <div className="recommendations-container">
-                <header className="recommendations-header">
-                    <div>
-                        <p className="recommendations-subtitle">
-                            Hobbies sugeridos com base no seu perfil, interesses e preferências.
-                        </p>
-                    </div>
-
-
-                </header>
+                <RecommendationBanner
+                    title="Descobrir hobbies"
+                    description="Hobbies sugeridos com base no seu perfil, interesses e preferências."
+                />
 
                 {recommendations.length === 0 ? (
                     <div className="recommendation-empty">
@@ -274,6 +270,17 @@ export default function DiscoverTab() {
                         ))}
                     </section>
                 )}
+                <footer className="discover-design-credit">
+                    Inspiração visual <span aria-hidden="true">·</span>{" "}
+                    <a
+                        href="https://open.spotify.com/intl-pt/album/4PIVdqvL1Rc7T7Vfsr8n8Q"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Koi No Yokan, de Deftones, no Spotify (abre em nova aba)"
+                    >
+                        Koi No Yokan, de Deftones
+                    </a>
+                </footer>
             </div>
             {hobbyExplicacao && (
                 <div
@@ -388,6 +395,6 @@ export default function DiscoverTab() {
                     </div>
                 </div>
             )}
-        </main>
+        </section>
     );
 }

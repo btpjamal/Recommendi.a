@@ -1,15 +1,15 @@
 .admin-hobby-data-section { display: grid; gap: 16px; min-width: 0; }
 .admin-hobby-data-section > h3 { margin: 0; }
-.admin-hobby-image-section { min-width: 0; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; }
-.admin-hobby-image-section > summary { cursor: pointer; padding: 16px; font-weight: 600; color: #1e293b; }
-.admin-hobby-image-section > summary > span { display: block; margin: 5px 0 0 18px; font-size: 13px; font-weight: 400; color: #475569; }
-.admin-hobby-image-section > summary:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; border-radius: 10px; }
+.admin-hobby-image-section { min-width: 0; border: 1px solid var(--border-control); border-radius: 12px; background: var(--surface); }
+.admin-hobby-image-section > summary { cursor: pointer; padding: 16px; font-weight: 600; color: var(--text-primary); }
+.admin-hobby-image-section > summary > span { display: block; margin: 5px 0 0 18px; font-size: 13px; font-weight: 400; color: var(--text-secondary); }
+.admin-hobby-image-section > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 10px; }
 .admin-hobby-image-content { display: grid; gap: 16px; padding: 0 16px 16px; min-width: 0; margin: 0; border: 0; }
 .admin-hobby-image-content h3, .admin-hobby-image-content h4 { margin: 0 0 10px; }
-.admin-hobby-image-notice { margin: 0; padding: 12px; border-left: 3px solid #6366f1; border-radius: 6px; background: #eef2ff; color: #312e81; line-height: 1.5; }
-.admin-hobby-image-content button { padding: 10px 12px; margin: 6px 8px 0 0; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #1e293b; font: inherit; cursor: pointer; }
+.admin-hobby-image-notice { margin: 0; padding: 12px; border-left: 3px solid var(--primary); border-radius: 6px; background: var(--surface-accent); color: var(--text-primary); line-height: 1.5; }
+.admin-hobby-image-content button { padding: 10px 12px; margin: 6px 8px 0 0; border: 1px solid var(--border-control); border-radius: 8px; background: var(--surface); color: var(--text-primary); font: inherit; cursor: pointer; }
 .admin-hobby-image-content button:disabled { opacity: .6; cursor: not-allowed; }
-.admin-hobby-image-content button:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
-.admin-hobby-image-success { padding: 12px; border-radius: 8px; background: #dcfce7; color: #166534; }
+.admin-hobby-image-content button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.admin-hobby-image-success { padding: 12px; border-radius: 8px; background: var(--success-bg); color: var(--success); }
 .admin-hobby-image-content .admin-hobby-pending-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px; }
-.admin-hobby-save-note { margin: 0; font-size: 13px; color: #475569; line-height: 1.5; }
+.admin-hobby-save-note { margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }

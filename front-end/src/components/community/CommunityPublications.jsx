@@ -1,3 +1,4 @@
+import RecommendationBanner from "../recommendations/RecommendationBanner";
 import NotificationBell from "../social/SocialNotifications.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
@@ -174,7 +175,7 @@ export default function CommunityPublications({ communityId, active, onTabChange
 
     async function logout() { await revokeSession(); navigate("/login"); }
 
-    return <main className="community-details-page">
+    return <main className="community-details-page recommendations-theme social-screen-theme">
         <header className="app-header"><div className="app-header-content">
             <div className="app-brand"><div><span className="app-brand-name">Recommendi.a</span><span className="app-brand-subtitle">Pratique e compartilhe seus hobbies</span></div></div>
             <div className="app-header-actions"><NotificationBell /><span className="app-user-greeting">Olá, {session.getItem("nome")}!</span>
@@ -185,11 +186,9 @@ export default function CommunityPublications({ communityId, active, onTabChange
         </div></header>
         <section className="community-details-container community-posts-container">
             <button className="community-back-button" onClick={() => navigate("/community")}>Voltar ao Hub Social</button>
-            <div className="community-post-heading"><span className="community-post-eyebrow">{community?.tipo === "MUNICIPAL" ? "COMUNIDADE MUNICIPAL" : community?.tipo === "REGIONAL" ? "COMUNIDADE REGIONAL" : "COMUNIDADE"}</span>
-                <h1>{community?.hobbyNome || "Publicações da comunidade"}</h1>
-                <p>Compartilhe descobertas, experiências e seus primeiros passos neste hobby.</p>
-                {community && <p>{community.membros} {community.membros === 1 ? "participante" : "participantes"}</p>}
-            </div>
+            <RecommendationBanner title={community?.hobbyNome || "Publicações da comunidade"}
+                description="Compartilhe descobertas, experiências e seus primeiros passos neste hobby."
+                detail={community && `${community.membros} ${community.membros === 1 ? "participante" : "participantes"}`} />
             <CommunityTabs active="posts" onChange={onTabChange} disabled={busy} />
             <div className="community-post-status" aria-live="polite">{notice && <p role="status">{notice}</p>}</div>
             {error && <div className="community-chat-error" role="alert">{error}</div>}

@@ -1,3 +1,4 @@
+import SocialAvatar from "../components/social/SocialAvatar.jsx";
 import NotificationBell from "../components/social/SocialNotifications.jsx";
 import { session, revokeSession } from "../auth/session.js";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -81,18 +82,8 @@ function PrivateChat({ contactId }) {
         envioOcupadoRef.current = false;
         leituraOcupadaRef.current = false;
         erroLeituraEmRef.current = 0;
-        setUltimaLeitura(0);
-        setLendoFim(true);
-        setAvisoLeitura("");
         anterioresOcupadoRef.current = false;
         seguirFinalRef.current = true;
-        setCarregando(true);
-        setAcesso(false);
-        setMensagens([]);
-        setContato(null);
-        setErro("");
-        setErroAtualizacao("");
-
         async function atualizar() {
             if (!sessao.isActive() || !inicializada || atualizando) return;
             clearTimeout(timer);
@@ -127,6 +118,17 @@ function PrivateChat({ contactId }) {
         atualizarRef.current = atualizar;
 
         async function iniciar() {
+            await Promise.resolve();
+            if (!sessao.isActive()) return;
+            setUltimaLeitura(0);
+            setLendoFim(true);
+            setAvisoLeitura("");
+            setCarregando(true);
+            setAcesso(false);
+            setMensagens([]);
+            setContato(null);
+            setErro("");
+            setErroAtualizacao("");
             try {
                 const [detalhes, historico] = await Promise.all([
                     api.get(base, { signal: sessao.signal }),
@@ -255,7 +257,7 @@ function PrivateChat({ contactId }) {
     }
 
     return (
-        <main className="community-details-page">
+        <main className="community-details-page recommendations-theme private-conversation-page">
             <header className="app-header"><div className="app-header-content">
                 <div className="app-brand"><span className="app-brand-icon">✦</span><div><span className="app-brand-name">Recommendi.a</span><span className="app-brand-subtitle">Descubra seu próximo hobby</span></div></div>
                 <div className="app-header-actions"><NotificationBell /><span className="app-user-greeting">Olá, {nome}!</span>
@@ -266,9 +268,10 @@ function PrivateChat({ contactId }) {
             <section className="community-details-container">
                 <button className="community-back-button" onClick={() => navigate("/community?aba=conversas&caixa=ACEITAS")}>← Voltar às conversas</button>
                 <div className="community-chat private-conversation">
-                    <div className="community-chat-header private-conversation-heading">
-                        <div><span>CONVERSA PRIVADA</span><h1>{contato?.outraPessoa?.nome || "Conversa"}</h1>
-                            {contato?.outraPessoa?.proximidade && <p>{contato.outraPessoa.proximidade === "MESMA_CIDADE" ? "É da mesma cidade que você" : "É do mesmo estado que você"}</p>}
+                    <div className="recommendations-header private-conversation-heading">
+                        {acesso && contato?.outraPessoa && <SocialAvatar usuario={contato.outraPessoa} ampliavel />}
+                        <div><span>CONVERSA PRIVADA</span><h1 className="recommendations-title">{contato?.outraPessoa?.nome || "Conversa"}</h1>
+                            {contato?.outraPessoa?.proximidade && <p className="recommendations-subtitle">{contato.outraPessoa.proximidade === "MESMA_CIDADE" ? "É da mesma cidade que você" : "É do mesmo estado que você"}</p>}
                         </div>
                         {acesso && <button type="button" className="social-contact-block" disabled={bloqueando || enviando} onClick={bloquearContato}>Bloquear contato</button>}
                     </div>
@@ -277,7 +280,7 @@ function PrivateChat({ contactId }) {
                     {avisoLeitura && <p className="community-chat-update-note" role="status">{avisoLeitura}</p>}
                     {!carregando && !acesso && <div className="community-chat-tools"><button type="button" onClick={() => setRevisao((atual) => atual + 1)}>Verificar acesso novamente</button></div>}
                     {acesso && <div className="community-chat-tools">
-                        <button type="button" disabled={!temAnteriores || carregandoAnteriores || bloqueando} onClick={carregarAnteriores}>{carregandoAnteriores ? "Carregando..." : "Carregar anteriores"}</button>
+                        {temAnteriores && <button type="button" disabled={carregandoAnteriores || bloqueando} onClick={carregarAnteriores}>{carregandoAnteriores ? "Carregando..." : "Carregar anteriores"}</button>}
                         <button type="button" disabled={bloqueando} onClick={() => atualizarRef.current?.()}>Atualizar mensagens</button>
                     </div>}
                     <div className="community-messages" ref={listaRef} aria-label="Mensagens privadas"

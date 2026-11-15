@@ -18,6 +18,9 @@ public class CommunityMessageService {
     private final CommunityMemberRepository memberRepository;
     private final UserRepository userRepository;
     private final CommunityChatLockRepository chatLocks;
+    private final SocialProfileRepository profiles;
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public List<CommunityMessageDTO> listar(Long communityId, Long userId) {
@@ -33,9 +36,10 @@ public class CommunityMessageService {
             throw new IllegalArgumentException("Cursor inválido ou limite fora do intervalo de 1 a 50.");
         }
         var pagina = PageRequest.of(0, limite + 1);
+        var adultoEm = java.time.LocalDate.now().minusYears(18);
         var encontradas = aposId != null
-                ? messageRepository.buscarNovas(communityId, aposId, pagina)
-                : messageRepository.buscarAnteriores(communityId, antesDe == null ? Long.MAX_VALUE : antesDe, pagina);
+                ? messageRepository.buscarNovas(communityId, aposId, userId, adultoEm, pagina)
+                : messageRepository.buscarAnteriores(communityId, antesDe == null ? Long.MAX_VALUE : antesDe, userId, adultoEm, pagina);
         boolean temMais = encontradas.size() > limite;
         var mensagens = encontradas.stream().limit(limite).sorted(Comparator.comparing(CommunityMessage::getId))
                 .map(m -> converterParaDTO(m, userId)).toList();
@@ -52,13 +56,38 @@ public class CommunityMessageService {
         }
         validarMembro(communityId, userId);
         String conteudo = request == null || request.conteudo() == null ? "" : request.conteudo().strip();
+        SocialTextValidation.rejectNul(conteudo);
         if (conteudo.isBlank()) throw new IllegalArgumentException("A mensagem não pode estar vazia.");
         if (conteudo.length() > 1000) throw new IllegalArgumentException("A mensagem deve possuir no máximo 1000 caracteres.");
         Community community = communityRepository.findById(communityId)
                 .orElseThrow(() -> new IllegalStateException("Comunidade não encontrada."));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Usuário não encontrado."));
+        var profile = profiles.findByUser_Id(userId)
+                .orElseThrow(() -> new IllegalStateException("Participação social indisponível."));
+        entityManager.refresh(user);
+        entityManager.refresh(profile);
+        if (!profile.isEnabled() || !SocialProfileService.maiorDeIdade(user)) {
+            throw new IllegalStateException("Participação social indisponível.");
+        }
+        var clientMessageId = request.clientMessageId();
+        if (clientMessageId != null) {
+            var existente = messageRepository.findByCommunity_IdAndUser_IdAndClientMessageId(
+                    communityId, userId, clientMessageId);
+            if (existente.isPresent()) {
+                var anterior = existente.get();
+                if (!anterior.getConteudo().equals(conteudo)) {
+                    throw new org.springframework.web.server.ResponseStatusException(
+                            org.springframework.http.HttpStatus.CONFLICT,
+                            "Este identificador já foi usado para outra mensagem.");
+                }
+                return converterParaDTO(anterior, userId);
+            }
+        }
+
+        SocialWriteQuota.consume(entityManager, userId, SocialWriteQuota.Action.COMMUNITY_MESSAGE);
         var message = new CommunityMessage();
+        message.setClientMessageId(clientMessageId);
         message.setCommunity(community);
         message.setUser(user);
         message.setConteudo(conteudo);

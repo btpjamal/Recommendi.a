@@ -13,7 +13,9 @@ public record HobbyLocationsResponseDTO(
         Double longitude,
         List<HobbyLocationDTO> locais,
         HobbyLocationSearchStatus status,
-        String mensagem
+        String mensagem,
+        String consultadoEm,
+        boolean dadosDesatualizados
 
 ) {
 
@@ -22,7 +24,9 @@ public record HobbyLocationsResponseDTO(
             String estado,
             Double latitude,
             Double longitude,
-            List<HobbyLocationDTO> locais
+            List<HobbyLocationDTO> locais,
+            String consultadoEm,
+            boolean dadosDesatualizados
     ) {
         this(
                 cidade,
@@ -35,7 +39,14 @@ public record HobbyLocationsResponseDTO(
                         : HobbyLocationSearchStatus.SUCESSO,
                 locais == null || locais.isEmpty()
                         ? "Nenhum local encontrado para este hobby na região."
-                        : "Locais encontrados com sucesso."
+                        : "Locais encontrados com sucesso.",
+                consultadoEm,
+                dadosDesatualizados
         );
+    }
+
+    public HobbyLocationsResponseDTO(String cidade, String estado, Double latitude, Double longitude,
+                                     List<HobbyLocationDTO> locais, HobbyLocationSearchStatus status, String mensagem) {
+        this(cidade, estado, latitude, longitude, locais, status, mensagem, null, false);
     }
 }

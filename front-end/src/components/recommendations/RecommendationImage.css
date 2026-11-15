@@ -4,7 +4,7 @@
     flex-shrink: 0;
     overflow: hidden;
     border-radius: 12px;
-    background: #eef2ff;
+    background: var(--surface-accent);
 }
 .recommendation-hobby-image > img {
     display: block;
@@ -24,6 +24,6 @@
     padding: 16px;
     box-sizing: border-box;
     text-align: center;
-    color: #475569;
+    color: var(--text-secondary);
     font-size: 13px;
 }
