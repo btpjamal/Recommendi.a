@@ -1,3 +1,4 @@
+import RecommendationBanner from "../components/recommendations/RecommendationBanner";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/api.js";
 import { createChatSession } from "../components/community/communityChatState.mjs";
@@ -109,7 +110,7 @@ export default function AdminCommunityReports() {
         } catch (e) { session.commit(() => setError(e.response?.data?.error || "Não foi possível carregar mais denúncias.")); }
         finally { session.commit(() => { occupied.current = false; setBusy(false); }); }
     }
-    return <section className="moderation-page"><h1>Denúncias da comunidade</h1><p>Analise publicações e comentários. As decisões e justificativas ficam registradas.</p>
+    return <section className="moderation-page"><RecommendationBanner title="Denúncias da comunidade" description="Analise publicações e comentários. As decisões e justificativas ficam registradas." />
         <div className="moderation-filters"><label>Status<select value={status} disabled={busy} onChange={e => setStatus(e.target.value)}><option value="ABERTA">Abertas</option><option value="ANALISADA">Analisadas</option></select></label>
             <button type="button" disabled={busy || loading} onClick={() => setRevision(v => v + 1)}>Atualizar lista</button></div>
         {error && <p role="alert" className="interaction-error">{error}</p>}{notice && <p role="status">{notice}</p>}

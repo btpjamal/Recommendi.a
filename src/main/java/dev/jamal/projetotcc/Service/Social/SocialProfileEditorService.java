@@ -109,7 +109,7 @@ public class SocialProfileEditorService {
                 int width = reader.getWidth(0), height = reader.getHeight(0);
                 if (width < 1 || height < 1 || (long) width * height > 16_000_000) throw new IOException();
                 var source = reader.read(0);
-                double scale = Math.min(1, 256.0 / Math.max(width, height));
+                double scale = Math.min(1, 768.0 / Math.max(width, height));
                 var target = new BufferedImage(Math.max(1, (int)(width * scale)), Math.max(1, (int)(height * scale)), BufferedImage.TYPE_INT_RGB);
                 var g = target.createGraphics();
                 try {

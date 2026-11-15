@@ -16,7 +16,7 @@
     margin-bottom: 20px;
 }
 
-.mobile-social-destination .community-visual .social-hub-tabs {
+.mobile-primary-content .community-visual .social-hub-tabs {
     display: none;
 }
 
@@ -47,5 +47,26 @@
 .community-visual .social-location-controls h2 {
     margin: 0;
     font-size: 1rem;
+}
+
+.community-name-search {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.community-name-search input {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-control);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 400;
 }
 

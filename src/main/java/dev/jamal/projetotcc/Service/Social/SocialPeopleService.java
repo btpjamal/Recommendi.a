@@ -30,6 +30,11 @@ public class SocialPeopleService {
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public SocialPeoplePageDTO listar(Long actor, SocialLocationScope scope, int page, int limit) {
+        return listar(actor, scope, page, limit, "");
+    }
+
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public SocialPeoplePageDTO listar(Long actor, SocialLocationScope scope, int page, int limit, String nome) {
         if (page < 0 || limit < 1 || limit > 30) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe uma página válida e limite de 1 a 30.");
         }
@@ -40,7 +45,8 @@ public class SocialPeopleService {
         } catch (IllegalArgumentException error) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, error.getMessage());
         }
-        var rankedIds = rankedIds(actor, own, scope, page, limit);
+        if (nome.length() > 100) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe até 100 caracteres no nome.");
+        var rankedIds = rankedIds(actor, own, scope, page, limit, nome.strip());
         if (rankedIds.isEmpty()) return new SocialPeoplePageDTO(List.of(), false);
 
         var ids = new ArrayList<>(rankedIds.stream().limit(limit).toList());
@@ -93,9 +99,10 @@ public class SocialPeopleService {
         return new SocialPeoplePageDTO(cards, rankedIds.size() > limit);
     }
 
-    private List<Long> rankedIds(Long actor, Person own, SocialLocationScope scope, int page, int limit) {
+    private List<Long> rankedIds(Long actor, Person own, SocialLocationScope scope, int page, int limit, String nome) {
         var params = new org.springframework.jdbc.core.namedparam.MapSqlParameterSource()
                 .addValue("actor", actor)
+                .addValue("nome", nome)
                 .addValue("adult", LocalDate.now().minusYears(18))
                 .addValue("scope", scope.name())
                 .addValue("state", own.location().estado(), java.sql.Types.VARCHAR)
@@ -117,6 +124,7 @@ public class SocialPeopleService {
                     LEFT JOIN social_contacts c ON c.low_user_id = LEAST(:actor, u.id)
                          AND c.high_user_id = GREATEST(:actor, u.id) AND c.status = 'ACEITA'
                     WHERE p.user_id <> :actor AND p.enabled AND u.data_nascimento <= :adult
+                      AND strpos(lower(u.nome), lower(:nome)) > 0
                       AND NOT EXISTS (
                           SELECT 1 FROM social_user_blocks b
                           WHERE (b.blocker_id = :actor AND b.blocked_id = u.id)

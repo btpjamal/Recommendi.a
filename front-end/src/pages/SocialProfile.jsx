@@ -133,7 +133,7 @@ function SocialProfileContent({ userId, embedded }) {
             </form>}
             <article className="social-user-card">
                 {own && <><h2>Prévia dos dados salvos</h2><p>Esta é a sua visão completa. Outras pessoas veem os campos conforme a visibilidade escolhida.</p></>}
-                <SocialAvatar usuario={profile} revision={revision} />
+                <SocialAvatar usuario={profile} revision={revision} ampliavel={own} />
                 <h2>{profile.nome}</h2>
                 {profile.biografia && <p className="social-profile-bio">{profile.biografia}</p>}
                 <p>{profile.resumo}</p>

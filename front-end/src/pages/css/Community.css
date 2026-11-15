@@ -607,23 +607,21 @@
 }
 
 .community-card-open {
-    padding: 8px 13px;
-
-    border: none;
+    min-height: 44px;
+    padding: 8px 14px;
+    border: 1px solid var(--primary);
     border-radius: 9px;
-
-    background: var(--surface-accent);
-    color: var(--primary);
-
-    font-size: 12px;
+    background: var(--primary);
+    color: var(--on-accent);
+    font-size: 13px;
     font-weight: 700;
-
     cursor: pointer;
-    transition: 0.2s;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
 .community-card-open:hover {
-    background: var(--surface-accent);
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
 }
 
 /* ÁREA DE SUGESTÕES */

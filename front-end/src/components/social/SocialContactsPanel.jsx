@@ -1,3 +1,4 @@
+import SocialAvatar from "./SocialAvatar.jsx";
 import RecommendationBanner from "../recommendations/RecommendationBanner";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../../api/api";
@@ -5,16 +6,19 @@ import { useNavigate } from "react-router";
 import "./SocialContacts.css";
 import "./PrivateConversation.css";
 
-const CAIXAS = { RECEBIDAS: "Recebidas", ENVIADAS: "Enviadas", ACEITAS: "Aceitas", HISTORICO: "Histórico", BLOQUEADOS: "Bloqueados" };
+const CAIXAS = { RECEBIDAS: "Recebidas", ENVIADAS: "Enviadas", ACEITAS: "Conversas", HISTORICO: "Histórico", BLOQUEADOS: "Bloqueados" };
 const ROTULOS = { PENDENTE: "Aguardando resposta", ACEITA: "Contato aceito", RECUSADA: "Solicitação não aceita", CANCELADA: "Solicitação cancelada", ENCERRADA: "Contato encerrado" };
 const dataLocal = (valor) => valor ? new Date(valor).toLocaleString("pt-BR") : "";
 
-function PerfilContato({ perfil }) {
+function PerfilContato({ perfil, mostrarFoto }) {
     if (!perfil) return <h3>Participante indisponível</h3>;
     const afinidade = perfil.afinidade;
     return (
         <>
-            <h3>{perfil.nome}</h3>
+            <div className="social-request-person">
+                {mostrarFoto && <SocialAvatar usuario={perfil} ampliavel />}
+                <h3>{perfil.nome}</h3>
+            </div>
             {perfil.proximidade && <p className="social-location-badge" title="Localização declarada pelo participante.">
                 {perfil.proximidade === "MESMA_CIDADE" ? "É da mesma cidade que você" : "É do mesmo estado que você"}
             </p>}
@@ -112,7 +116,8 @@ export default function SocialContactsPanel({ caixa, onCaixaChange, onBloqueioAl
                     onClick={() => setRevisao(atual => atual + 1)}>Atualizar</button>
             </RecommendationBanner>
             <nav className="social-contact-boxes" aria-label="Organizar contatos">
-                {Object.entries(CAIXAS).map(([valor, rotulo]) => (
+                {Object.entries(CAIXAS).filter(([valor]) => valor === "ACEITAS" || valor === caixa ||
+                    (["RECEBIDAS", "ENVIADAS"].includes(caixa) && ["RECEBIDAS", "ENVIADAS"].includes(valor))).map(([valor, rotulo]) => (
                     <button type="button" key={valor} aria-pressed={caixa === valor}
                         disabled={processando} onClick={() => mudarCaixa(valor)}>{rotulo}{valor === "ACEITAS" && naoLidas.total > 0 ? ` (${naoLidas.total} não lidas)` : ""}</button>
                 ))}
@@ -133,7 +138,7 @@ export default function SocialContactsPanel({ caixa, onCaixaChange, onBloqueioAl
                     ) : (
                         <article className="social-contact-card" key={item.id}>
                             <span className="social-contact-status">{ROTULOS[item.status]}</span>
-                            <PerfilContato perfil={item.outraPessoa} />
+                            <PerfilContato perfil={item.outraPessoa} mostrarFoto={caixa === "RECEBIDAS"} />
                             <p className="social-contact-date">{item.direcao === "RECEBIDA" ? "Recebida" : "Enviada"} em {dataLocal(item.solicitadaEm)}</p>
                             {item.apresentacao && <blockquote><strong>{item.direcao === "RECEBIDA" ? "Apresentação recebida" : "Sua apresentação"}</strong><p>{item.apresentacao}</p></blockquote>}
                             {item.novaSolicitacaoApos && <p className="social-contact-help">Nova solicitação disponível após {dataLocal(item.novaSolicitacaoApos)}.</p>}

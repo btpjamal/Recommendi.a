@@ -1,3 +1,5 @@
+import { Link, useSearchParams } from "react-router";
+import RecommendationBanner from "../components/recommendations/RecommendationBanner";
 import { session } from "../auth/session.js";
 import { useEffect, useState } from "react";
 import { api } from "../api/api";
@@ -33,7 +35,9 @@ function mensagemErro(error, alternativa) {
 
 export default function AdminLocationRules() {
     const [hobbies, setHobbies] = useState([]);
-    const [hobbyId, setHobbyId] = useState("");
+    const [params] = useSearchParams();
+    const hobbyInicial = params.get("hobby") ?? "";
+    const [hobbyId, setHobbyId] = useState(/^\d+$/.test(hobbyInicial) ? hobbyInicial : "");
     const [testeAberto, setTesteAberto] = useState(false);
     const [regras, setRegras] = useState([]);
 
@@ -319,10 +323,17 @@ export default function AdminLocationRules() {
 
     return (
         <div className="admin-location-rules">
-            <div className="admin-page-heading">
-                <h1>Regras geográficas</h1>
-                <p>Consulte e cadastre as configurações OSM utilizadas na busca de locais para cada hobby.</p>
-            </div>
+            <RecommendationBanner title="Regras geográficas" description="Consulte e cadastre as configurações OSM utilizadas na busca de locais para cada hobby." />
+
+            <section className="admin-card" aria-labelledby="admin-localizacao-teste">
+                <h2 id="admin-localizacao-teste">Localização usada no teste</h2>
+                <p>Informe a cidade e a UF que o teste de busca deve usar.</p>
+                <Link className="admin-card-link" to={hobbyId
+                    ? `/admin/preferencias?hobby=${encodeURIComponent(hobbyId)}`
+                    : "/admin/preferencias"}>
+                    Alterar localização →
+                </Link>
+            </section>
 
             <div className="admin-card">
                 <h2>Selecionar hobby</h2>

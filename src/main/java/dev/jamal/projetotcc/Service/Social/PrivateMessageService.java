@@ -32,6 +32,22 @@ public class PrivateMessageService {
         return contacts.detalhesConversa(atorId, contatoId);
     }
 
+    public record Conversa(Long contatoId, Long userId, String nome, boolean possuiFoto,
+                          String ultimaMensagem, boolean propria, Instant atividade, long naoLidas) {}
+    public record CaixaEntrada(java.util.List<Conversa> conversas, boolean temMais, long solicitacoesPendentes) {}
+
+    @Transactional(readOnly = true)
+    public CaixaEntrada caixaEntrada(Long atorId, int pagina) {
+        contacts.validarParticipacaoSocial(atorId);
+        if (pagina < 0) throw invalido("Página inválida.");
+        int tamanho = 20;
+        var linhas = messages.caixaEntrada(atorId, LocalDate.now().minusYears(18), tamanho + 1, (long) pagina * tamanho);
+        return new CaixaEntrada(linhas.stream().limit(tamanho).map(linha -> new Conversa(
+                linha.getContatoId(), linha.getUserId(), linha.getNome(), linha.getPossuiFoto(),
+                linha.getUltimaMensagem(), linha.getPropria(), linha.getAtividade(), linha.getNaoLidas()
+        )).toList(), linhas.size() > tamanho, messages.solicitacoesPendentes(atorId));
+    }
+
     public PrivateMessagePageDTO listar(Long atorId, Long contatoId, Long antesDe, Long aposId, int limite) {
         // Mantem os locks do par ate o termino desta transacao, junto com bloqueios e envios.
         contacts.carregarConversaAceitaBloqueada(atorId, contatoId);

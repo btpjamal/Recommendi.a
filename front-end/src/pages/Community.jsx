@@ -1,3 +1,5 @@
+import PeopleConversationDialog from "../components/social/PeopleConversationDialog.jsx";
+import ConversationInbox from "../components/social/ConversationInbox.jsx";
 import RecommendationBanner from "../components/recommendations/RecommendationBanner";
 import "./css/CommunityVisual.css";
 import SocialFeed from "../components/social/SocialFeed.jsx";
@@ -63,17 +65,30 @@ export default function Community() {
     const { mobile, unread } = useOutletContext();
 
     const [resultadoPessoas, setResultadoPessoas] = useState(null);
+    const [nomePessoa, setNomePessoa] = useState("");
     const [paginaPessoas, setPaginaPessoas] = useState(0);
     const [erro, setErro] = useState("");
     const [ativando, setAtivando] = useState(false);
     const aba = searchParams.get("aba");
     const caixa = searchParams.get("caixa");
-    const abaAtiva = ["feed", "pessoas", "comunidades", "conversas"].includes(aba) ? aba : "pessoas";
-    const caixaContato = ["RECEBIDAS", "ENVIADAS", "ACEITAS", "HISTORICO", "BLOQUEADOS"].includes(caixa) ? caixa : "RECEBIDAS";
+    const abaAtiva = aba === "pessoas" ? "conversas" : ["feed", "comunidades", "conversas"].includes(aba) ? aba : "comunidades";
+    const procurandoPessoa = abaAtiva === "conversas" && (aba === "pessoas" || searchParams.get("nova") === "1");
+
+    function mostrarPessoas(aberto) {
+        setNomePessoa("");
+        setPaginaPessoas(0);
+        const next = new URLSearchParams(searchParams);
+        next.set("aba", "conversas");
+        if (aberto) next.set("nova", "1");
+        else next.delete("nova");
+        setSearchParams(next, { replace: !aberto });
+    }
+    const caixaContato = ["RECEBIDAS", "ENVIADAS", "ACEITAS", "HISTORICO", "BLOQUEADOS"].includes(caixa) ? caixa : "ACEITAS";
 
     function setAbaAtiva(value) {
         const next = new URLSearchParams(searchParams);
         next.set("aba", value);
+        next.delete("nova");
         setSearchParams(next);
     }
 
@@ -81,11 +96,16 @@ export default function Community() {
         const next = new URLSearchParams(searchParams);
         next.set("aba", "conversas");
         next.set("caixa", value);
+        next.delete("nova");
         setSearchParams(next);
     }
 
     function abrirSolicitacao(contato) {
-        setCaixaContato(contato.status === "ACEITA" ? "ACEITAS" : contato.direcao === "RECEBIDA" ? "RECEBIDAS" : "ENVIADAS");
+        if (contato.status === "ACEITA") {
+            navigate(`/community/conversations/${contato.id}`);
+            return;
+        }
+        setCaixaContato(contato.direcao === "RECEBIDA" ? "RECEBIDAS" : "ENVIADAS");
     }
 
     function participanteBloqueado() {
@@ -95,6 +115,7 @@ export default function Community() {
 
     const [alterandoComunidade, setAlterandoComunidade] = useState(null);
     const [tipoComunidade, setTipoComunidade] = useState("geral");
+    const [buscaComunidade, setBuscaComunidade] = useState("");
     const [filtroPessoas, setFiltroPessoas] = useState("GERAL");
     const [salvandoVisibilidade, setSalvandoVisibilidade] = useState(false);
     const [erroVisibilidade, setErroVisibilidade] = useState("");
@@ -102,7 +123,7 @@ export default function Community() {
     const statusRequest = useCommunityResource("/social/me/status", "Não foi possível carregar o status da comunidade.");
     const { data: status, loading: carregando, error: erroStatus, retry: retryStatus } = statusRequest;
     const participa = Boolean(status?.elegivel && status?.participa);
-    const locationRequest = useCommunityResource(participa && (abaAtiva === "pessoas" || abaAtiva === "comunidades")
+    const locationRequest = useCommunityResource(participa && (procurandoPessoa || abaAtiva === "comunidades")
         ? "/community/location" : null, "Não foi possível carregar sua localização.");
     const { data: configLocal, loading: carregandoLocal, error: erroLocal, retry: retryLocal } = locationRequest;
     const catalogRequest = useCommunityResource(participa && abaAtiva === "comunidades"
@@ -121,10 +142,10 @@ export default function Community() {
 
     const nome = session.getItem("nome");
 
-    const pessoasAtiva = Boolean(status?.elegivel && status?.participa && abaAtiva === "pessoas");
+    const pessoasAtiva = Boolean(status?.elegivel && status?.participa && procurandoPessoa);
     const consultaPessoas = useMemo(() => pessoasAtiva ? {
-        escopo: filtroPessoas, pagina: paginaPessoas, revisao: revisaoLocal
-    } : null, [pessoasAtiva, filtroPessoas, paginaPessoas, revisaoLocal]);
+        escopo: filtroPessoas, pagina: paginaPessoas, nome: nomePessoa.trim(), revisao: revisaoLocal
+    } : null, [pessoasAtiva, filtroPessoas, paginaPessoas, revisaoLocal, nomePessoa]);
     const resultadoAtual = resultadoPessoas?.consulta === consultaPessoas ? resultadoPessoas : null;
     const usuarios = resultadoAtual?.pessoas ?? [];
     const maisPessoas = resultadoAtual?.temMais ?? false;
@@ -134,20 +155,22 @@ export default function Community() {
     useEffect(() => {
         if (!consultaPessoas) return;
         const controller = new AbortController();
-        api.get("/community/users/page", {
-            params: { escopo: consultaPessoas.escopo, pagina: consultaPessoas.pagina },
-            signal: controller.signal
-        }).then((resposta) => {
-            if (!controller.signal.aborted) {
-                setResultadoPessoas({ consulta: consultaPessoas, ...resposta.data });
-            }
-        }).catch((error) => {
-            if (!controller.signal.aborted) setResultadoPessoas({
-                consulta: consultaPessoas,
-                erro: error.response?.data?.error || "Não foi possível carregar as pessoas."
+        const delay = setTimeout(() => {
+            api.get("/community/users/page", {
+                params: { escopo: consultaPessoas.escopo, pagina: consultaPessoas.pagina, nome: consultaPessoas.nome },
+                signal: controller.signal
+            }).then((resposta) => {
+                if (!controller.signal.aborted) {
+                    setResultadoPessoas({ consulta: consultaPessoas, ...resposta.data });
+                }
+            }).catch((error) => {
+                if (!controller.signal.aborted) setResultadoPessoas({
+                    consulta: consultaPessoas,
+                    erro: error.response?.data?.error || "Não foi possível carregar as pessoas."
+                });
             });
-        });
-        return () => controller.abort();
+        }, 250);
+        return () => { clearTimeout(delay); controller.abort(); };
     }, [consultaPessoas]);
 
     async function alterarVisibilidade(compartilharRegiao) {
@@ -278,7 +301,10 @@ export default function Community() {
                 ? comunidadeAtualizada : comunidade));
     }
 
-    const comunidadesExibidas = catalogo ?? [];
+    const termoComunidade = normalizarNomeComunidade(buscaComunidade);
+    const comunidadesExibidas = (catalogo ?? []).filter(comunidade =>
+        normalizarNomeComunidade(comunidade.hobbyNome).includes(termoComunidade)
+    );
 
     return (
         <main className="community-page recommendations-theme community-visual">
@@ -482,12 +508,7 @@ export default function Community() {
                                     Feed
                                 </button>
 
-                                <button
-                                    className={abaAtiva === "pessoas" ? "active" : ""} aria-pressed={abaAtiva === "pessoas"}
-                                    onClick={() => setAbaAtiva("pessoas")}
-                                >
-                                    Pessoas
-                                </button>
+
 
                                 <button
                                     className={abaAtiva === "comunidades" ? "active" : ""} aria-pressed={abaAtiva === "comunidades"}
@@ -504,11 +525,12 @@ export default function Community() {
                             </div>
 
                             {abaAtiva === "feed" && <SocialFeed />}
-                            {abaAtiva === "pessoas" && (
-                                <>
-                                    <RecommendationBanner title="Encontrar pessoas"
-                                        description="Descubra participantes que compartilham hobbies e interesses com você." />
-
+                            {procurandoPessoa && (
+                                <PeopleConversationDialog onClose={() => mostrarPessoas(false)}>
+                                    <label className="people-dialog-search">Para
+                                        <input type="search" placeholder="Pesquisar por nome" maxLength={100}
+                                            value={nomePessoa} onChange={event => { setNomePessoa(event.target.value); setPaginaPessoas(0); }} />
+                                    </label>
                                     <div className="community-segments community-scope-filters" role="group" aria-label="Abrangência da busca de pessoas">
                                         {[
                                             ["GERAL", "Geral", true],
@@ -586,10 +608,11 @@ export default function Community() {
                                         onClick={() => setPaginaPessoas(pagina => pagina + 1)}>Próxima</button>
                                 </nav>
                             )}
-                        </>
-                    )}
+                                </PeopleConversationDialog>
+                            )}
                             {abaAtiva === "conversas" && (
-                                <SocialContactsPanel caixa={caixaContato} onCaixaChange={setCaixaContato}
+                                caixaContato === "ACEITAS" ? <ConversationInbox onCaixaChange={setCaixaContato} onNewConversation={() => mostrarPessoas(true)} /> :
+                                <SocialContactsPanel key={caixaContato} caixa={caixaContato} onCaixaChange={setCaixaContato}
                                     onBloqueioAlterado={() => setRevisaoLocal((atual) => atual + 1)}
                                     naoLidas={naoLidas} />
                             )}
@@ -641,20 +664,27 @@ export default function Community() {
 
                                     <LocationFeedback loading={carregandoLocal} error={erroLocal} retry={retryLocal} />
                                     {configLocal && !configLocal.cidadeDisponivel && <p>Preencha cidade e UF no seu perfil para acessar as comunidades municipais.</p>}
+                                    <label className="community-name-search">
+                                        Buscar comunidade
+                                        <input type="search" placeholder="Pesquisar pelo nome do hobby"
+                                            value={buscaComunidade} onChange={event => setBuscaComunidade(event.target.value)} />
+                                    </label>
                                     {carregandoRegiao ? <p role="status">Carregando comunidades...</p> : erroRegiao ? (
                                         <div role="alert"><p>{erroRegiao}</p><button type="button" onClick={retryCatalogo}>Tentar novamente</button></div>
                                     ) : comunidadesExibidas.length === 0 ? (
 
-                                        <div className="community-state">
+                                        <div className="community-state" role="status">
 
                                             <div className="community-state-icon">
                                                 ♡
                                             </div>
 
-                                            <h2>Nenhuma comunidade disponível</h2>
+                                            <h2>{termoComunidade ? "Nenhuma comunidade encontrada" : "Nenhuma comunidade disponível"}</h2>
 
                                             <p>
-                                                As comunidades de hobbies aparecerão aqui.
+                                                {termoComunidade
+                                                    ? "Tente outro nome ou selecione outro filtro regional."
+                                                    : "As comunidades de hobbies aparecerão aqui."}
                                             </p>
 
                                         </div>
@@ -699,8 +729,6 @@ export default function Community() {
 
 
 function SocialUserCard({ usuario, seguindo, onSolicitada, onBloqueado }) {
-    const navigate = useNavigate();
-
     const afinidade = usuario.afinidade;
 
     const possuiAfinidade =
@@ -716,11 +744,10 @@ function SocialUserCard({ usuario, seguindo, onSolicitada, onBloqueado }) {
 
             <div className="social-user-header">
 
-                <SocialAvatar usuario={usuario} />
+                <SocialAvatar usuario={usuario} ampliavel />
 
                 <div>
                     <h2>{usuario.nome}</h2>
-                    <button className="community-secondary-button" onClick={() => navigate(`/community/users/${usuario.userId}`)}>Ver perfil</button>
 
                     {possuiAfinidade && (
                         <span className="social-affinity-badge">
@@ -805,6 +832,10 @@ function AffinityGroup({ titulo, itens }) {
 
         </div>
     );
+}
+
+function normalizarNomeComunidade(nome) {
+    return nome.trim().normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("pt-BR");
 }
 
 function chaveComunidade(comunidade) {

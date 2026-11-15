@@ -23,12 +23,13 @@ public class SocialPeopleController {
     public ResponseEntity<SocialPeoplePageDTO> listar(Authentication auth,
             @RequestParam(defaultValue = "GERAL") SocialLocationScope escopo,
             @RequestParam(defaultValue = "0") int pagina,
-            @RequestParam(defaultValue = "20") int limite) {
+            @RequestParam(defaultValue = "20") int limite,
+            @RequestParam(defaultValue = "") String nome) {
         if (auth == null || !auth.isAuthenticated()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         var user = users.findByEmail(auth.getName())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(people.listar(user.getId(), escopo, pagina, limite));
+                .body(people.listar(user.getId(), escopo, pagina, limite, nome));
     }
 
     @GetMapping
@@ -37,7 +38,7 @@ public class SocialPeopleController {
             @RequestParam(defaultValue = "GERAL") SocialLocationScope escopo,
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "30") int limite) {
-        var result = java.util.Objects.requireNonNull(listar(auth, escopo, pagina, limite).getBody());
+        var result = java.util.Objects.requireNonNull(listar(auth, escopo, pagina, limite, "").getBody());
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
                 .header("X-Has-More", Boolean.toString(result.temMais()))
                 .body(result.pessoas().stream().map(SocialPeoplePageDTO.Card::perfil).toList());

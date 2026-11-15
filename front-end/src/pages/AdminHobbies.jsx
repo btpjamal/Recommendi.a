@@ -1,3 +1,4 @@
+import RecommendationBanner from "../components/recommendations/RecommendationBanner";
 import { session } from "../auth/session.js";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/api";
@@ -787,10 +788,7 @@ export default function AdminHobbies() {
 
     return (
         <div className="admin-hobbies">
-            <div className="admin-page-heading">
-                <h1>Catálogo de hobbies</h1>
-                <p>Consulte e gerencie os hobbies cadastrados no Recommendi.a.</p>
-            </div>
+            <RecommendationBanner title="Catálogo de hobbies" description="Consulte e gerencie os hobbies cadastrados no Recommendi.a." />
 
             <div className="admin-hobbies-toolbar">
                 <input type="search" placeholder="Buscar hobby pelo nome..."

@@ -29,6 +29,12 @@ public class PrivateMessageController {
     @GetMapping("/unread")
     public PrivateUnreadDTO naoLidas(Authentication authentication) { return service.naoLidas(ator(authentication)); }
 
+    @GetMapping("/inbox")
+    public ResponseEntity<PrivateMessageService.CaixaEntrada> caixaEntrada(Authentication authentication,
+            @RequestParam(defaultValue = "0") int pagina) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.caixaEntrada(ator(authentication), pagina));
+    }
+
     @GetMapping("/{contatoId}")
     public SocialContactDTO detalhes(Authentication authentication, @PathVariable Long contatoId) {
         return service.detalhes(ator(authentication), contatoId);

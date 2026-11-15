@@ -1,3 +1,4 @@
+import RecommendationBanner from "../components/recommendations/RecommendationBanner";
 
 import { Link } from "react-router";
 
@@ -31,13 +32,7 @@ export default function AdminDashboard() {
 
     return (
         <div className="admin-dashboard">
-            <div className="admin-page-heading">
-                <h1>Visão geral</h1>
-                <p>
-                    Gerencie o catálogo de hobbies e as funcionalidades
-                    administrativas do Recommendi.a.
-                </p>
-            </div>
+            <RecommendationBanner title="Visão geral" description="Gerencie o catálogo de hobbies e as funcionalidades administrativas do Recommendi.a." />
 
             <div className="admin-card-grid">
                 {secoes.map((secao) => (

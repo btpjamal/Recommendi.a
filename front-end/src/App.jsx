@@ -49,6 +49,7 @@ export default function App() {
         </Route>
 
             <Route element={<AdminRoute />}>
+                  <Route path="/admin/preferencias" element={<Onboarding admin />} />
                   <Route path="/admin" element={<AdminLayout />}>
                         <Route index element={<AdminDashboard />} />
 

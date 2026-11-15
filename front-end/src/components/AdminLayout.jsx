@@ -22,7 +22,7 @@ export default function AdminLayout() {
     }
 
     return (
-        <div className="admin-layout">
+        <div className="admin-layout recommendations-theme">
             <aside className="admin-sidebar">
                 <div className="admin-brand">
                     <span className="admin-brand-icon">✦</span>

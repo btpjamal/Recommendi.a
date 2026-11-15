@@ -12,7 +12,7 @@ export function subscribeLocationSearch(listener) {
     return () => listeners.delete(listener);
 }
 
-subscribeSessionToken(() => {
+export function clearLocationSearches() {
     for (const search of searches.values()) {
         search.controller.abort();
         clearTimeout(search.expiry);
@@ -20,7 +20,9 @@ subscribeSessionToken(() => {
     searches.clear();
     notices = [];
     notify();
-});
+}
+
+subscribeSessionToken(clearLocationSearches);
 
 export function getLocationSearch(hobbyId) {
     return searches.get(String(hobbyId))?.state ?? idle;

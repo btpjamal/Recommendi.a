@@ -62,12 +62,14 @@ export default function MobileNavigation() {
     const path = location.pathname.toLowerCase();
     const privateChat = path.startsWith("/community/conversations/");
     const showNavigation = mobile && !privateChat && path !== "/onboarding" && path !== "/profile";
-    const showHeader = showNavigation && (path.startsWith("/community/communities/") || ["/recommendations", "/community", "/myprofile", "/my-suggestions", "/suggest-hobby"].includes(path));
+    const showHeader = (mobile && privateChat) || showNavigation && (path.startsWith("/community/communities/") || ["/recommendations", "/community", "/myprofile", "/my-suggestions", "/suggest-hobby"].includes(path));
     const unread = usePrivateUnread(showNavigation, location.key);
     const aba = new URLSearchParams(location.search).get("aba");
     let active = "discover";
     if (path === "/community") {
-        active = aba === "feed" ? "feed" : aba === "conversas" ? "chat" : "community";
+        active = aba === "feed" ? "feed" : ["conversas", "pessoas"].includes(aba) ? "chat" : "community";
+    } else if (privateChat) {
+        active = "chat";
     } else if (path.startsWith("/community/")) {
         active = "community";
     } else if (["/myprofile", "/ai-settings", "/my-suggestions", "/suggest-hobby"].includes(path)) {
@@ -75,9 +77,9 @@ export default function MobileNavigation() {
     }
 
     return (
-        <div className={showNavigation ? "mobile-navigation-layout" : undefined} data-mobile-destination={showNavigation ? active : undefined}>
+        <div className={showNavigation ? "mobile-navigation-layout" : undefined} data-mobile-destination={showHeader || showNavigation ? active : undefined}>
             {showHeader && <MobileHeader key={location.key} />}
-            <div className={showHeader ? (active === "feed" || active === "chat" ? "mobile-primary-content mobile-social-destination" : "mobile-primary-content") : undefined}>
+            <div className={showHeader ? (!privateChat && (active === "feed" || active === "chat") ? "mobile-primary-content mobile-social-destination" : "mobile-primary-content") : undefined}>
                 <Outlet context={{ mobile, unread }} />
             </div>
             {showNavigation && (

@@ -1,0 +1,67 @@
+.conversation-inbox-header, .conversation-inbox-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.conversation-inbox-header { justify-content: space-between; }
+.conversation-inbox-header h1 { margin: 0; }
+.conversation-inbox-header details { position: relative; }
+.conversation-inbox-menu {
+    position: absolute;
+    inset-inline-end: 0;
+    z-index: 2;
+    display: grid;
+    min-width: 130px;
+    padding: 6px;
+    background: var(--surface);
+    border-radius: 10px;
+}
+.conversation-inbox :is(button, summary, .conversation-inbox-actions a) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 6px 12px;
+    border: 1px solid var(--border-control);
+    border-radius: 9px;
+    background: var(--surface);
+    color: var(--text-primary);
+    text-decoration: none;
+    cursor: pointer;
+}
+.conversation-inbox-actions a { color: var(--primary); }
+.conversation-inbox summary { min-width: 44px; font-size: 1.3rem; }
+.conversation-inbox summary::-webkit-details-marker { display: none; }
+.conversation-inbox-list {
+    padding: 0;
+    margin: 0 0 12px;
+    list-style: none;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--glass-light);
+}
+.conversation-inbox-list li + li { border-top: 1px solid var(--border); }
+.conversation-inbox-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding-inline-start: 10px;
+}
+.conversation-inbox-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    min-height: 68px;
+    padding: 10px 10px 10px 0;
+    color: var(--text-primary);
+    text-decoration: none;
+}
+.conversation-inbox-row:hover { background: #9fd6be16; }
+.conversation-inbox-text { display: grid; flex: 1; min-width: 0; gap: 4px; }
+.conversation-inbox-text :is(strong, span) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conversation-inbox-text span, .conversation-inbox-meta { color: var(--text-secondary); font-size: 0.8rem; }
+.conversation-inbox-meta { display: grid; justify-items: end; gap: 4px; }
