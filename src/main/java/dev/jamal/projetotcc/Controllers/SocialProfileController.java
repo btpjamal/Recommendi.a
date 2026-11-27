@@ -2,8 +2,6 @@ package dev.jamal.projetotcc.Controllers;
 
 import dev.jamal.projetotcc.DTO.Social.SocialProfileDTO;
 import dev.jamal.projetotcc.DTO.Social.SocialProfileStatusDTO;
-import dev.jamal.projetotcc.Entities.User;
-import dev.jamal.projetotcc.Repository.UserRepository;
 import dev.jamal.projetotcc.Service.Social.SocialHubService;
 import dev.jamal.projetotcc.Service.Social.SocialProfileService;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class SocialProfileController {
 
     private final SocialProfileService socialProfileService;
-    private final UserRepository userRepository;
+
     private final SocialHubService socialHubService;
 
 
@@ -77,17 +75,7 @@ public class SocialProfileController {
             Authentication authentication
     ) {
 
-        String email = authentication.getName();
-
-        User user = userRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Usuário autenticado não encontrado"
-                        )
-                );
-
-        return user.getId();
+        return AuthenticatedUser.id(authentication);
     }
 
     @ExceptionHandler(IllegalStateException.class)

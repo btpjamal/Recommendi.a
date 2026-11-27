@@ -2,8 +2,6 @@ package dev.jamal.projetotcc.Controllers;
 
 import dev.jamal.projetotcc.DTO.AI.AIConfigurationStatusDTO;
 import dev.jamal.projetotcc.DTO.AI.AIKeyRequestDTO;
-import dev.jamal.projetotcc.Entities.User;
-import dev.jamal.projetotcc.Repository.UserRepository;
 import dev.jamal.projetotcc.Service.AI.UserAIConfigurationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +16,7 @@ import java.util.Map;
 public class UserAIConfigurationController {
 
     private final UserAIConfigurationService service;
-    private final UserRepository userRepository;
+
 
 
     @GetMapping("/status")
@@ -73,18 +71,7 @@ public class UserAIConfigurationController {
             Authentication authentication
     ) {
 
-        String email =
-                authentication.getName();
-
-        User user =
-                userRepository.findByEmail(email)
-                        .orElseThrow(() ->
-                                new IllegalStateException(
-                                        "Usuário autenticado não encontrado."
-                                )
-                        );
-
-        return user.getId();
+        return AuthenticatedUser.id(authentication);
     }
 
 

@@ -2,9 +2,9 @@ package dev.jamal.projetotcc.Service.recommendation.criteria;
 
 import dev.jamal.projetotcc.Entities.*;
 import dev.jamal.projetotcc.Enum.RecommendationFeedbackType;
-import dev.jamal.projetotcc.Repository.HobbyInterestRepository;
-import dev.jamal.projetotcc.Repository.UserRecommendationFeedbackRepository;
 import dev.jamal.projetotcc.Service.recommendation.model.CriterionResult;
+import dev.jamal.projetotcc.Service.recommendation.model.HobbyAssociation;
+import dev.jamal.projetotcc.Service.recommendation.model.RecommendationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -12,36 +12,18 @@ import java.util.List;
 @Component
 public class BehaviorCriterion implements RecommendationCriterion {
 
-    private final UserRecommendationFeedbackRepository feedbackRepository;
-    private final HobbyInterestRepository hobbyInterestRepository;
-
-    public BehaviorCriterion(
-            UserRecommendationFeedbackRepository feedbackRepository,
-            HobbyInterestRepository hobbyInterestRepository
-    ) {
-        this.feedbackRepository = feedbackRepository;
-        this.hobbyInterestRepository = hobbyInterestRepository;
-    }
-
     @Override
-    public CriterionResult avaliar(
-            Hobby hobby,
-            RecommendationProfile perfil,
-            List<UserInterest> interesses,
-            List<UserHobbyFeedback> feedbacks
-    ) {
-
-        Long userId = perfil.getUser().getId();
+    public CriterionResult avaliar(Hobby hobby, RecommendationContext contexto) {
 
         List<UserRecommendationFeedback> decisoes =
-                feedbackRepository.findByUser_Id(userId);
+                contexto.decisoes();
 
         if (decisoes.isEmpty()) {
             return CriterionResult.of(0, null);
         }
 
-        List<HobbyInterest> interessesCandidato =
-                hobbyInterestRepository.findByHobbyId(hobby.getId());
+        List<HobbyAssociation> interessesCandidato =
+                contexto.interessesDoHobby(hobby.getId());
 
         if (interessesCandidato.isEmpty()) {
             return CriterionResult.of(0, null);
@@ -51,28 +33,26 @@ public class BehaviorCriterion implements RecommendationCriterion {
 
         for (UserRecommendationFeedback decisao : decisoes) {
 
-            List<HobbyInterest> interessesHistorico =
-                    hobbyInterestRepository.findByHobbyId(
-                            decisao.getHobby().getId()
-                    );
+            List<HobbyAssociation> interessesHistorico =
+                    contexto.interessesDoHobby(decisao.getHobby().getId());
 
-            for (HobbyInterest historico : interessesHistorico) {
+            for (HobbyAssociation historico : interessesHistorico) {
 
-                for (HobbyInterest candidato : interessesCandidato) {
+                for (HobbyAssociation candidato : interessesCandidato) {
 
-                    if (!historico.getInterest().getId()
-                            .equals(candidato.getInterest().getId())) {
+                    if (!historico.associationId()
+                            .equals(candidato.associationId())) {
                         continue;
                     }
 
                     int pesoHistorico =
-                            historico.getPeso() != null
-                                    ? historico.getPeso()
+                            historico.peso() != null
+                                    ? historico.peso()
                                     : 1;
 
                     int pesoCandidato =
-                            candidato.getPeso() != null
-                                    ? candidato.getPeso()
+                            candidato.peso() != null
+                                    ? candidato.peso()
                                     : 1;
 
                     double similaridade =

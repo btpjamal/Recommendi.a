@@ -9,30 +9,48 @@ export function subscribeSessionToken(listener) {
     return () => tokenListeners.delete(listener);
 }
 
-function notifyTokenChange(previous) {
-    if (previous !== values.get("token")) {
-        tokenListeners.forEach(listener => listener());
-    }
+let generation = 0;
+
+export function sessionSnapshot() {
+    return { generation, token: session.getItem("token") };
+}
+
+export function isCurrentSession(expected) {
+    return generation === expected;
+}
+
+function renewSession() {
+    const next = ++generation;
+    tokenListeners.forEach(listener => listener());
+    return next;
+}
+
+export function clearSessionIfCurrent(expected) {
+    if (!isCurrentSession(expected)) return false;
+    values.clear();
+    return isCurrentSession(renewSession());
 }
 
 export const session = Object.freeze({
     getItem: key => values.get(key) ?? null,
+    start(credentials) {
+        values.clear();
+        for (const [key, value] of Object.entries(credentials)) values.set(key, String(value));
+        return renewSession();
+    },
     setItem(key, value) {
-        const previous = values.get("token");
         const result = values.set(key, String(value));
-        notifyTokenChange(previous);
+        if (key === "token" || key === "userId") renewSession();
         return result;
     },
     removeItem(key) {
-        const previous = values.get("token");
         const result = values.delete(key);
-        notifyTokenChange(previous);
+        if (result && (key === "token" || key === "userId")) renewSession();
         return result;
     },
     clear() {
-        const previous = values.get("token");
         values.clear();
-        notifyTokenChange(previous);
+        return renewSession();
     },
 });
 
@@ -44,8 +62,9 @@ try {
     }
 } catch { /* Storage can be unavailable in restricted browsers. */ }
 
-export async function revokeSession() {
+export async function revokeSession(onComplete) {
     const token = session.getItem("token");
+    const ended = session.clear();
     try {
         if (token) {
             const response = await fetch(API_BASE_URL + "/auth/logout", {
@@ -55,8 +74,7 @@ export async function revokeSession() {
             if (!response.ok && response.status !== 401) throw new Error("logout");
         }
     } catch {
-        globalThis.alert?.("A sessão local foi encerrada. Não foi possível confirmar o encerramento no servidor; entre novamente para encerrar as outras sessões.");
-    } finally {
-        session.clear();
+        if (isCurrentSession(ended)) globalThis.alert?.("A sessão local foi encerrada. Não foi possível confirmar o encerramento no servidor; entre novamente para encerrar as outras sessões.");
     }
+    if (isCurrentSession(ended)) onComplete?.();
 }

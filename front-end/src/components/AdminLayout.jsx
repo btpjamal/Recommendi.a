@@ -16,9 +16,7 @@ export default function AdminLayout() {
     ];
 
     async function sair() {
-        await revokeSession();
-
-        navigate("/login", { replace: true });
+        await revokeSession(() => navigate("/login", { replace: true }));
     }
 
     return (

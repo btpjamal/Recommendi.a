@@ -183,7 +183,12 @@ public class SocialPeopleService {
 
     private List<Person> profiles(Long actor, List<Long> ids) {
         return jdbc.query("""
-            SELECT u.id, u.nome, p.biografia, p.foto IS NOT NULL AS possui_foto,
+                SELECT u.id, u.nome, p.biografia,
+                   EXISTS (
+                       SELECT 1
+                       FROM social_profile_photos ph
+                       WHERE ph.profile_id = p.id
+                   ) AS possui_foto,
                    p.biografia_visibilidade, p.foto_visibilidade, p.interesses_visibilidade, p.hobbies_visibilidade,
                    p.compartilhar_regiao, rp.estado, rp.cidade,
                    c.id IS NOT NULL AS contato, f.follower_id IS NOT NULL AS seguindo

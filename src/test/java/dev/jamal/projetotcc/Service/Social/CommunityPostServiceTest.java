@@ -24,6 +24,8 @@ class CommunityPostServiceTest {
     SocialProfileRepository profiles;
     SocialUserBlockRepository blocks;
     CommunityChatLockRepository locks;
+    CommunityCommentRepository comments;
+    CommunityPostLikeRepository likes;
     CommunityPostService service;
     User user,other;
     SocialProfile social;
@@ -35,7 +37,8 @@ class CommunityPostServiceTest {
         communities=mock(CommunityRepository.class);members=mock(CommunityMemberRepository.class);
         users=mock(UserRepository.class);profiles=mock(SocialProfileRepository.class);
         blocks=mock(SocialUserBlockRepository.class);locks=mock(CommunityChatLockRepository.class);
-        service=new CommunityPostService(posts,images,communities,members,users,profiles,blocks,locks);
+        comments=mock(CommunityCommentRepository.class);likes=mock(CommunityPostLikeRepository.class);
+        service=new CommunityPostService(posts,images,communities,members,users,profiles,blocks,locks,comments,likes);
         var manager = mock(jakarta.persistence.EntityManager.class);
         var quotaQuery = mock(jakarta.persistence.Query.class);
         when(manager.createNativeQuery(anyString())).thenReturn(quotaQuery);
@@ -144,12 +147,17 @@ class CommunityPostServiceTest {
         when(images.findById(50L)).thenReturn(Optional.of(image));assertArrayEquals(new byte[]{9},service.imagem(10L,1L,50L));
     }
     @Test void paginaCalculaCursorNoUltimoItemEntregue() {
-        var first=ownPost(false);var next=new CommunityPost();next.setId(49L);next.setCommunity(community);next.setUser(user);
+        var first=new CommunityPostDTO(50L,10L,1L,"Autora","Inicial",false,Instant.now(),null,0L,true);
+        var next=new CommunityPostDTO(49L,10L,1L,"Autora","Anterior",false,Instant.now(),null,0L,true);
         when(posts.buscarVisiveis(eq(10L),eq(1L),eq(Long.MAX_VALUE),any(),any(Pageable.class))).thenReturn(List.of(first,next));
         var page=service.listar(10L,1L,null,1);assertEquals(1,page.publicacoes().size());assertTrue(page.temMais());assertEquals(50L,page.proximoCursor());
+        assertEquals(new CommunityInteractionDTO(0,false,0),page.publicacoes().get(0).interacoes());
+        verify(comments).contarPagina(eq(List.of(50L)),eq(1L),any());
+        verify(likes).contarPagina(eq(List.of(50L)),eq(1L),any());
     }
     @Test void rejeitaTextoLongoEParametrosDePaginacaoInvalidos() {
         status(400,()->service.criar(10L,1L,request("x".repeat(4001)),null));
         status(400,()->service.listar(10L,1L,0L,20));status(400,()->service.listar(10L,1L,null,31));
     }
 }
+

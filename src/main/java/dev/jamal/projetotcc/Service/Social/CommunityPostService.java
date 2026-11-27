@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import java.time.*;
@@ -25,6 +26,8 @@ public class CommunityPostService {
     private final SocialProfileRepository profiles;
     private final SocialUserBlockRepository blocks;
     private final CommunityChatLockRepository locks;
+    private final CommunityCommentRepository comments;
+    private final CommunityPostLikeRepository likes;
     @PersistenceContext private EntityManager entityManager;
 
     private ResponseStatusException erro(HttpStatus status,String text) {return new ResponseStatusException(status,text);}
@@ -57,15 +60,30 @@ public class CommunityPostService {
         SocialWriteQuota.consume(entityManager, userId, SocialWriteQuota.Action.POST_IMAGE_PROCESSING);
     }
 
-    @Transactional(readOnly=true)
-    public CommunityPostPageDTO listar(Long communityId,Long viewer,Long antesDe,int limite) {
-        acesso(communityId,viewer,false);
-        if((antesDe!=null && antesDe<=0) || limite<1 || limite>30)
-            throw erro(HttpStatus.BAD_REQUEST,"Use um cursor válido e limite de 1 a 30.");
-        var rows=posts.buscarVisiveis(communityId,viewer,antesDe==null?Long.MAX_VALUE:antesDe,
-            LocalDate.now().minusYears(18),PageRequest.of(0,limite+1));
-        var page=rows.stream().limit(limite).map(p->dto(p,viewer)).toList();
-        return new CommunityPostPageDTO(page,rows.size()>limite,page.isEmpty()?null:page.get(page.size()-1).id());
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public CommunityPostPageDTO listar(Long communityId, Long viewer, Long antesDe, int limite) {
+        acesso(communityId, viewer, false);
+        if ((antesDe != null && antesDe <= 0) || limite < 1 || limite > 30) {
+            throw erro(HttpStatus.BAD_REQUEST, "Use um cursor válido e limite de 1 a 30.");
+        }
+        var cutoff = LocalDate.now().minusYears(18);
+        var rows = posts.buscarVisiveis(communityId, viewer, antesDe == null ? Long.MAX_VALUE : antesDe,
+                cutoff, PageRequest.of(0, limite + 1));
+        if (rows.isEmpty()) return new CommunityPostPageDTO(List.of(), false, null);
+
+        var page = rows.stream().limit(limite).toList();
+        var ids = page.stream().map(CommunityPostDTO::id).toList();
+        var commentCounts = new HashMap<Long, Long>();
+        comments.contarPagina(ids, viewer, cutoff).forEach(c -> commentCounts.put(c.getPostId(), c.getTotal()));
+        var likeCounts = new HashMap<Long, CommunityPostLikeRepository.PostLikes>();
+        likes.contarPagina(ids, viewer, cutoff).forEach(l -> likeCounts.put(l.getPostId(), l));
+
+        var publications = page.stream().map(post -> {
+            var count = likeCounts.get(post.id());
+            return post.comInteracoes(new CommunityInteractionDTO(count == null ? 0 : count.getTotal(),
+                    count != null && count.getMine() > 0, commentCounts.getOrDefault(post.id(), 0L)));
+        }).toList();
+        return new CommunityPostPageDTO(publications, rows.size() > limite, ids.get(ids.size() - 1));
     }
 
     @Transactional
@@ -188,3 +206,4 @@ public class CommunityPostService {
             p.getConteudo(),p.isPossuiImagem(),p.getCreatedAt(),p.getEditedAt(),p.getVersion(),p.getUser().getId().equals(viewer));
     }
 }
+

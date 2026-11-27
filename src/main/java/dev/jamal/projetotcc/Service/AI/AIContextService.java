@@ -3,6 +3,8 @@ package dev.jamal.projetotcc.Service.AI;
 import dev.jamal.projetotcc.DTO.AI.AIUserContext;
 import dev.jamal.projetotcc.DTO.Recommendation.HobbyRecommendationDTO;
 import dev.jamal.projetotcc.Entities.*;
+import dev.jamal.projetotcc.Exception.BusinessException;
+import dev.jamal.projetotcc.Service.recommendation.model.RecommendationContext;
 import dev.jamal.projetotcc.Repository.*;
 import dev.jamal.projetotcc.Service.RecommendationService;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.List;
 
 @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated() and #p0 == authentication.principal.id")
 @org.springframework.transaction.annotation.Transactional(readOnly = true)
@@ -20,10 +21,7 @@ public class AIContextService {
 
     private final UserRepository userRepository;
     private final RecommendationProfileRepository recommendationProfileRepository;
-    private final UserInterestRepository userInterestRepository;
-    private final UserObjectiveRepository userObjectiveRepository;
     private final HobbyRepository hobbyRepository;
-    private final UserHobbyRepository userHobbyRepository;
     private final RecommendationService recommendationService;
 
     public AIUserContext construirContexto(
@@ -31,7 +29,7 @@ public class AIContextService {
             Long hobbyId
     ) {
 
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() ->
                         new RuntimeException("Usuário não encontrado.")
                 );
@@ -45,27 +43,22 @@ public class AIContextService {
                                 )
                         );
 
-        Hobby hobby = hobbyRepository.findById(hobbyId)
-                .orElseThrow(() ->
-                        new RuntimeException("Hobby não encontrado.")
-                );
+        Hobby hobby = hobbyRepository.findEligibleById(hobbyId).orElseThrow(() -> {
+            if (!hobbyRepository.existsById(hobbyId)) {
+                return new RuntimeException("Hobby não encontrado.");
+            }
+            return new BusinessException("Hobby não encontrado ou indisponível para recomendação.");
+        });
 
-        List<UserInterest> interesses =
-                userInterestRepository
-                        .findByUserIdWithInterest(userId);
+        return construirContexto(userId, hobby, recommendationService.avaliarHobbyElegivel(userId, hobby, perfil));
+    }
 
-        List<UserObjective> objetivos =
-                userObjectiveRepository
-                        .findByUserId(userId);
-
-        UserHobby userHobby =
-                userHobbyRepository
-                        .findByUser_IdAndHobby_Id(userId, hobbyId)
-                        .orElse(null);
-
-        HobbyRecommendationDTO recomendacao =
-                recommendationService
-                        .calcularRecomendacao(userId, hobbyId);
+    public AIUserContext construirContexto(Long userId, Hobby hobby, RecommendationService.Avaliacao avaliacao) {
+        RecommendationContext contexto = avaliacao.contexto();
+        RecommendationProfile perfil = contexto.perfil();
+        User user = perfil.getUser();
+        UserHobby userHobby = avaliacao.vinculo();
+        HobbyRecommendationDTO recomendacao = avaliacao.recomendacao();
 
         return new AIUserContext(
 
@@ -91,13 +84,13 @@ public class AIContextService {
                                 ? perfil.getAmbientePreferido().name()
                                 : null,
 
-                        interesses.stream()
+                        contexto.interesses().stream()
                                 .map(ui ->
                                         ui.getInterest().getNome()
                                 )
                                 .toList(),
 
-                        objetivos.stream()
+                        contexto.objetivos().stream()
                                 .map(uo ->
                                         uo.getObjective().getNome()
                                 )

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -184,11 +185,19 @@ public class SocialContactService {
         blocks.findByBlockerIdAndBlockedId(atorId, outroId).ifPresent(blocks::delete);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public Page<SocialContactDTO> listar(Long atorId, SocialContactBox caixa, int pagina) {
         validarAtor(atorId);
-        return contacts.buscarCaixa(atorId, caixa.name(), PageRequest.of(Math.max(0, pagina), 12))
-                .map(contato -> converter(atorId, contato));
+        var page = contacts.buscarCaixa(atorId, caixa.name(), PageRequest.of(Math.max(0, pagina), 12));
+        if (caixa != SocialContactBox.ACEITAS) return page.map(contato -> converter(atorId, contato));
+
+        var ids = page.getContent().stream().map(contato -> outroParticipante(atorId, contato)).toList();
+        var perfis = hub.buscarPerfisDeContatosAceitos(atorId, ids);
+        return page.map(contato -> {
+            Long outro = outroParticipante(atorId, contato);
+            var perfil = perfis.get(outro);
+            return montarContato(atorId, contato, outro, perfil, perfil != null);
+        });
     }
 
     @Transactional(readOnly = true)
@@ -236,16 +245,25 @@ public class SocialContactService {
     @Transactional(readOnly = true)
     public void validarParticipacaoSocial(Long atorId) { validarAtor(atorId); }
 
+    private Long outroParticipante(Long atorId, SocialContact contato) {
+        return atorId.equals(contato.getLowUserId()) ? contato.getHighUserId() : contato.getLowUserId();
+    }
+
     private SocialContactDTO converter(Long atorId, SocialContact contato) {
-        Long outro = atorId.equals(contato.getLowUserId()) ? contato.getHighUserId() : contato.getLowUserId();
+        Long outro = outroParticipante(atorId, contato);
         boolean ativo = disponivel(outro) && !blocks.bloqueados(atorId, outro);
         SocialProfileDTO perfil = null;
         if (ativo) {
             perfil = hub.buscarPerfilPublicoPara(atorId, outro);
         }
+        return montarContato(atorId, contato, outro, perfil, ativo);
+    }
+
+    private SocialContactDTO montarContato(Long atorId, SocialContact contato, Long outro, SocialProfileDTO perfil, boolean ativo) {
         return new SocialContactDTO(contato.getId(), contato.getStatus(),
                 atorId.equals(contato.getRecipientId()) ? "RECEBIDA" : "ENVIADA",
                 contato.getRequestedAt(), contato.getUpdatedAt(), novaSolicitacaoApos(contato),
                 contato.getApresentacao(), outro, perfil, ativo);
     }
 }
+

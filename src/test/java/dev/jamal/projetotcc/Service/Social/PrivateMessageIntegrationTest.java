@@ -287,16 +287,66 @@ class PrivateMessageIntegrationTest {
     @Test
     void endpointUsaUsuarioAutenticadoENaoPermiteHistoricoDeTerceiro() throws Exception {
         aceitar(); var mvc = MockMvcBuilders.standaloneSetup(controller).build();
-        var auth = new UsernamePasswordAuthenticationToken(users.findById(a).orElseThrow().getEmail(), "ignorado",
+        var auth = new UsernamePasswordAuthenticationToken(users.findById(a).orElseThrow(), null,
                 List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER")));
         String url = "/api/v1/community/private-messages/" + contato + "/messages";
         mvc.perform(post(url).principal(auth).contentType("application/json").content(
                 "{\"conteudo\":\"Mensagem HTTP\",\"clientMessageId\":\"" + UUID.randomUUID() + "\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.userId").value(a.intValue()));
-        var intruso = new UsernamePasswordAuthenticationToken(users.findById(terceiro).orElseThrow().getEmail(), "ignorado",
+        var intruso = new UsernamePasswordAuthenticationToken(users.findById(terceiro).orElseThrow(), null,
                 List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER")));
         mvc.perform(get(url).principal(intruso)).andExpect(status().isNotFound());
         mvc.perform(get(url).principal(auth)).andExpect(status().isOk()).andExpect(jsonPath("$.mensagens.length()").value(1));
+    }
+
+    @Test
+    void incrementalVazioMantemAutorizacaoECodigosDeCursor() {
+        falha(403, () -> chat.listar(a, contato, null, 0L, 50));
+        aceitar();
+        falha(404, () -> chat.listar(terceiro, contato, null, 0L, 50));
+        falha(400, () -> chat.listar(a, contato, null, -1L, 50));
+        falha(400, () -> chat.listar(a, contato, 1L, 0L, 50));
+        var mensagem = enviar(b, "Já lida no cursor");
+        var antes = chat.naoLidas(a);
+        var pagina = chat.listar(a, contato, null, mensagem.id(), 50);
+        assertEquals(new dev.jamal.projetotcc.DTO.Social.PrivateMessagePageDTO(List.of(), false, null, null), pagina);
+        assertEquals(antes, chat.naoLidas(a));
+        contacts.bloquear(b, a);
+        falha(403, () -> chat.listar(a, contato, null, mensagem.id(), 50));
+        contacts.desbloquear(b, a);
+        falha(403, () -> chat.listar(a, contato, null, mensagem.id(), 50));
+    }
+
+    @Test
+    void incrementalReconfereBloqueioConfirmadoDepoisDeEsperarPeloPar() throws Exception {
+        aceitar();
+        var mensagem = enviar(b, "Mensagem que não pode aparecer após bloquear");
+        var executor = Executors.newFixedThreadPool(2);
+        var alterado = new CountDownLatch(1);
+        var liberar = new CountDownLatch(1);
+        try {
+            var bloqueio = executor.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+                contacts.bloquear(b, a);
+                alterado.countDown();
+                try { assertTrue(liberar.await(10, TimeUnit.SECONDS)); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new IllegalStateException(e); }
+            }));
+            assertTrue(alterado.await(10, TimeUnit.SECONDS));
+            var leitura = executor.submit(() -> falha(403, () -> chat.listar(a, contato, null, mensagem.id() - 1, 50)));
+            assertThrows(TimeoutException.class, () -> leitura.get(200, TimeUnit.MILLISECONDS));
+            liberar.countDown();
+            bloqueio.get(20, TimeUnit.SECONDS);
+            leitura.get(20, TimeUnit.SECONDS);
+        } finally { liberar.countDown(); executor.shutdownNow(); }
+    }
+
+    @Test
+    void incrementalRejeitaVersaoDeSessaoRevogada() {
+        aceitar();
+        long versao = users.findById(a).orElseThrow().getTokenVersion();
+        jdbc.update("UPDATE users SET token_version=token_version+1 WHERE id=?", a);
+        falha(401, () -> chat.listar(a, contato, null, 0L, 50, versao));
+        assertTrue(chat.listar(a, contato, null, 0L, 50, versao + 1).mensagens().isEmpty());
     }
 
     private Long usuario() {

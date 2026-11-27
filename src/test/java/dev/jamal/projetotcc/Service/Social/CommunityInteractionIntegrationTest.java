@@ -93,6 +93,32 @@ class CommunityInteractionIntegrationTest {
     CommunityReportDTO reportView(Long id){return moderation.listar(outsider,CommunityReportStatus.ABERTA,null,20).denuncias().stream().filter(r->r.id().equals(id)).findFirst().orElseThrow();}
     ReviewCommunityReportDTO review(CommunityReportDTO r,CommunityModerationDecision decision){return new ReviewCommunityReportDTO(decision,"Decisão de teste",r.versaoDenuncia(),r.versaoConteudo());}
 
+    @Test void paginaComResumosEquivaleAConsultaIndividualPorUsuario() {
+        assertTrue(service.listar(community,a,null,20).publicacoes().isEmpty());
+        status(403,()->service.listar(community,outsider,null,20));
+        var oldest=post(a,"Com interações");
+        comment(a,oldest.id(),"Da autora");
+        comment(b,oldest.id(),"Do outro participante");
+        interactions.curtir(community,b,oldest.id(),true);
+        assertEquals(new CommunityInteractionDTO(1,false,2),service.listar(community,a,null,20).publicacoes().get(0).interacoes());
+        for(int i=0;i<21;i++) post(a,"Publicação "+i);
+        for(var viewer:List.of(a,b)) {
+            var first=service.listar(community,viewer,null,20);
+            var second=service.listar(community,viewer,first.proximoCursor(),20);
+            assertEquals(20,first.publicacoes().size());
+            assertTrue(first.temMais());
+            assertEquals(2,second.publicacoes().size());
+            assertFalse(second.temMais());
+            for(var page:List.of(first,second)) for(var p:page.publicacoes())
+                assertEquals(interactions.resumo(community,viewer,p.id()),p.interacoes());
+        }
+        var block=new SocialUserBlock();
+        block.setBlockerId(a);block.setBlockedId(b);block.setCreatedAt(Instant.now());blocks.saveAndFlush(block);
+        var hidden=service.listar(community,a,oldest.id()+1,20).publicacoes().get(0);
+        assertEquals(new CommunityInteractionDTO(0,false,1),hidden.interacoes());
+        assertTrue(service.listar(community,b,null,20).publicacoes().isEmpty());
+    }
+
     @Test void curtidasIdempotentesNaoAlteramVersaoDaPublicacao(){
         var p=post(a,"Texto");assertEquals(1,interactions.curtir(community,b,p.id(),true).curtidas());
         assertEquals(1,interactions.curtir(community,b,p.id(),true).curtidas());assertEquals(1,likes.count());
@@ -231,3 +257,4 @@ class CommunityInteractionIntegrationTest {
         }finally{start.countDown();pool.shutdownNow();}
     }
 }
+

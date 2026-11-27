@@ -216,7 +216,7 @@ function PrivateChat({ contactId }) {
         finally { sessao.commit(() => { envioOcupadoRef.current = false; setEnviando(false); }); }
     }
 
-    async function logout() { await revokeSession(); navigate("/login"); }
+    async function logout() { await revokeSession(() => navigate("/login")); }
 
     useEffect(() => {
         const sessao = sessaoRef.current;

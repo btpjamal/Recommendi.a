@@ -13,7 +13,7 @@ import java.util.Map;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import java.sql.SQLException;
-import org.springframework.core.NestedExceptionUtils;
+import org.hibernate.exception.ConstraintViolationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -58,6 +58,14 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         Throwable causa = ex;
+
+        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException violation
+                    && "23505".equals(violation.getSQLState())
+                    && "users_email_canonical_key".equals(violation.getConstraintName())) {
+                return safe(HttpStatus.BAD_REQUEST, "Email já cadastrado", request);
+            }
+        }
 
         while (causa != null) {
 

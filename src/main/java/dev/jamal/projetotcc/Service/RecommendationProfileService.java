@@ -40,12 +40,14 @@ public class RecommendationProfileService {
 
     private final UserObjectiveRepository userObjectiveRepository;
 
+    private final QuestionarioConclusao questionarioConclusao;
+
     @Transactional
     public RecommendationProfileResponseDTO salvarQuestionario(
             Long userId,
             RecommendationProfileCreateRequestDTO dto
     ) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdForProfileUpdate(userId)
                 .orElseThrow(() ->
                         new BusinessException("Usuário não encontrado.")
                 );
@@ -67,7 +69,7 @@ public class RecommendationProfileService {
             recommendationProfileMapper.updateEntity(profile, dto);
         }
 
-        profile.setQuestionarioConcluido(true);
+        questionarioConclusao.atualizar(profile);
 
         RecommendationProfile salvo =
                 recommendationProfileRepository.save(profile);
@@ -140,6 +142,16 @@ public class RecommendationProfileService {
 
     }
 
+    private Interest buscarInteresse(Long interestId) {
+        return interestRepository.findById(interestId)
+                .orElseThrow(() -> new BusinessException("Interesse não encontrado: " + interestId));
+    }
+
+    private Objective buscarObjetivo(Long objectiveId) {
+        return objectiveRepository.findById(objectiveId)
+                .orElseThrow(() -> new BusinessException("Objetivo não encontrado: " + objectiveId));
+    }
+
     private void salvarObjetivos(
             User user,
             List<Long> objectiveIds
@@ -151,13 +163,7 @@ public class RecommendationProfileService {
         userObjectiveRepository.deleteByUserId(user.getId());
 
         for (Long objectiveId : objectiveIds){
-            Objective objective = objectiveRepository
-                    .findById(objectiveId)
-                    .orElseThrow(() ->
-                            new BusinessException(
-                                    "Objetivo não encontrado: "+ objectiveId
-                            )
-                    );
+            Objective objective = buscarObjetivo(objectiveId);
 
             UserObjectiveId id = new UserObjectiveId();
             id.setUserId(user.getId());
@@ -240,12 +246,7 @@ public class RecommendationProfileService {
         userInterestRepository.deleteByUserId(user.getId());
 
         for (Long interestId : interestIds){
-            Interest interest = interestRepository.findById(interestId)
-                    .orElseThrow(() ->
-                            new RuntimeException(
-                                    "Interesse não encontrado" + interestId
-                            )
-                    );
+            Interest interest = buscarInteresse(interestId);
 
             UserInterestId id = new UserInterestId();
             id.setUserId(user.getId());
@@ -317,12 +318,7 @@ public class RecommendationProfileService {
             if (userInterest != null) {
                 userInterest.setPeso(associacao.peso());
             } else {
-                Interest interest = interestRepository
-                        .findById(associacao.interestId())
-                        .orElseThrow(() -> new BusinessException(
-                                "Interesse não encontrado: "
-                                        + associacao.interestId()
-                        ));
+                Interest interest = buscarInteresse(associacao.interestId());
 
                 UserInterestId id = new UserInterestId();
                 id.setUserId(user.getId());
@@ -393,12 +389,7 @@ public class RecommendationProfileService {
             if (userObjective != null) {
                 userObjective.setPeso(associacao.peso());
             } else {
-                Objective objective = objectiveRepository
-                        .findById(associacao.objectiveId())
-                        .orElseThrow(() -> new BusinessException(
-                                "Objetivo não encontrado: "
-                                        + associacao.objectiveId()
-                        ));
+                Objective objective = buscarObjetivo(associacao.objectiveId());
 
                 UserObjectiveId id = new UserObjectiveId();
                 id.setUserId(user.getId());

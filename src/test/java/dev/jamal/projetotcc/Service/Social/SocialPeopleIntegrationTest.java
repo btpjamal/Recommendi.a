@@ -120,9 +120,14 @@ class SocialPeopleIntegrationTest {
         }
         jdbc.update("""
                 UPDATE social_profiles SET biografia = 'Visível para contatos',
-                  foto = decode('00', 'hex'), biografia_visibilidade = 'CONTATOS',
+                  biografia_visibilidade = 'CONTATOS',
                   foto_visibilidade = 'CONTATOS', interesses_visibilidade = 'CONTATOS'
                 WHERE user_id = ?
+                """, other);
+        jdbc.update("""
+                INSERT INTO social_profile_photos(profile_id, foto, content_type)
+                SELECT id, decode('00', 'hex'), 'image/png'
+                FROM social_profiles WHERE user_id = ?
                 """, other);
         jdbc.update("UPDATE social_profiles SET interesses_visibilidade = 'SOMENTE_EU' WHERE user_id = ?", actor);
         jdbc.update("INSERT INTO social_follows(follower_id, followed_id) VALUES (?, ?)", actor, other);

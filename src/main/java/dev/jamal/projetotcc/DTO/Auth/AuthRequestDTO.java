@@ -1,5 +1,7 @@
 package dev.jamal.projetotcc.DTO.Auth;
 
+import dev.jamal.projetotcc.Service.CanonicalEmail;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -15,4 +17,7 @@ public class AuthRequestDTO {
 
     @NotBlank(message = "senha é obrigatória")
     private String senha;
+    public void setEmail(String email) {
+        this.email = CanonicalEmail.normalize(email);
+    }
 }

@@ -1,7 +1,6 @@
 package dev.jamal.projetotcc.Service.AI;
 
 import dev.jamal.projetotcc.DTO.AI.AIGeneralPlanContext;
-import dev.jamal.projetotcc.DTO.Recommendation.HobbyRecommendationDTO;
 import dev.jamal.projetotcc.Entities.*;
 import dev.jamal.projetotcc.Enum.RecommendationFeedbackType;
 import dev.jamal.projetotcc.Enum.UserHobbyStatus;
@@ -14,6 +13,9 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class AIGeneralPlanContextService {
@@ -23,26 +25,17 @@ public class AIGeneralPlanContextService {
     private final UserRepository userRepository;
     private final RecommendationProfileRepository profileRepository;
     private final UserRecommendationFeedbackRepository feedbackRepository;
-    private final UserHobbyRepository userHobbyRepository;
-    private final UserInterestRepository userInterestRepository;
-    private final UserObjectiveRepository userObjectiveRepository;
     private final RecommendationService recommendationService;
 
     public AIGeneralPlanContextService(
             UserRepository userRepository,
             RecommendationProfileRepository profileRepository,
             UserRecommendationFeedbackRepository feedbackRepository,
-            UserHobbyRepository userHobbyRepository,
-            UserInterestRepository userInterestRepository,
-            UserObjectiveRepository userObjectiveRepository,
             RecommendationService recommendationService
     ) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.feedbackRepository = feedbackRepository;
-        this.userHobbyRepository = userHobbyRepository;
-        this.userInterestRepository = userInterestRepository;
-        this.userObjectiveRepository = userObjectiveRepository;
         this.recommendationService = recommendationService;
     }
 
@@ -61,59 +54,34 @@ public class AIGeneralPlanContextService {
                                 )
                         );
 
-        List<String> interesses =
-                userInterestRepository.findByUserIdWithInterest(userId)
-                        .stream()
-                        .map(userInterest ->
-                                userInterest.getInterest().getNome()
-                        )
-                        .sorted()
-                        .toList();
-
-        List<String> objetivos =
-                userObjectiveRepository.findByUserId(userId)
-                        .stream()
-                        .map(userObjective ->
-                                userObjective.getObjective().getNome()
-                        )
-                        .sorted()
-                        .toList();
-
-        List<AIGeneralPlanContext.HobbySummaryContext> hobbies =
-                feedbackRepository
-                        .findByUser_IdAndTipo(
-                                userId,
-                                RecommendationFeedbackType.INTERESSADO
-                        )
-                        .stream()
-                        .map(feedback ->
-                                montarHobbyContext(
-                                        userId,
-                                        feedback.getHobby()
-                                )
-                        )
-                        .sorted(
-                                Comparator
-                                        .comparingInt(
-                                                this::prioridadeStatus
-                                        )
-                                        .thenComparing(
-                                                AIGeneralPlanContext
-                                                        .HobbySummaryContext
-                                                        ::score,
-                                                Comparator.nullsLast(
-                                                        Comparator.reverseOrder()
-                                                )
-                                        )
-                        )
-                        .limit(MAX_HOBBIES_GENERAL_PLAN)
-                        .toList();
-
-        if (hobbies.isEmpty()) {
-            throw new BusinessException(
-                    "Você ainda não possui hobbies marcados como interessado."
-            );
+        // Maintain the original encounter order for ties in the plan's status and score sort.
+        List<Long> ids = feedbackRepository.findByUser_IdAndTipo(userId, RecommendationFeedbackType.INTERESSADO)
+                .stream()
+                .map(feedback -> feedback.getHobby().getId())
+                .toList();
+        if (ids.isEmpty()) {
+            throw new BusinessException("Você ainda não possui hobbies marcados como interessado.");
         }
+
+        var lote = recommendationService.pontuarHobbiesElegiveis(userId, profile, ids);
+        var contexto = lote.contexto();
+        List<String> interesses = contexto.interesses().stream()
+                .map(interesse -> interesse.getInterest().getNome())
+                .sorted()
+                .toList();
+        List<String> objetivos = contexto.objetivos().stream()
+                .map(objetivo -> contexto.nomesDosObjetivos().get(objetivo.getId().getObjectiveId()))
+                .sorted()
+                .toList();
+        Map<Long, UserHobby> vinculos = contexto.hobbiesDoUsuario().stream()
+                .collect(Collectors.toMap(hobby -> hobby.getHobby().getId(), Function.identity()));
+        List<AIGeneralPlanContext.HobbySummaryContext> hobbies = lote.pontuacoes().stream()
+                .map(pontuacao -> montarHobbyContext(pontuacao, vinculos.get(pontuacao.hobby().getId())))
+                .sorted(Comparator.comparingInt(this::prioridadeStatus)
+                        .thenComparing(AIGeneralPlanContext.HobbySummaryContext::score,
+                                Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(MAX_HOBBIES_GENERAL_PLAN)
+                .toList();
 
         return new AIGeneralPlanContext(
 
@@ -138,24 +106,10 @@ public class AIGeneralPlanContextService {
     }
 
     private AIGeneralPlanContext.HobbySummaryContext montarHobbyContext(
-            Long userId,
-            Hobby hobby
+            RecommendationService.PontuacaoHobby pontuacao,
+            UserHobby userHobby
     ) {
-
-        UserHobby userHobby =
-                userHobbyRepository
-                        .findByUser_IdAndHobby_Id(
-                                userId,
-                                hobby.getId()
-                        )
-                        .orElse(null);
-
-        HobbyRecommendationDTO recomendacao =
-                recommendationService.calcularRecomendacao(
-                        userId,
-                        hobby.getId()
-                );
-
+        Hobby hobby = pontuacao.hobby();
         return new AIGeneralPlanContext.HobbySummaryContext(
                 hobby.getId(),
                 hobby.getNome(),
@@ -163,7 +117,7 @@ public class AIGeneralPlanContextService {
                 hobby.getTempoNecessario(),
                 hobby.getNivelAtividadeFisica().name(),
                 hobby.getAmbiente().name(),
-                recomendacao.getScore(),
+                pontuacao.score(),
                 userHobby != null
                         ? userHobby.getNivelAtual().name()
                         : null,

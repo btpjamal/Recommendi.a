@@ -10,6 +10,7 @@ import dev.jamal.projetotcc.Enum.Role;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -76,13 +77,11 @@ public class User implements UserDetails {
     @JsonIgnore // para evitar loop de serialização
     private RecommendationProfile profile;
 
-    @OneToOne(
-            mappedBy = "user",
-            cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY
-    )
+    // A lazy inverse collection avoids probing for a profile whenever a user is loaded.
+    // The unique foreign key on SocialProfile.user still permits at most one profile per user.
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonIgnore
-    private SocialProfile socialProfile;
+    private List<SocialProfile> socialProfiles = new ArrayList<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -27,8 +27,7 @@ function MobileHeader() {
     const { paused, toggleLights } = useContext(AtmosphereContext);
 
     async function sair() {
-        await revokeSession();
-        navigate("/login", { replace: true });
+        await revokeSession(() => navigate("/login", { replace: true }));
     }
 
     return (
@@ -63,7 +62,8 @@ export default function MobileNavigation() {
     const privateChat = path.startsWith("/community/conversations/");
     const showNavigation = mobile && !privateChat && path !== "/onboarding" && path !== "/profile";
     const showHeader = (mobile && privateChat) || showNavigation && (path.startsWith("/community/communities/") || ["/recommendations", "/community", "/myprofile", "/my-suggestions", "/suggest-hobby"].includes(path));
-    const unread = usePrivateUnread(showNavigation, location.key);
+    const unreadRoute = location.pathname === "/recommendations" ? location.pathname : location.key;
+    const unread = usePrivateUnread(showNavigation, unreadRoute);
     const aba = new URLSearchParams(location.search).get("aba");
     let active = "discover";
     if (path === "/community") {

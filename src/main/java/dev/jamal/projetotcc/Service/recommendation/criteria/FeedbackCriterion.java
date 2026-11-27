@@ -1,7 +1,9 @@
 package dev.jamal.projetotcc.Service.recommendation.criteria;
 
-import dev.jamal.projetotcc.Entities.*;
+import dev.jamal.projetotcc.Entities.Hobby;
 import dev.jamal.projetotcc.Service.recommendation.model.CriterionResult;
+import dev.jamal.projetotcc.Service.recommendation.model.HobbyRating;
+import dev.jamal.projetotcc.Service.recommendation.model.RecommendationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -10,12 +12,9 @@ import java.util.List;
 public class FeedbackCriterion implements RecommendationCriterion {
 
     @Override
-    public CriterionResult avaliar(
-            Hobby h,
-            RecommendationProfile p,
-            List<UserInterest> i,
-            List<UserHobbyFeedback> feedbacks
-    ) {
+    public CriterionResult avaliar(Hobby h, RecommendationContext contexto) {
+
+        List<HobbyRating> feedbacks = contexto.avaliacoes();
 
         if (feedbacks == null || feedbacks.isEmpty()) {
             return CriterionResult.of(0, null);
@@ -23,18 +22,10 @@ public class FeedbackCriterion implements RecommendationCriterion {
 
         double pontos = feedbacks.stream()
                 .filter(f ->
-                        f.getHobby() != null
-                                && f.getHobby().getCategory() != null
-                                && h.getCategory() != null
-                                && f.getHobby()
-                                .getCategory()
-                                .getId()
-                                .equals(
-                                        h.getCategory()
-                                                .getId()
-                                )
+                        h.getCategory() != null
+                                && f.categoryId().equals(h.getCategory().getId())
                 )
-                .mapToDouble(f -> switch (f.getRating()) {
+                .mapToDouble(f -> switch (f.rating()) {
                     case 5 -> 8;
                     case 4 -> 5;
                     case 3 -> 0;

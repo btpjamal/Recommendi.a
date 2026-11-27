@@ -28,8 +28,7 @@ export default function Recommendations() {
     const nome = session.getItem("nome");
 
     async function logout() {
-              await revokeSession();
-              navigate("/login");
+              await revokeSession(() => navigate("/login"));
           }
 
     return (

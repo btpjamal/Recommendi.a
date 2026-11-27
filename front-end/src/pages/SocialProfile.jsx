@@ -1,10 +1,11 @@
 import SocialFollowButton from "../components/social/SocialFollowButton.jsx";
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useNavigate, useParams } from "react-router";
 import axios from "axios";
 import { API_BASE_URL } from "../api/config.js";
-import { session } from "../auth/session.js";
+import { isCurrentSession, sessionSnapshot, subscribeSessionToken } from "../auth/session.js";
 import SocialAvatar from "../components/social/SocialAvatar.jsx";
+import { invalidarMiniaturas } from "../components/social/socialAvatarRequest.js";
 import SocialContactRequestButton from "../components/social/SocialContactRequestButton.jsx";
 import "./css/Community.css";
 import "./css/SocialProfile.css";
@@ -16,10 +17,16 @@ const errorText = (error) => error.response?.data?.detail || error.response?.dat
 
 export default function SocialProfile({ embedded = false }) {
     const { userId } = useParams();
-    return <SocialProfileContent key={userId || "me"} userId={userId} embedded={embedded} />;
+    const generation = useSyncExternalStore(subscribeSessionToken, getSessionGeneration);
+    return <SocialProfileContent key={JSON.stringify([generation, userId])}
+        generation={generation} userId={userId} embedded={embedded} />;
 }
 
-function SocialProfileContent({ userId, embedded }) {
+function getSessionGeneration() {
+    return sessionSnapshot().generation;
+}
+
+function SocialProfileContent({ generation, userId, embedded }) {
     const own = !userId;
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
@@ -30,81 +37,120 @@ function SocialProfileContent({ userId, embedded }) {
     const [revision, setRevision] = useState(0);
     const [loaded, setLoaded] = useState(false);
     const [participa, setParticipa] = useState(false);
-    const token = session.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
+    const lifetime = useRef(null);
+    const mutation = useRef(null);
+    const { token } = sessionSnapshot();
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const controller = new AbortController();
+        lifetime.current = controller;
+        const active = () => !controller.signal.aborted && isCurrentSession(generation);
+        const config = { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal };
+
         async function load() {
             try {
-                const config = { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal };
                 const [p, f] = await Promise.all([
                     axios.get(API_BASE_URL + (own ? "/social/me/profile/preview" : `/community/users/${userId}`), config),
                     own ? axios.get(API_BASE_URL + "/social/me/profile", config) : Promise.resolve(null)
                 ]);
-                if (!controller.signal.aborted) { setProfile(p.data); setForm(f?.data); }
-            } catch (e) { if (!controller.signal.aborted) setError(errorText(e)); }
-            finally { if (!controller.signal.aborted) setLoaded(true); }
+                if (!active()) return;
+                setProfile(p.data);
+                setForm(f?.data);
+            } catch (e) {
+                if (active() && !axios.isCancel(e)) setError(errorText(e));
+            } finally {
+                if (active()) setLoaded(true);
+            }
         }
-        load(); return () => controller.abort();
-    }, [own, userId, token]);
 
-    useEffect(() => {
-        if (!own) return;
-        const controller = new AbortController();
-        axios.get(API_BASE_URL + "/social/me/status", {
-            headers: { Authorization: `Bearer ${token}` },
-            signal: controller.signal
-        }).then(({ data }) => {
-            if (!controller.signal.aborted) setParticipa(data.participa);
-        }).catch(e => {
-            if (!controller.signal.aborted) setError(errorText(e));
-        });
-        return () => controller.abort();
-    }, [own, token]);
+        load();
+        if (own) {
+            axios.get(API_BASE_URL + "/social/me/status", config).then(({ data }) => {
+                if (active()) setParticipa(data.participa);
+            }).catch(e => {
+                if (active() && !axios.isCancel(e)) setError(errorText(e));
+            });
+        }
 
-    async function sairDaComunidade() {
-        if (busy || !window.confirm("Deseja sair da comunidade? Seu perfil deixará de aparecer para outros participantes.")) return;
+        return () => {
+            lifetime.current = null;
+            mutation.current = null;
+            controller.abort();
+        };
+    }, [generation, own, token, userId]);
+
+    async function mutate(action) {
+        const controller = lifetime.current;
+        if (!controller || mutation.current || !isCurrentSession(generation)) return;
+
+        const operation = {};
+        mutation.current = operation;
+        const active = () => mutation.current === operation && !controller.signal.aborted &&
+            isCurrentSession(generation);
+        const config = { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal };
+
         setBusy(true);
         setError("");
         setMessage("");
         try {
-            await axios.post(API_BASE_URL + "/social/me/disable", {}, { headers });
-            window.dispatchEvent(new Event("social-participation-changed"));
-            navigate("/community", { replace: true });
+            await action(config, active);
         } catch (e) {
-            setError(errorText(e));
+            if (active() && !axios.isCancel(e)) setError(errorText(e));
         } finally {
-            setBusy(false);
+            if (active()) {
+                mutation.current = null;
+                setBusy(false);
+            }
         }
     }
 
-    async function refresh() {
-        const { data } = await axios.get(API_BASE_URL + "/social/me/profile/preview", { headers });
-        setProfile(data); setRevision(v => v + 1);
+    function sairDaComunidade() {
+        if (mutation.current || !window.confirm("Deseja sair da comunidade? Seu perfil deixará de aparecer para outros participantes.")) return;
+        return mutate(async (config, active) => {
+            await axios.post(API_BASE_URL + "/social/me/disable", {}, config);
+            if (!active()) return;
+            window.dispatchEvent(new Event("social-participation-changed"));
+            if (active()) navigate("/community", { replace: true });
+        });
     }
-    async function save(event) {
-        event.preventDefault(); if (busy) return;
-        setBusy(true); setError(""); setMessage("");
-        try {
-            const { data } = await axios.put(API_BASE_URL + "/social/me/profile", form, { headers });
-            setForm(data); await refresh(); setMessage("Perfil e visibilidade salvos.");
-        } catch (e) { setError(errorText(e)); } finally { setBusy(false); }
+
+    async function refresh(config, active, successMessage) {
+        const { data } = await axios.get(API_BASE_URL + "/social/me/profile/preview", config);
+        if (!active()) return;
+        setProfile(data);
+        setRevision(v => v + 1);
+        setMessage(successMessage);
     }
-    async function photo(file, remove = false) {
-        if (busy || (!file && !remove)) return;
+
+    function save(event) {
+        event.preventDefault();
+        return mutate(async (config, active) => {
+            const { data } = await axios.put(API_BASE_URL + "/social/me/profile", form, config);
+            if (!active()) return;
+            setForm(data);
+            invalidarMiniaturas();
+            if (active()) await refresh(config, active, "Perfil e visibilidade salvos.");
+        });
+    }
+
+    function photo(file, remove = false) {
+        if (mutation.current || (!file && !remove)) return;
         if (file && (file.size > 1024 * 1024 || !["image/png", "image/jpeg"].includes(file.type))) {
-            setError("Use uma foto PNG ou JPEG de até 1 MB."); return;
+            setError("Use uma foto PNG ou JPEG de até 1 MB.");
+            return;
         }
-        setBusy(true); setError(""); setMessage("");
-        try {
-            if (remove) await axios.delete(API_BASE_URL + "/social/me/profile/photo", { headers });
-            else {
-                const body = new FormData(); body.append("file", file);
-                await axios.put(API_BASE_URL + "/social/me/profile/photo", body, { headers });
+        return mutate(async (config, active) => {
+            if (remove) {
+                await axios.delete(API_BASE_URL + "/social/me/profile/photo", config);
+            } else {
+                const body = new FormData();
+                body.append("file", file);
+                await axios.put(API_BASE_URL + "/social/me/profile/photo", body, config);
             }
-            await refresh(); setMessage(remove ? "Foto removida." : "Foto atualizada.");
-        } catch (e) { setError(errorText(e)); } finally { setBusy(false); }
+            if (!active()) return;
+            invalidarMiniaturas();
+            if (active()) await refresh(config, active, remove ? "Foto removida." : "Foto atualizada.");
+        });
     }
     return <main className="community-page"><section className="social-profile-page">
         {!embedded && <button className="community-secondary-button" onClick={() => navigate("/community")}>Voltar ao Hub Social</button>}

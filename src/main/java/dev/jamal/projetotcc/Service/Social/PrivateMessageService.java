@@ -19,6 +19,7 @@ import java.util.Comparator;
 public class PrivateMessageService {
     private final SocialContactService contacts;
     private final PrivateMessageRepository messages;
+    private final SocialContactLockRepository locks;
     private final PrivateMessageReadRepository reads;
     private final UserRepository users;
     @jakarta.persistence.PersistenceContext
@@ -49,20 +50,64 @@ public class PrivateMessageService {
     }
 
     public PrivateMessagePageDTO listar(Long atorId, Long contatoId, Long antesDe, Long aposId, int limite) {
+        return listar(atorId, contatoId, antesDe, aposId, limite, null);
+    }
+
+    public PrivateMessagePageDTO listar(Long atorId, Long contatoId, Long antesDe, Long aposId, int limite,
+            Long versaoSessao) {
+        if (aposId != null) return listarIncremental(atorId, contatoId, antesDe, aposId, limite, versaoSessao);
         // Mantem os locks do par ate o termino desta transacao, junto com bloqueios e envios.
         contacts.carregarConversaAceitaBloqueada(atorId, contatoId);
-        if (antesDe != null && aposId != null) throw invalido("Use somente um cursor por consulta.");
-        if ((antesDe != null && antesDe <= 0) || (aposId != null && aposId < 0) || limite < 1 || limite > 50) {
+        if ((antesDe != null && antesDe <= 0) || limite < 1 || limite > 50) {
             throw invalido("Cursor inválido ou limite fora do intervalo de 1 a 50.");
         }
         var pagina = PageRequest.of(0, limite + 1);
-        var encontradas = aposId != null ? messages.novas(contatoId, aposId, pagina)
-                : messages.anteriores(contatoId, antesDe == null ? Long.MAX_VALUE : antesDe, pagina);
+        var encontradas = messages.anteriores(contatoId, antesDe == null ? Long.MAX_VALUE : antesDe, pagina);
         var lista = encontradas.stream().limit(limite).sorted(Comparator.comparing(PrivateMessage::getId))
                 .map(m -> converter(m, atorId)).toList();
         return new PrivateMessagePageDTO(lista, encontradas.size() > limite,
                 lista.isEmpty() ? null : lista.get(0).id(),
                 lista.isEmpty() ? null : lista.get(lista.size() - 1).id());
+    }
+
+    private PrivateMessagePageDTO listarIncremental(Long atorId, Long contatoId, Long antesDe, Long aposId,
+            int limite, Long versaoSessao) {
+        var cutoff = LocalDate.now().minusYears(18);
+        var par = messages.incrementalPair(atorId, contatoId, cutoff);
+        if (!par.getAtorElegivel()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Ative sua participação social para gerenciar contatos. O recurso é exclusivo para maiores de 18 anos.");
+        }
+        if (par.getLowId() == null || locks.lockPair(par.getLowId(), par.getHighId()).size() != 2) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada.");
+        }
+
+        boolean cursorValido = antesDe == null && aposId >= 0 && limite >= 1 && limite <= 50;
+        var rows = messages.incrementalPage(atorId, contatoId, par.getLowId(), par.getHighId(),
+                cutoff, versaoSessao, aposId, cursorValido ? limite + 1 : 0);
+        validarAcessoIncremental(rows.get(0).getAccessStatus());
+        if (antesDe != null) throw invalido("Use somente um cursor por consulta.");
+        if (!cursorValido) throw invalido("Cursor inválido ou limite fora do intervalo de 1 a 50.");
+        if (rows.get(0).getMessageId() == null) return new PrivateMessagePageDTO(java.util.List.of(), false, null, null);
+
+        var page = rows.stream().limit(limite).map(row -> new PrivateMessageDTO(row.getMessageId(),
+                row.getSenderId(), row.getAuthorName(), row.getContent(), row.getSentAt(),
+                atorId.equals(row.getSenderId()))).toList();
+        return new PrivateMessagePageDTO(page, rows.size() > limite, page.get(0).id(), page.get(page.size() - 1).id());
+    }
+
+    private void validarAcessoIncremental(String status) {
+        switch (status) {
+            case "PERMITIDO" -> { }
+            case "SESSAO" -> throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+            case "ATOR" -> throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Ative sua participação social para gerenciar contatos. O recurso é exclusivo para maiores de 18 anos.");
+            case "CONTATO" -> throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada.");
+            case "INDISPONIVEL" -> throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Este contato está indisponível.");
+            case "PENDENTE" -> throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "A conversa precisa estar aceita para acessar as mensagens.");
+            default -> throw new IllegalStateException("Resultado de autorização inesperado.");
+        }
     }
 
     public PrivateMessageDTO enviar(Long atorId, Long contatoId, SendPrivateMessageDTO pedido) {

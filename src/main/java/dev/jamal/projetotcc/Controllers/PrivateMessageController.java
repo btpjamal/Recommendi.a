@@ -1,7 +1,8 @@
 package dev.jamal.projetotcc.Controllers;
 
+import dev.jamal.projetotcc.Entities.User;
+
 import dev.jamal.projetotcc.DTO.Social.*;
-import dev.jamal.projetotcc.Repository.UserRepository;
 import dev.jamal.projetotcc.Service.Social.PrivateMessageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,14 +17,10 @@ import java.util.Map;
 @RequestMapping("/api/v1/community/private-messages")
 public class PrivateMessageController {
     private final PrivateMessageService service;
-    private final UserRepository users;
+
 
     private Long ator(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Autenticação necessária.");
-        }
-        return users.findByEmail(authentication.getName()).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário indisponível.")).getId();
+        return AuthenticatedUser.id(authentication);
     }
 
     @GetMapping("/unread")
@@ -43,7 +40,9 @@ public class PrivateMessageController {
     public PrivateMessagePageDTO listar(Authentication authentication, @PathVariable Long contatoId,
             @RequestParam(required = false) Long antesDe, @RequestParam(required = false) Long aposId,
             @RequestParam(defaultValue = "30") int limite) {
-        return service.listar(ator(authentication), contatoId, antesDe, aposId, limite);
+        Long atorId = ator(authentication);
+        return service.listar(atorId, contatoId, antesDe, aposId, limite,
+                ((User) authentication.getPrincipal()).getTokenVersion());
     }
     @PostMapping("/{contatoId}/messages")
     public PrivateMessageDTO enviar(Authentication authentication, @PathVariable Long contatoId,

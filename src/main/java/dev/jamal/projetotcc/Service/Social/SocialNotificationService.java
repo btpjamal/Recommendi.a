@@ -8,8 +8,11 @@ import java.time.LocalDate;
 public class SocialNotificationService {
  private final SocialNotificationStore store;private final UserRepository users;private final SocialProfileRepository profiles;
  private void validar(Long user){
-  var u=users.findById(user).orElseThrow(()->new ResponseStatusException(HttpStatus.FORBIDDEN));
-  if(u.getDataNascimento()==null||u.getDataNascimento().isAfter(LocalDate.now().minusYears(18))||!profiles.findByUser_Id(user).map(p->p.isEnabled()).orElse(false))
+  var nascimento=users.findBirthDateById(user).map(UserRepository.BirthDate::getDataNascimento).orElse(null);
+  // A projeção vazia pode representar uma linha com data nula.
+  if(nascimento==null&&!users.existsById(user))
+   throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+  if(nascimento==null||nascimento.isAfter(LocalDate.now().minusYears(18))||!profiles.existsByUser_IdAndEnabledTrue(user))
    throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Ative sua participação social para acessar notificações.");
  }
  @Transactional(readOnly=true)

@@ -1,9 +1,14 @@
 package dev.jamal.projetotcc.Repository;
 
 import dev.jamal.projetotcc.Entities.User;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Repository
@@ -19,6 +24,19 @@ public interface UserRepository extends JpaRepository <User, Long> {
     // Scalar SQL bypasses the Open-in-View entity cache and locks until transaction completion.
     @org.springframework.data.jpa.repository.Query(value = "SELECT token_version FROM users WHERE id = :id FOR UPDATE", nativeQuery = true)
     Optional<Long> lockTokenVersion(@org.springframework.data.repository.query.Param("id") Long id);
+
+    // Serialize both profile writes even before a recommendation profile exists.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM User u WHERE u.id = :id")
+    Optional<User> findByIdForProfileUpdate(@Param("id") Long id);
+
+    interface BirthDate {
+        LocalDate getDataNascimento();
+    }
+
+    @org.springframework.data.jpa.repository.Query(
+            "select u.dataNascimento as dataNascimento from User u where u.id = :id")
+    Optional<BirthDate> findBirthDateById(@org.springframework.data.repository.query.Param("id") Long id);
 
     Optional<User> findByEmail(String email);
 

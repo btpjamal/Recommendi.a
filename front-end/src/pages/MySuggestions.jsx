@@ -69,8 +69,7 @@ export default function MySuggestions() {
     }
 
     async function logout() {
-        await revokeSession();
-        navigate("/login");
+        await revokeSession(() => navigate("/login"));
     }
 
     return (

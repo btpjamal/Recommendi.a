@@ -4,6 +4,7 @@ import dev.jamal.projetotcc.Enum.TipoSocializacao;
 import dev.jamal.projetotcc.Entities.*;
 import dev.jamal.projetotcc.Enum.*;
 import dev.jamal.projetotcc.Service.recommendation.model.CriterionResult;
+import dev.jamal.projetotcc.Service.recommendation.model.RecommendationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -12,12 +13,8 @@ import java.util.*;
 public class PreferenceCriterion implements RecommendationCriterion {
 
     @Override
-    public CriterionResult avaliar(
-            Hobby h,
-            RecommendationProfile p,
-            List<UserInterest> i,
-            List<UserHobbyFeedback> f
-    ) {
+    public CriterionResult avaliar(Hobby h, RecommendationContext contexto) {
+        RecommendationProfile p = contexto.perfil();
 
         double score = 0;
         List<String> motivos = new ArrayList<>();

@@ -1,4 +1,4 @@
-import { session } from "../auth/session.js";
+import { isCurrentSession, session, sessionSnapshot } from "../auth/session.js";
 import { useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { api } from "../api/api";
@@ -46,19 +46,16 @@ export default function Login() {
         }, AVISO_DEMORA_MS);
 
         let consultandoPerfil = false;
+        let generation = sessionSnapshot().generation;
 
         try {
             const response = await api.post("/auth/login", { email, senha });
             clearTimeout(avisoDeDemora);
-            if (!montado.current) return;
+            if (!montado.current || !isCurrentSession(generation)) return;
 
             const { token, userId, nome, email: emailUsuario, role } = response.data;
 
-            session.setItem("token", token);
-            session.setItem("userId", userId);
-            session.setItem("nome", nome);
-            session.setItem("email", emailUsuario);
-            session.setItem("role", role);
+            generation = session.start({ token, userId, nome, email: emailUsuario, role });
 
             consultandoPerfil = true;
             setDemorando(false);
@@ -72,7 +69,7 @@ export default function Login() {
                     },
                 }
             );
-            if (!montado.current) return;
+            if (!montado.current || !isCurrentSession(generation)) return;
 
             if (role === "ADMIN") {
                 navigate("/admin", { replace: true });
@@ -85,7 +82,10 @@ export default function Login() {
                 navigate("/onboarding");
             }
         } catch (error) {
-            if (!montado.current) return;
+            if (!montado.current || error?.code === "ERR_CANCELED") return;
+            if (!isCurrentSession(generation) && !(
+                consultandoPerfil && error?.response?.status === 401 && !session.getItem("token")
+            )) return;
 
             const mensagemApi = error?.response?.data?.error;
             let mensagem = consultandoPerfil

@@ -67,17 +67,23 @@ public class SocialLocationService {
     }
 
     @Transactional(readOnly = true)
-    public String proximidade(Localizacao atual, SocialProfile outro) {
-        if (!outro.isCompartilharRegiao()) return null;
-        return comparar(atual, buscar(outro.getUser().getId()));
+    public String proximidade(Localizacao atual, Long outroId, boolean compartilharRegiao) {
+        if (!compartilharRegiao) return null;
+        return comparar(atual, buscar(outroId));
     }
 
     @Transactional(readOnly = true)
     public SocialLocationSettingsDTO configuracao(Long userId) {
         Localizacao local = buscar(userId);
-        boolean visivel = socialRepository.findByUser_Id(userId)
-                .filter(SocialProfile::isEnabled).map(SocialProfile::isCompartilharRegiao).orElse(false);
-        return new SocialLocationSettingsDTO(local.temEstado(), local.temCidade(), visivel);
+
+        boolean visivel = socialRepository
+                .existsByUser_IdAndEnabledTrueAndCompartilharRegiaoTrue(userId);
+
+        return new SocialLocationSettingsDTO(
+                local.temEstado(),
+                local.temCidade(),
+                visivel
+        );
     }
 
     @Transactional

@@ -102,7 +102,7 @@ public interface HobbyRepository extends JpaRepository<Hobby, Long> {
     );
 
 
-    @Query("""
+    String ELIGIBLE_FOR_RECOMMENDATION = """
     SELECT h
     FROM Hobby h
     JOIN FETCH h.category
@@ -119,32 +119,24 @@ public interface HobbyRepository extends JpaRepository<Hobby, Long> {
           WHERE ho.hobby = h
             AND ho.peso BETWEEN 1 AND 3
       )
-""")
+    """;
+
+    @Query(ELIGIBLE_FOR_RECOMMENDATION)
     List<Hobby> findAllEligibleForRecommendation();
 
+    @Query(ELIGIBLE_FOR_RECOMMENDATION + " AND h.id = :id")
+    Optional<Hobby> findEligibleById(@Param("id") Long id);
 
-    @Query("""
-    SELECT h
-    FROM Hobby h
-    JOIN FETCH h.category
-    WHERE h.id = :id
-      AND h.ativo = true
-      AND EXISTS (
-          SELECT hi.id
-          FROM HobbyInterest hi
-          WHERE hi.hobby = h
-            AND hi.peso BETWEEN 1 AND 3
-      )
-      AND EXISTS (
-          SELECT ho.id
-          FROM HobbyObjective ho
-          WHERE ho.hobby = h
-            AND ho.peso BETWEEN 1 AND 3
-      )
-""")
-    Optional<Hobby> findEligibleById(
-            @Param("id") Long id
-    );
+    @Query(ELIGIBLE_FOR_RECOMMENDATION + " AND h.id IN :ids")
+    List<Hobby> findEligibleByIds(@Param("ids") List<Long> ids);
+
+    interface IdNome {
+        Long getId();
+        String getNome();
+    }
+
+    @Query("SELECT h.id AS id, h.nome AS nome FROM Hobby h WHERE h.id IN :ids")
+    List<IdNome> findNomesByIds(@Param("ids") List<Long> ids);
 
     boolean existsByImagemUrl(String imagemUrl);
 }

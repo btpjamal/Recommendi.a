@@ -46,15 +46,14 @@ public class AuthService {
     public AuthResponseDTO login(AuthRequestDTO dto) {
 
         loginRateLimit.check(dto.getEmail());
-        authenticationManager.authenticate(
+        var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         dto.getEmail(),
                         dto.getSenha()
                 )
         );
 
-        User user = userRepository.findByEmail(dto.getEmail())
-                .orElseThrow(() -> new BusinessException("Credenciais inválidas"));
+        User user = (User) authentication.getPrincipal();
 
         String token = jwtService.gerarToken(user);
 

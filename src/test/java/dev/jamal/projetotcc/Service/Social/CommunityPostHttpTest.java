@@ -85,6 +85,13 @@ class CommunityPostHttpTest {
             .header("Authorization",bearer)).andExpect(status().isBadRequest());
         verify(service,never()).criar(anyLong(),anyLong(),any(),any());
     }
+    @Test void multipartComMetadadosAusentesOuIncompletosNaoCriaPublicacao() throws Exception {
+        mvc.perform(multipart(base).header("Authorization", bearer)).andExpect(status().isBadRequest());
+        mvc.perform(multipart(base).file(metadata("{\"conteudo\":"))
+                .header("Authorization", bearer)).andExpect(status().isBadRequest());
+        verify(service, never()).criar(anyLong(), anyLong(), any(), any());
+    }
+
     @Test void imagemAutenticadaTemTipoSeguroESemCache() throws Exception {
         when(service.imagem(10L,7L,50L)).thenReturn(new byte[]{1,2});
         mvc.perform(get(base+"/50/image").header("Authorization",bearer)).andExpect(status().isOk())

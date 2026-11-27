@@ -11,7 +11,7 @@ import java.util.List;
 public class RecommendationMapper {
     public HobbyRecommendationDTO toDTO(
             Hobby h,
-            Double score,
+            double score,
             List<String> motivos,
             List<String> alertas,
             List<CriterionScoreDTO> criterios
@@ -21,7 +21,7 @@ public class RecommendationMapper {
                 h.getNome(),
                 h.getDescricao(),
                 h.getCategory().getNome(),
-                Math.max(0, Math.round(score * 10.0) / 10.0),
+                score,
                 motivos,
                 alertas,
                 criterios,
