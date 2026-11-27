@@ -68,7 +68,10 @@ export default function CommunityPublications({ communityId, active, onTabChange
                     target ? api.get(base + `/posts/${target}`, { signal: current.signal }).catch(e => { if (e.response?.status === 404) return null; throw e; }) : Promise.resolve(null)
                 ]);
                 current.commit(() => {
-                    setCommunity(details.data); setPosts(mergePosts(page.data.publicacoes, highlighted ? [highlighted.data] : []));
+                    const highlight = highlighted?.data;
+                    const listed = page.data.publicacoes.find(post => post.id === highlight?.id);
+                    setCommunity(details.data);
+                    setPosts(mergePosts(page.data.publicacoes, highlight && (!listed || listed.versao < highlight.versao) ? [highlight] : []));
                     if (target && !highlighted) setNotice("A publicação mencionada não está mais disponível para você.");
                     setMore(page.data.temMais);
                     setCursor(page.data.proximoCursor); setAccess(true);
@@ -173,7 +176,7 @@ export default function CommunityPublications({ communityId, active, onTabChange
         finally { current.commit(() => { mutationBusy.current = false; setBusy(false); }); }
     }
 
-    async function logout() { await revokeSession(); navigate("/login"); }
+    async function logout() { await revokeSession(() => navigate("/login")); }
 
     return <main className="community-details-page recommendations-theme social-screen-theme">
         <header className="app-header"><div className="app-header-content">
@@ -225,7 +228,7 @@ export default function CommunityPublications({ communityId, active, onTabChange
                                     <button type="button" disabled={busy || loadingMore} onClick={() => remove(post)}>Excluir</button></div>}
                             </header>
                             {post.conteudo && <p className="community-post-text">{post.conteudo}</p>}
-                            {active && <CommunityPostInteractions key={`${post.id}-${String(post.id) === target ? targetCommentId : ""}`} communityId={communityId} post={post} targetCommentId={String(post.id) === target ? targetCommentId : null} onAccessLost={lostAccess} onUnavailable={removeUnavailable} />}
+                            {active && <CommunityPostInteractions key={`${post.id}-${String(post.id) === target ? targetCommentId : ""}`} communityId={communityId} post={post} initialSummary={post.interacoes} targetCommentId={String(post.id) === target ? targetCommentId : null} onAccessLost={lostAccess} onUnavailable={removeUnavailable} />}
                             {active && post.possuiImagem && <CommunityPostImage communityId={communityId} post={post} onAccessLost={lostAccess} />}
                         </article>)}
                     {more && <button className="community-post-load" type="button" disabled={loadingMore || busy} onClick={loadMore}>{loadingMore ? "Carregando..." : "Carregar publicações anteriores"}</button>}
@@ -234,3 +237,4 @@ export default function CommunityPublications({ communityId, active, onTabChange
         </section>
     </main>;
 }
+

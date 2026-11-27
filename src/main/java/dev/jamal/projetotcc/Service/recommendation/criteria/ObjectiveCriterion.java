@@ -1,9 +1,9 @@
 package dev.jamal.projetotcc.Service.recommendation.criteria;
 
 import dev.jamal.projetotcc.Entities.*;
-import dev.jamal.projetotcc.Repository.HobbyObjectiveRepository;
-import dev.jamal.projetotcc.Repository.UserObjectiveRepository;
 import dev.jamal.projetotcc.Service.recommendation.model.CriterionResult;
+import dev.jamal.projetotcc.Service.recommendation.model.HobbyAssociation;
+import dev.jamal.projetotcc.Service.recommendation.model.RecommendationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -11,32 +11,13 @@ import java.util.List;
 @Component
 public class ObjectiveCriterion implements RecommendationCriterion{
 
-    private final UserObjectiveRepository userObjectiveRepository;
-    private final HobbyObjectiveRepository hobbyObjectiveRepository;
-
-
-    public ObjectiveCriterion(
-            UserObjectiveRepository userObjectiveRepository,
-            HobbyObjectiveRepository hobbyObjectiveRepository
-    ) {
-        this.userObjectiveRepository = userObjectiveRepository;
-        this.hobbyObjectiveRepository = hobbyObjectiveRepository;
-    }
-
     @Override
-    public CriterionResult avaliar(
-            Hobby hobby,
-            RecommendationProfile perfil,
-            List<UserInterest> interesses,
-            List<UserHobbyFeedback> feedbacks
-    ) {
-        Long userId = perfil.getUser().getId();
-
+    public CriterionResult avaliar(Hobby hobby, RecommendationContext contexto) {
         List<UserObjective> objetivosUsuario =
-                userObjectiveRepository.findByUserId(userId);
+                contexto.objetivos();
 
-        List<HobbyObjective> objetivosHobby =
-                hobbyObjectiveRepository.findByHobbyId(hobby.getId());
+        List<HobbyAssociation> objetivosHobby =
+                contexto.objetivosDoHobby(hobby.getId());
 
         if (objetivosUsuario.isEmpty() || objetivosHobby.isEmpty()) {
             return CriterionResult.of(0, null);
@@ -61,9 +42,9 @@ public class ObjectiveCriterion implements RecommendationCriterion{
                     : 1;
 
             int pesoHobby = objetivosHobby.stream()
-                    .filter(ho -> ho.getObjective().getId()
-                            .equals(objetivoUsuario.getObjective().getId()))
-                    .mapToInt(ho -> ho.getPeso() != null ? ho.getPeso() : 1)
+                    .filter(ho -> ho.associationId()
+                            .equals(objetivoUsuario.getId().getObjectiveId()))
+                    .mapToInt(ho -> ho.peso() != null ? ho.peso() : 1)
                     .max()
                     .orElse(0);
 
@@ -97,11 +78,11 @@ public class ObjectiveCriterion implements RecommendationCriterion{
                 .filter(uo ->
                         objetivosHobby.stream()
                                 .anyMatch(ho ->
-                                        ho.getObjective().getId()
-                                                .equals(uo.getObjective().getId())
+                                        ho.associationId()
+                                                .equals(uo.getId().getObjectiveId())
                                 )
                 )
-                .map(uo -> uo.getObjective().getNome())
+                .map(uo -> contexto.nomesDosObjetivos().get(uo.getId().getObjectiveId()))
                 .distinct()
                 .toList();
 

@@ -248,6 +248,67 @@ class SocialContactIntegrationTest {
         assertEquals(0, bloqueios.count());
     }
 
+    @Test
+    void contatosAceitosEmLotePreservamPerfisAfinidadePrivacidadeEOrdem() {
+        assertTrue(service.listar(a, SocialContactBox.ACEITAS, 0).isEmpty());
+        var pedido = solicitar(a, b);
+        assertEquals(pedido.id(), service.listar(b, SocialContactBox.RECEBIDAS, 0).getContent().get(0).id());
+        service.responder(b, pedido.id(), true);
+
+        var interest = jdbc.queryForObject("INSERT INTO interest(nome) VALUES('Arte teste') RETURNING id", Long.class);
+        jdbc.update("INSERT INTO user_interest(user_id,interest_id,peso) VALUES (?,?,3),(?,?,3)", a, interest, b, interest);
+        jdbc.update("UPDATE social_profiles SET interesses_visibilidade='CONTATOS' WHERE user_id IN (?,?)", a, b);
+        localizacao.atualizarVisibilidade(b, true);
+        var categoria = jdbc.queryForObject("INSERT INTO hobby_category(nome) VALUES('Contatos teste') RETURNING id", Long.class);
+        for (String nome : java.util.List.of("Pintura", "Escultura", "Cerâmica")) {
+            var hobby = jdbc.queryForObject("""
+                    INSERT INTO hobby(nome,ambiente,nivel_atividade_fisica,tipo_socializacao,requer_equipamento,category_id,tempo_necessario)
+                    VALUES (?,'CASA','BAIXO','SOCIAL',false,?,2) RETURNING id
+                    """, Long.class, nome, categoria);
+            if (!nome.equals("Escultura")) jdbc.update("""
+                    INSERT INTO user_hobbies(user_id,hobby_id,nivel_atual,status_atual,criado_em,atualizado_em)
+                    VALUES (?,?,'INICIANTE','PRATICANDO',now(),now()),(?,?,'INICIANTE','PRATICANDO',now(),now())
+                    """, a, hobby, b, hobby);
+            jdbc.update("""
+                    INSERT INTO user_recommendation_feedbacks(user_id,hobby_id,tipo,created_at)
+                    VALUES (?,?,'INTERESSADO',now()),(?,?,'INTERESSADO',now())
+                    """, a, hobby, b, hobby);
+        }
+        var unica = service.listar(a, SocialContactBox.ACEITAS, 0).getContent().get(0);
+        assertEquals(hub.buscarPerfilPublicoPara(a,b), unica.outraPessoa());
+        assertEquals(9, unica.outraPessoa().afinidade().score());
+        assertEquals("MESMA_CIDADE", unica.outraPessoa().proximidade());
+        var rejeitada = solicitar(terceiro,a);
+        service.responder(a, rejeitada.id(), false);
+        for (int i=0; i<12; i++) {
+            var outro = usuario();
+            jdbc.update("""
+                    INSERT INTO social_contacts(low_user_id,high_user_id,requester_id,recipient_id,status,requested_at,updated_at)
+                    VALUES (?,?,?,?,'ACEITA',now(),now())
+                    """, a, outro, a, outro);
+        }
+        var primeira = service.listar(a, SocialContactBox.ACEITAS, 0);
+        var segunda = service.listar(a, SocialContactBox.ACEITAS, 1);
+        assertEquals(13, primeira.getTotalElements());
+        assertEquals(12, primeira.getNumberOfElements());
+        assertEquals(1, segunda.getNumberOfElements());
+        assertEquals(unica, segunda.getContent().get(0));
+        assertTrue(service.listar(terceiro, SocialContactBox.ACEITAS, 0).isEmpty());
+        assertEquals(rejeitada.id(), service.listar(a, SocialContactBox.HISTORICO, 0).getContent().get(0).id());
+
+        jdbc.update("UPDATE social_profiles SET interesses_visibilidade='SOMENTE_EU' WHERE user_id=?", b);
+        var privado = service.listar(a, SocialContactBox.ACEITAS, 1).getContent().get(0).outraPessoa();
+        assertTrue(privado.interesses().isEmpty());
+        assertEquals(hub.buscarPerfilPublicoPara(a,b), privado);
+        assertEquals(8, privado.afinidade().score());
+
+        jdbc.update("UPDATE social_profiles SET enabled=false WHERE user_id=?", b);
+        var inativo = service.listar(a, SocialContactBox.ACEITAS, 1).getContent().get(0);
+        assertFalse(inativo.disponivel());
+        assertNull(inativo.outraPessoa());
+        status(403, () -> service.listar(b, SocialContactBox.ACEITAS, 0));
+    }
+
     private Long usuario() {
         var user = new User();
         user.setNome("Participante de teste");
@@ -267,3 +328,4 @@ class SocialContactIntegrationTest {
         return user.getId();
     }
 }
+

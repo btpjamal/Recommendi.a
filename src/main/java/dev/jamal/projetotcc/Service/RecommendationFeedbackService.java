@@ -14,6 +14,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated() and #p0 == authentication.principal.id")
 @Service
@@ -105,36 +108,28 @@ public class RecommendationFeedbackService {
             RecommendationFeedbackType tipo
     ) {
 
-        return feedbackRepository
-                .findByUser_IdAndTipo(userId, tipo)
-                .stream()
+        List<UserRecommendationFeedback> feedbacks = feedbackRepository.findByUser_IdAndTipo(userId, tipo);
+        if (feedbacks.isEmpty()) {
+            return List.of();
+        }
+
+        RecommendationProfile perfil = recommendationService.buscarPerfil(userId);
+        List<Long> ids = feedbacks.stream().map(feedback -> feedback.getHobby().getId()).toList();
+        List<Hobby> hobbiesElegiveis = hobbyRepository.findEligibleByIds(ids);
+        Map<Long, Hobby> hobbiesPorId = hobbiesElegiveis.stream()
+                .collect(Collectors.toMap(Hobby::getId, Function.identity()));
+        if (!hobbiesPorId.keySet().containsAll(ids)) {
+            throw new BusinessException("Hobby não encontrado ou indisponível para recomendação.");
+        }
+
+        var contexto = recommendationService.carregarContexto(userId, perfil, hobbiesElegiveis);
+        Map<Long, UserHobby> vinculos = contexto.hobbiesDoUsuario().stream()
+                .collect(Collectors.toMap(vinculo -> vinculo.getHobby().getId(), Function.identity()));
+        return feedbacks.stream()
                 .map(feedback -> {
-
-                    Hobby hobby = feedback.getHobby();
-
-                    UserHobby userHobby =
-                            userHobbyRepository
-                                    .findByUser_IdAndHobby_Id(
-                                            userId,
-                                            hobby.getId()
-                                    )
-                                    .orElse(null);
-
-                    NivelExperiencia nivelAtual =
-                            userHobby != null
-                                    ? userHobby.getNivelAtual()
-                                    : null;
-
-                    UserHobbyStatus statusAtual =
-                            userHobby != null
-                                    ? userHobby.getStatusAtual()
-                                    : null;
-
-                    HobbyRecommendationDTO recomendacao =
-                            recommendationService.calcularRecomendacao(
-                                    userId,
-                                    feedback.getHobby().getId()
-                            );
+                    Hobby hobby = hobbiesPorId.get(feedback.getHobby().getId());
+                    UserHobby vinculo = vinculos.get(hobby.getId());
+                    HobbyRecommendationDTO recomendacao = recommendationService.avaliarHobby(hobby, contexto);
 
                     return new RecommendationFeedbackResponseDTO(
                             hobby.getId(),
@@ -142,8 +137,8 @@ public class RecommendationFeedbackService {
                             hobby.getDescricao(),
                             hobby.getCategory().getNome(),
                             feedback.getTipo(),
-                            nivelAtual,
-                            statusAtual,
+                            vinculo == null ? null : vinculo.getNivelAtual(),
+                            vinculo == null ? null : vinculo.getStatusAtual(),
                             recomendacao.getScore(),
                             hobby.getImagemUrl()
                     );

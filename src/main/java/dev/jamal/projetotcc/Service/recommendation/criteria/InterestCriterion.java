@@ -1,8 +1,9 @@
 package dev.jamal.projetotcc.Service.recommendation.criteria;
 
 import dev.jamal.projetotcc.Entities.*;
-import dev.jamal.projetotcc.Repository.HobbyInterestRepository;
 import dev.jamal.projetotcc.Service.recommendation.model.CriterionResult;
+import dev.jamal.projetotcc.Service.recommendation.model.HobbyAssociation;
+import dev.jamal.projetotcc.Service.recommendation.model.RecommendationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -10,25 +11,16 @@ import java.util.List;
 @Component
 public class InterestCriterion implements RecommendationCriterion {
 
-    private final HobbyInterestRepository hobbyInterestRepository;
-
-    public InterestCriterion(HobbyInterestRepository hobbyInterestRepository) {
-        this.hobbyInterestRepository = hobbyInterestRepository;
-    }
-
     @Override
-    public CriterionResult avaliar(
-            Hobby hobby,
-            RecommendationProfile perfil,
-            List<UserInterest> interesses,
-            List<UserHobbyFeedback> feedbacks
-    ) {
+    public CriterionResult avaliar(Hobby hobby, RecommendationContext contexto) {
+        List<UserInterest> interesses = contexto.interesses();
+
         if (interesses == null || interesses.isEmpty()) {
             return CriterionResult.of(0, null);
         }
 
-        List<HobbyInterest> interessesHobby=
-                hobbyInterestRepository.findByHobbyId(hobby.getId());
+        List<HobbyAssociation> interessesHobby =
+                contexto.interessesDoHobby(hobby.getId());
 
         if (interessesHobby.isEmpty()) {
             return CriterionResult.of(0,null);
@@ -59,10 +51,10 @@ public class InterestCriterion implements RecommendationCriterion {
 
             int pesoHobby = interessesHobby.stream()
                     .filter(hi ->
-                            hi.getInterest().getId()
+                            hi.associationId()
                                     .equals(userInterest.getInterest().getId())
                     )
-                    .mapToInt(hi -> hi.getPeso() != null ? hi.getPeso() : 1)
+                    .mapToInt(hi -> hi.peso() != null ? hi.peso() : 1)
                     .max()
                     .orElse(0);
 
@@ -96,7 +88,7 @@ public class InterestCriterion implements RecommendationCriterion {
                 .filter(ui ->
                         interessesHobby.stream()
                                 .anyMatch(hi ->
-                                        hi.getInterest().getId()
+                                        hi.associationId()
                                                 .equals(ui.getInterest().getId())
                                 )
                 )

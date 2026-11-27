@@ -213,7 +213,7 @@ function CommunityChat({ communityId, active, onTabChange }) {
         finally { sessao.commit(() => { envioOcupadoRef.current = false; setEnviando(false); }); }
     }
 
-    async function logout() { await revokeSession(); navigate("/login"); }
+    async function logout() { await revokeSession(() => navigate("/login")); }
 
     return (
         <main className="community-details-page recommendations-theme social-screen-theme">

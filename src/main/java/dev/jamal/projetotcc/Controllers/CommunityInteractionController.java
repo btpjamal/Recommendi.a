@@ -1,6 +1,5 @@
 package dev.jamal.projetotcc.Controllers;
-import dev.jamal.projetotcc.DTO.Social.*;import dev.jamal.projetotcc.Repository.UserRepository;
-import dev.jamal.projetotcc.Service.Social.CommunityInteractionService;
+import dev.jamal.projetotcc.DTO.Social.*;import dev.jamal.projetotcc.Service.Social.CommunityInteractionService;
 import jakarta.validation.Valid;import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;import org.springframework.web.server.ResponseStatusException;
@@ -9,8 +8,8 @@ import java.util.Map;
 @RestController @RequiredArgsConstructor
 @RequestMapping("/api/v1/community/communities/{communityId}/posts/{postId}")
 public class CommunityInteractionController {
- private final CommunityInteractionService service;private final UserRepository users;
- private Long actor(Authentication auth){return users.findByEmail(auth.getName()).orElseThrow(()->new ResponseStatusException(HttpStatus.UNAUTHORIZED)).getId();}
+ private final CommunityInteractionService service;
+ private Long actor(Authentication auth){return AuthenticatedUser.id(auth);}
  @GetMapping("/interactions") public ResponseEntity<CommunityInteractionDTO> resumo(@PathVariable Long communityId,@PathVariable Long postId,Authentication auth){
   return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(service.resumo(communityId,actor(auth),postId));
  }

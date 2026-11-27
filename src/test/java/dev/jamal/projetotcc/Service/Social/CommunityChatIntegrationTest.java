@@ -198,7 +198,7 @@ class CommunityChatIntegrationTest {
     void endpointValidaParticipacaoSocialEFormatoPaginado() throws Exception {
         var mvc = MockMvcBuilders.standaloneSetup(controller).build();
         var usuario = usuarios.findById(a).orElseThrow();
-        var auth = new UsernamePasswordAuthenticationToken(usuario.getEmail(), "ignorado");
+        var auth = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
         enviar(a, "Teste de formato");
         String url = "/api/v1/community/communities/" + comunidade + "/messages";
         mvc.perform(get(url).principal(auth)).andExpect(status().isOk())

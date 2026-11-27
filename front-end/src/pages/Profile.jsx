@@ -1,5 +1,6 @@
-import { session } from "../auth/session.js";
-import { useState } from "react";
+import { isCurrentSession, session, sessionSnapshot } from "../auth/session.js";
+import { useLayoutEffect, useRef, useState } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router";
 import { api } from "../api/api";
 
@@ -17,6 +18,12 @@ export default function Profile() {
   const [form, setForm] = useState({ tempoDisponivelSemanal: 3, orcamentoInicial: 100 });
   const [erro, setErro] = useState("");
   const navigate = useNavigate();
+  const lifetime = useRef(null);
+  useLayoutEffect(() => {
+    const controller = new AbortController();
+    lifetime.current = controller.signal;
+    return () => controller.abort();
+  }, []);
   const current = steps[step];
   const selected = form[current.key];
 
@@ -28,12 +35,21 @@ export default function Profile() {
   async function next() {
     if (selected === undefined || selected === "") { setErro("Escolha uma resposta para continuar."); return; }
     if (step < steps.length - 1) { setStep(step + 1); return; }
+    const signal = lifetime.current;
+    const { generation } = sessionSnapshot();
+    const canUpdate = () => !signal.aborted && isCurrentSession(generation);
     try {
       const token = session.getItem("token");
       const userId = session.getItem("userId");
-      await api.put(`/users/${userId}/profile`, form, { headers: { Authorization: `Bearer ${token}` } });
-      navigate("/recommendations");
-    } catch (e) { setErro(e.response?.data?.message || "Não foi possível salvar seu perfil."); }
+      const { data } = await api.put(`/users/${userId}/profile`, form, { signal, headers: { Authorization: `Bearer ${token}` } });
+      if (canUpdate()) {
+        navigate(data.questionarioConcluido === true ? "/recommendations" : "/onboarding");
+      }
+    } catch (e) {
+      if (canUpdate() && !axios.isCancel(e)) {
+        setErro(e.response?.data?.message || "Não foi possível salvar seu perfil.");
+      }
+    }
   }
 
   return (

@@ -1,9 +1,12 @@
 import { clearLocationSearches } from "../components/hobbyLocationSearch.js";
-import { session } from "../auth/session.js";
-import { useEffect, useState } from "react";
+import { isCurrentSession, session, sessionSnapshot } from "../auth/session.js";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
 import { api } from "../api/api";
 import "./css/Onboarding.css";
+
+const IBGE_TIMEOUT_MS = 10_000;
 
 const perguntas = [
     {
@@ -125,9 +128,9 @@ export default function Onboarding({ admin = false }) {
     const modoEdicao =
      searchParams.get("editar") === "true";
 
-    const [cidades, setCidades] = useState([]);
-    const [carregandoCidades, setCarregandoCidades] = useState(false);
-    const [erroCidades, setErroCidades] = useState(false);
+    const [tentativaCidades, setTentativaCidades] = useState(0);
+    const [consultaCidades, setConsultaCidades] = useState(null);
+    const lifetime = useRef(null);
 
      //Dados carregados do backend
     const [objetivos, setObjetivos] = useState([]);
@@ -158,7 +161,14 @@ export default function Onboarding({ admin = false }) {
             objectiveIds: []
         });
 
-    useEffect(() => {
+    useLayoutEffect(() => {
+        const controller = new AbortController();
+        const { signal } = controller;
+        if (lifetime.current?.aborted) setEnviando(false);
+        lifetime.current = signal;
+        const { generation } = sessionSnapshot();
+        const canUpdate = () => !signal.aborted && isCurrentSession(generation);
+
         async function carregarDados() {
             try {
                 const token = session.getItem("token");
@@ -170,7 +180,8 @@ export default function Onboarding({ admin = false }) {
                 }
 
                 if (admin) {
-                    const { data } = await api.get("/admin/location-preferences");
+                    const { data } = await api.get("/admin/location-preferences", { signal });
+                    if (!canUpdate()) return;
                     setProfile(atual => ({ ...atual, cidade: data.cidade ?? "", estado: data.estado ?? "" }));
                     return;
                 }
@@ -178,6 +189,7 @@ export default function Onboarding({ admin = false }) {
                 const [objetivosResponse, interessesResponse] =
                                 await Promise.all([
                                     api.get("/objectives", {
+                                        signal,
                                         headers: {
                                             Authorization: `Bearer ${token}`,
                                         },
@@ -185,11 +197,13 @@ export default function Onboarding({ admin = false }) {
 
 
                                     api.get("/interests", {
+                                        signal,
                                         headers: {
                                             Authorization: `Bearer ${token}`,
                                         },
                                     }),
                                 ]);
+                            if (!canUpdate()) return;
 
 
                             setObjetivos(objetivosResponse.data);
@@ -199,11 +213,13 @@ export default function Onboarding({ admin = false }) {
                                 const profileResponse = await api.get(
                                     `/recommendation-profiles/${userId}`,
                                     {
+                                        signal,
                                         headers: {
                                             Authorization: `Bearer ${token}`,
                                         },
                                     }
                                 );
+                                if (!canUpdate()) return;
 
                                 const dados = profileResponse.data;
 
@@ -297,9 +313,8 @@ export default function Onboarding({ admin = false }) {
 
                 }
 
-            } catch {
-
-
+            } catch (error) {
+                if (!canUpdate() || axios.isCancel(error)) return;
                 setErro(
                     "Não foi possível carregar as suas preferências"
                 );
@@ -307,55 +322,68 @@ export default function Onboarding({ admin = false }) {
         }
 
         carregarDados();
+        return () => controller.abort();
     }, [admin, modoEdicao, navigate]);
 
+    const ufSelecionada = profile.estado;
+    const consultaAtual = consultaCidades?.uf === ufSelecionada && consultaCidades.tentativa === tentativaCidades
+        ? consultaCidades
+        : null;
+    const cidades = consultaAtual?.cidades ?? [];
+    const erroCidades = consultaAtual?.erro;
+    const carregandoCidades = Boolean(ufSelecionada && !consultaAtual);
+
     useEffect(() => {
-        if (!profile.estado) {
-            setCidades([]);
-            setErroCidades(false);
-            return;
-        }
+        if (!ufSelecionada) return;
 
         const controller = new AbortController();
+        const { signal } = controller;
+        const contexto = { uf: ufSelecionada, tentativa: tentativaCidades };
+        const timeout = setTimeout(() => {
+            controller.abort();
+            setConsultaCidades({
+                ...contexto,
+                erro: "A consulta de municípios demorou demais. Tente novamente.",
+            });
+        }, IBGE_TIMEOUT_MS);
 
         async function carregarCidades() {
-            setCarregandoCidades(true);
-            setErroCidades(false);
-            setCidades([]);
-
             try {
-                const response = await fetch(
-                    `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${profile.estado}/municipios`,
-                    { signal: controller.signal }
+                const resposta = await fetch(
+                    `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${ufSelecionada}/municipios`,
+                    { signal }
                 );
+                if (!resposta.ok) throw new Error("Falha ao consultar municípios.");
 
-                if (!response.ok) {
-                    throw new Error("Falha ao consultar municípios.");
+                const dados = await resposta.json();
+                if (signal.aborted) return;
+                if (!Array.isArray(dados) || dados.length === 0 ||
+                    !dados.every(municipio => typeof municipio?.nome === "string" && municipio.nome.trim())) {
+                    throw new Error("Lista de municípios inválida.");
                 }
-
-                const dados = await response.json();
-
                 const municipios = dados
-                    .map((municipio) => municipio.nome)
+                    .map(municipio => municipio.nome)
                     .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
-                setCidades(municipios);
-            } catch (error) {
-                if (error.name !== "AbortError") {
-                    setErroCidades(true);
+                setConsultaCidades({ ...contexto, cidades: municipios });
+            } catch {
+                if (!signal.aborted) {
+                    setConsultaCidades({
+                        ...contexto,
+                        erro: "Não foi possível carregar as cidades. Tente novamente.",
+                    });
                 }
             } finally {
-                if (!controller.signal.aborted) {
-                    setCarregandoCidades(false);
-                }
+                clearTimeout(timeout);
             }
         }
 
         carregarCidades();
-
-        return () => controller.abort();
-    }, [profile.estado]);
-
+        return () => {
+            clearTimeout(timeout);
+            controller.abort();
+        };
+    }, [ufSelecionada, tentativaCidades]);
 
     function alternarObjetivo(id) {
         const selecionado = objetivosSelecionados.includes(id);
@@ -464,6 +492,9 @@ export default function Onboarding({ admin = false }) {
     }
 
     async function finalizarOnboarding(dados) {
+        const signal = lifetime.current;
+        const { generation } = sessionSnapshot();
+        const canUpdate = () => !signal.aborted && isCurrentSession(generation);
         try {
             setEnviando(true);
             setErro("");
@@ -478,7 +509,8 @@ export default function Onboarding({ admin = false }) {
 
 
             if (admin) {
-                await api.put("/admin/location-preferences", { cidade: dados.cidade, estado: dados.estado });
+                await api.put("/admin/location-preferences", { cidade: dados.cidade, estado: dados.estado }, { signal });
+                if (!canUpdate()) return;
                 clearLocationSearches();
                 navigate(retornoAdmin);
                 return;
@@ -488,16 +520,18 @@ export default function Onboarding({ admin = false }) {
                 `/recommendation-profiles/${userId}`,
                 dados,
                 {
+                    signal,
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 }
             );
 
-            navigate("/MyProfile");
+            if (canUpdate()) navigate(modoEdicao ? "/MyProfile" : "/recommendations");
 
 
         } catch (error) {
+            if (!canUpdate() || axios.isCancel(error)) return;
             const status = error.response?.status;
             const dados = error.response?.data;
 
@@ -526,7 +560,7 @@ export default function Onboarding({ admin = false }) {
         }
 
         finally {
-            setEnviando(false);
+            if (canUpdate()) setEnviando(false);
         }
     }
 
@@ -736,6 +770,7 @@ export default function Onboarding({ admin = false }) {
                         <button
                             type="button"
                             className="onboarding-continue"
+                            disabled={enviando}
                             onClick={() => {
 
                                 if (objetivosSelecionados.length === 0) {
@@ -788,6 +823,7 @@ export default function Onboarding({ admin = false }) {
                                             estado: e.target.value,
                                             cidade: ""
                                         }));
+                                        setTentativaCidades(atual => atual + 1);
                                         setErro("");
                                     }}
                                     disabled={enviando}
@@ -814,12 +850,7 @@ export default function Onboarding({ admin = false }) {
                                         }));
                                         setErro("");
                                     }}
-                                    disabled={
-                                        enviando ||
-                                        !profile.estado ||
-                                        carregandoCidades ||
-                                        erroCidades
-                                    }
+                                    disabled={enviando || cidades.length === 0}
                                 >
                                     <option value="">
                                         {carregandoCidades
@@ -837,20 +868,22 @@ export default function Onboarding({ admin = false }) {
                         </div>
 
                         {erroCidades && (
-                            <p className="onboarding-error">
-                                Não foi possível carregar as cidades.
-                                Tente selecionar o estado novamente.
-                            </p>
+                            <div>
+                                <p className="onboarding-error" role="alert">{erroCidades}</p>
+                                <button
+                                    type="button"
+                                    className="onboarding-continue"
+                                    onClick={() => setTentativaCidades(tentativaCidades + 1)}
+                                >
+                                    Tentar novamente
+                                </button>
+                            </div>
                         )}
 
                         <button
                             type="button"
                             className="onboarding-continue"
-                            disabled={
-                                enviando ||
-                                carregandoCidades ||
-                                erroCidades
-                            }
+                            disabled={enviando || cidades.length === 0}
                             onClick={() => {
                                 if (
                                     !profile.estado ||

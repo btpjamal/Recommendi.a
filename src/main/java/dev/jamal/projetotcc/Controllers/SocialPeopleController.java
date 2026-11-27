@@ -2,7 +2,6 @@ package dev.jamal.projetotcc.Controllers;
 
 import dev.jamal.projetotcc.DTO.Social.SocialPeoplePageDTO;
 import dev.jamal.projetotcc.Enum.SocialLocationScope;
-import dev.jamal.projetotcc.Repository.UserRepository;
 import dev.jamal.projetotcc.Service.Social.SocialPeopleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -16,7 +15,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/community/users")
 @RequiredArgsConstructor
 public class SocialPeopleController {
-    private final UserRepository users;
+
     private final SocialPeopleService people;
 
     @GetMapping("/page")
@@ -25,11 +24,9 @@ public class SocialPeopleController {
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "20") int limite,
             @RequestParam(defaultValue = "") String nome) {
-        if (auth == null || !auth.isAuthenticated()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-        var user = users.findByEmail(auth.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        Long userId = AuthenticatedUser.id(auth);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(people.listar(user.getId(), escopo, pagina, limite, nome));
+                .body(people.listar(userId, escopo, pagina, limite, nome));
     }
 
     @GetMapping

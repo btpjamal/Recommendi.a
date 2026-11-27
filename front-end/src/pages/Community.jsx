@@ -228,8 +228,7 @@ export default function Community() {
 
 
     async function logout() {
-        await revokeSession();
-        navigate("/login");
+        await revokeSession(() => navigate("/login"));
     }
 
     async function entrarComunidade(comunidade) {

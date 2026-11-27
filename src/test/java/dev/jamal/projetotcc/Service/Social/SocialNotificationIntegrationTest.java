@@ -140,6 +140,40 @@ class SocialNotificationIntegrationTest {
         var p=post(a,"Publicação");comment(b,p.id(),"Texto");participation.desativar(b);assertEquals(0,unread(a));participation.ativar(b);assertEquals(1,unread(a));
         participation.desativar(a);status(403,()->notifications.contar(a));participation.ativar(a);assertEquals(1,unread(a));
     }
+    @Test void revalidaIdadeNoLimiteEDepoisDeEscritaConcorrente() throws Exception {
+        var limite = LocalDate.now().minusYears(18);
+        jdbc.update("UPDATE users SET data_nascimento=? WHERE id=?", limite, a);
+        var publicacao = post(a, "Publicação");
+        comment(b, publicacao.id(), "Aviso");
+        assertEquals(1, unread(a));
+
+        var atualizou = new CountDownLatch(1);
+        var confirmar = new CountDownLatch(1);
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            var escrita = executor.submit(() -> new TransactionTemplate(transactions).executeWithoutResult(tx -> {
+                jdbc.update("UPDATE users SET data_nascimento=? WHERE id=?", limite.plusDays(1), a);
+                atualizou.countDown();
+                try {
+                    assertTrue(confirmar.await(10, TimeUnit.SECONDS));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException(e);
+                }
+            }));
+            assertTrue(atualizou.await(10, TimeUnit.SECONDS));
+            assertEquals(1, unread(a));
+            confirmar.countDown();
+            escrita.get(10, TimeUnit.SECONDS);
+            status(403, () -> notifications.contar(a));
+            status(403, () -> notifications.listar(a, null, 20));
+            jdbc.update("UPDATE users SET data_nascimento=? WHERE id=?", limite, a);
+            assertEquals(1, unread(a));
+        } finally {
+            confirmar.countDown();
+            executor.shutdownNow();
+        }
+    }
     @Test void saidaDaComunidadeOcultaAviso(){
         var p=post(a,"Publicação");comment(b,p.id(),"Texto");communities.sair(community,a);assertEquals(0,unread(a));communities.entrar(community,a);assertEquals(1,unread(a));
     }

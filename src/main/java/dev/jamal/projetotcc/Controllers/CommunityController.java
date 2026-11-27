@@ -1,8 +1,6 @@
 package dev.jamal.projetotcc.Controllers;
 
 import dev.jamal.projetotcc.DTO.Social.*;
-import dev.jamal.projetotcc.Entities.User;
-import dev.jamal.projetotcc.Repository.UserRepository;
 import dev.jamal.projetotcc.Service.Social.CommunityMessageService;
 import dev.jamal.projetotcc.Service.Social.CommunityService;
 import dev.jamal.projetotcc.Service.Social.SocialHubService;
@@ -25,7 +23,7 @@ public class CommunityController {
 
     private final SocialHubService socialHubService;
     private final SocialProfileService socialProfileService;
-    private final UserRepository userRepository;
+
     private final CommunityService communityService;
     private final CommunityMessageService communityMessageService;
     private final SocialLocationService locationService;
@@ -126,17 +124,7 @@ public class CommunityController {
             Authentication authentication
     ) {
 
-        String email = authentication.getName();
-
-        User user = userRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Usuário autenticado não encontrado"
-                        )
-                );
-
-        return user.getId();
+        return AuthenticatedUser.id(authentication);
     }
 
 

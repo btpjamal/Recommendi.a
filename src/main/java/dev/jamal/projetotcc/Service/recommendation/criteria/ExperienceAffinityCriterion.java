@@ -3,10 +3,9 @@ package dev.jamal.projetotcc.Service.recommendation.criteria;
 import dev.jamal.projetotcc.Entities.*;
 import dev.jamal.projetotcc.Enum.NivelExperiencia;
 import dev.jamal.projetotcc.Enum.UserHobbyStatus;
-import dev.jamal.projetotcc.Repository.HobbyInterestRepository;
-import dev.jamal.projetotcc.Repository.UserHobbyRepository;
 import dev.jamal.projetotcc.Service.recommendation.model.CriterionResult;
-import lombok.RequiredArgsConstructor;
+import dev.jamal.projetotcc.Service.recommendation.model.HobbyAssociation;
+import dev.jamal.projetotcc.Service.recommendation.model.RecommendationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -14,34 +13,22 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
 public class ExperienceAffinityCriterion implements RecommendationCriterion{
 
-    private final UserHobbyRepository userHobbyRepository;
-    private final HobbyInterestRepository hobbyInterestRepository;
-
     @Override
-    public CriterionResult avaliar(
-            Hobby hobby,
-            RecommendationProfile perfil,
-            List<UserInterest> interesses,
-            List<UserHobbyFeedback> feedbacks
-    ) {
-
-        Long userId = perfil.getUser().getId();
+    public CriterionResult avaliar(Hobby hobby, RecommendationContext contexto) {
 
         List<UserHobby> hobbiesDoUsuario =
-                userHobbyRepository.findByUser_Id(userId);
+                contexto.hobbiesDoUsuario();
 
         if (hobbiesDoUsuario.isEmpty()) {
             return CriterionResult.of(0, null);
         }
 
         Set<Long> interessesDoCandidato =
-                hobbyInterestRepository
-                        .findByHobbyId(hobby.getId())
+                contexto.interessesDoHobby(hobby.getId())
                         .stream()
-                        .map(hi -> hi.getInterest().getId())
+                        .map(HobbyAssociation::associationId)
                         .collect(Collectors.toSet());
 
         if (interessesDoCandidato.isEmpty()){
@@ -50,9 +37,6 @@ public class ExperienceAffinityCriterion implements RecommendationCriterion{
 
         double pontos = 0;
 
-        boolean possuiInteressado = false;
-        boolean possuiPausado = false;
-        boolean possuiPraticando = false;
         UserHobby hobbyMaisRelevante = null;
         double maiorContribuicao = 0;
 
@@ -63,18 +47,15 @@ public class ExperienceAffinityCriterion implements RecommendationCriterion{
                 continue;
             }
 
-            List<HobbyInterest> interessesDoHobbyConhecido =
-                    hobbyInterestRepository
-                            .findByHobbyId(
-                                    userHobby.getHobby().getId()
-                            );
+            List<HobbyAssociation> interessesDoHobbyConhecido =
+                    contexto.interessesDoHobby(userHobby.getHobby().getId());
 
             long quantidadeEmComum =
                     interessesDoHobbyConhecido
                             .stream()
                             .filter(hi ->
                                     interessesDoCandidato.contains(
-                                            hi.getInterest().getId()
+                                            hi.associationId()
                                     )
                             )
                             .count();
@@ -107,11 +88,6 @@ public class ExperienceAffinityCriterion implements RecommendationCriterion{
                 hobbyMaisRelevante = userHobby;
             }
 
-            switch (userHobby.getStatusAtual()) {
-                case INTERESSADO -> possuiInteressado = true;
-                case PAUSADO -> possuiPausado = true;
-                case PRATICANDO -> possuiPraticando = true;
-            }
         }
 
         pontos = Math.min(pontos, 8);
@@ -122,7 +98,7 @@ public class ExperienceAffinityCriterion implements RecommendationCriterion{
 
 
 
-        String nomeHobby = hobbyMaisRelevante.getHobby().getNome();
+        String nomeHobby = contexto.nomesDosHobbiesDoUsuario().get(hobbyMaisRelevante.getHobby().getId());
 
         String justificativa = switch (hobbyMaisRelevante.getStatusAtual()) {
 

@@ -1,5 +1,6 @@
 package dev.jamal.projetotcc.Service.Social;
 
+import dev.jamal.projetotcc.DTO.Social.SocialProfileEditDTO;
 import dev.jamal.projetotcc.Entities.*;
 import dev.jamal.projetotcc.Enum.*;
 import dev.jamal.projetotcc.Repository.*;
@@ -22,6 +23,9 @@ class SocialProfilePrivacyTest {
     SocialProfileService participation;
     UserRepository users;
     SocialProfile a, b;
+    SocialProfilePhotoRepository photos;
+    Map<Long, byte[]> fotografias;
+    Map<Long, byte[]> miniaturas;
 
     @BeforeEach void setup() {
         profiles = mock(SocialProfileRepository.class);
@@ -36,11 +40,89 @@ class SocialProfilePrivacyTest {
         participation = mock(SocialProfileService.class);
         users = mock(UserRepository.class);
         when(users.lockTokenVersion(anyLong())).thenReturn(Optional.of(0L));
-        editor = new SocialProfileEditorService(profiles, users, participation, hub, blocks);
+        photos = mock(SocialProfilePhotoRepository.class);
+
+        fotografias = new HashMap<>();
+        miniaturas = new HashMap<>();
+
+        editor = new SocialProfileEditorService(
+                profiles, users, participation, hub, blocks, photos
+        );
         org.springframework.test.util.ReflectionTestUtils.setField(editor, "entityManager", mock(jakarta.persistence.EntityManager.class));
         a = profile(1L); b = profile(2L);
+
+        when(photos.salvarOuAtualizar(
+                anyLong(),
+                any(byte[].class),
+                any(byte[].class),
+                anyString(),
+                any()
+        )).thenAnswer(call -> {
+
+            Long profileId = call.getArgument(0);
+
+            byte[] imagem = call.getArgument(1);
+            byte[] miniatura = call.getArgument(2);
+
+            fotografias.put(profileId, imagem);
+            miniaturas.put(profileId, miniatura);
+
+            return 1;
+        });
+        when(photos.findThumbnail(anyLong()))
+                .thenAnswer(call -> {
+
+                    Long profileId = call.getArgument(0);
+
+                    return Optional.ofNullable(
+                            miniaturas.get(profileId)
+                    );
+                });
+        when(photos.findPhotoData(anyLong()))
+                .thenAnswer(call -> {
+
+                    Long profileId = call.getArgument(0);
+
+                    byte[] imagem = fotografias.get(profileId);
+
+                    if (imagem == null) {
+                        return Optional.empty();
+                    }
+
+                    var data = mock(
+                            SocialProfilePhotoRepository.PhotoData.class
+                    );
+
+                    when(data.getFoto()).thenReturn(imagem);
+
+                    when(data.getContentType())
+                            .thenReturn("image/jpeg");
+
+                    return Optional.of(data);
+                });
+        when(photos.remover(anyLong()))
+                .thenAnswer(call -> {
+
+                    Long profileId = call.getArgument(0);
+
+                    miniaturas.remove(profileId);
+
+                    return fotografias.remove(profileId) != null
+                            ? 1 : 0;
+                });
         when(profiles.findByUser_Id(1L)).thenReturn(Optional.of(a));
         when(profiles.findByUser_Id(2L)).thenReturn(Optional.of(b));
+        when(profiles.findPublicSummary(anyLong())).thenAnswer(call -> {
+            SocialProfile p = call.getArgument(0).equals(1L) ? a : b;
+            return p.isEnabled() ? Optional.of(new SocialProfileSummary(p.getUser().getId(), p.getUser().getNome(),
+                    p.getUser().getDataNascimento(), p.isCompartilharRegiao(), p.getBiografia(), p.getFotoVisibilidade(),
+                    p.getBiografiaVisibilidade(), p.getInteressesVisibilidade(), p.getHobbiesVisibilidade(),
+                    fotografias.containsKey(p.getId()))) : Optional.empty();
+        });
+        when(profiles.existsByUser_Id(1L)).thenReturn(true);
+        when(profiles.findEditableByUserId(1L)).thenReturn(Optional.of(new SocialProfileEditDTO(
+                a.getBiografia(), a.getFotoVisibilidade(), a.getBiografiaVisibilidade(),
+                a.getInteressesVisibilidade(), a.getHobbiesVisibilidade())));
         when(participation.elegivel(anyLong())).thenReturn(true);
         when(participation.participa(anyLong())).thenReturn(true);
         var interest = new Interest(); interest.setNome("Astronomia");
@@ -49,13 +131,31 @@ class SocialProfilePrivacyTest {
         var hobby = new Hobby(); hobby.setId(10L); hobby.setNome("Xadrez");
         var uh = new UserHobby(); uh.setHobby(hobby); uh.setStatusAtual(UserHobbyStatus.PRATICANDO);
         when(hobbies.findByUser_Id(anyLong())).thenReturn(List.of(uh));
+
+        editor.salvarFoto(a.getUser().getId(), gerarFoto());
+        editor.salvarFoto(b.getUser().getId(), gerarFoto());
+
+        clearInvocations(photos, profiles);
     }
 
     private SocialProfile profile(Long id) {
-        var user = new User(); user.setId(id); user.setNome("Pessoa " + id);
-        user.setDataNascimento(java.time.LocalDate.of(1990, 1, 1));
-        var p = new SocialProfile(); p.setUser(user); p.setEnabled(true);
-        p.setBiografia("Minha biografia"); p.setFoto(new byte[]{1,2,3}); return p;
+
+        var user = new User();
+
+        user.setId(id);
+        user.setNome("Pessoa " + id);
+        user.setDataNascimento(
+                java.time.LocalDate.of(1990, 1, 1)
+        );
+
+        var p = new SocialProfile();
+
+        p.setId(id);
+        p.setUser(user);
+        p.setEnabled(true);
+        p.setBiografia("Minha biografia");
+
+        return p;
     }
     @Test void perfilEFotoExigemMaioridadeDoTitular() {
         b.getUser().setDataNascimento(java.time.LocalDate.now().minusYears(17));
@@ -87,7 +187,10 @@ class SocialProfilePrivacyTest {
         privateFields(b,SocialVisibility.SOMENTE_EU);
         var dto=hub.buscarPerfilPublicoPara(2L,2L);
         assertTrue(dto.possuiFoto()); assertNotNull(dto.biografia()); assertFalse(dto.praticando().isEmpty());
-        assertArrayEquals(b.getFoto(),editor.foto(2L,2L));
+        assertArrayEquals(
+                fotografias.get(b.getId()),
+                editor.foto(2L, 2L)
+        );
     }
     @Test void contatosPrecisamDeAceite() {
         privateFields(b,SocialVisibility.CONTATOS);
@@ -120,8 +223,10 @@ class SocialProfilePrivacyTest {
         var bytes=new ByteArrayOutputStream(); ImageIO.write(original,"jpg",bytes);
         var result=editor.prepararFoto(new MockMultipartFile("file","foto.jpg","image/jpeg",bytes.toByteArray()));
         var decoded=ImageIO.read(new ByteArrayInputStream(result));
-        assertEquals(256,decoded.getWidth()); assertTrue(decoded.getHeight()<=256);
-        assertEquals((byte)0x89,result[0]);
+        assertEquals(768,decoded.getWidth()); assertEquals(512,decoded.getHeight());
+        assertEquals((byte) 0xFF, result[0]);
+        assertEquals((byte) 0xD8, result[1]);
+        assertEquals((byte) 0xFF, result[2]);
     }
     @Test void rejeitaArquivoFalsoEVazioEOversize() {
         for(byte[] content:List.of(new byte[0],"<svg></svg>".getBytes(),new byte[1024*1024+1]))
@@ -130,7 +235,11 @@ class SocialProfilePrivacyTest {
     @Test void atualizaBiografiaEPreferenciasApenasDoTitular() {
         var dto = new dev.jamal.projetotcc.DTO.Social.SocialProfileEditDTO("  Minha nova bio  ",
                 SocialVisibility.SOMENTE_EU,SocialVisibility.CONTATOS,SocialVisibility.CONTATOS,SocialVisibility.SOMENTE_EU);
+        when(profiles.updateTextSettings(eq(1L), eq("Minha nova bio"), eq(dto.fotoVisibilidade()),
+                eq(dto.biografiaVisibilidade()), eq(dto.interessesVisibilidade()),
+                eq(dto.hobbiesVisibilidade()), any())).thenReturn(1);
         var saved=editor.salvar(1L,dto);
+        verify(profiles, never()).findByUser_Id(anyLong());
         assertEquals("Minha nova bio",saved.biografia()); assertEquals(SocialVisibility.SOMENTE_EU,saved.fotoVisibilidade());
         assertEquals("Minha biografia",b.getBiografia()); assertEquals(SocialVisibility.PARTICIPANTES,b.getFotoVisibilidade());
     }
@@ -142,11 +251,243 @@ class SocialProfilePrivacyTest {
         assertThrows(ResponseStatusException.class,()->editor.salvar(1L,missing));
         assertEquals("Minha biografia",a.getBiografia());
     }
-    @Test void trocaERemoveFotoSemAlterarBiografiaNemVisibilidade() {
-        privateFields(a,SocialVisibility.SOMENTE_EU);
-        editor.salvarFoto(1L,new byte[]{9}); assertArrayEquals(new byte[]{9},editor.foto(1L,1L));
-        editor.removerFoto(1L); assertNull(a.getFoto());
-        assertEquals("Minha biografia",a.getBiografia()); assertEquals(SocialVisibility.SOMENTE_EU,a.getFotoVisibilidade());
-        assertNotNull(b.getFoto());
+    @Test
+    void trocaERemoveFotoSemAlterarBiografiaNemVisibilidade() {
+
+        privateFields(a, SocialVisibility.SOMENTE_EU);
+
+        byte[] novaFoto = gerarFoto();
+
+        editor.salvarFoto(1L, novaFoto);
+
+        assertArrayEquals(
+                novaFoto,
+                editor.foto(1L, 1L)
+        );
+
+        editor.removerFoto(1L);
+
+        assertFalse(
+                fotografias.containsKey(a.getId())
+        );
+
+        assertThrows(
+                ResponseStatusException.class,
+                () -> editor.foto(1L, 1L)
+        );
+
+        assertEquals(
+                "Minha biografia",
+                a.getBiografia()
+        );
+
+        assertEquals(
+                SocialVisibility.SOMENTE_EU,
+                a.getFotoVisibilidade()
+        );
+
+        assertNotNull(
+                fotografias.get(b.getId())
+        );
+    }
+
+    private byte[] gerarFoto() {
+
+        try {
+            var imagem = new BufferedImage(
+                    100, 100,
+                    BufferedImage.TYPE_INT_RGB
+            );
+
+            var output = new ByteArrayOutputStream();
+
+            ImageIO.write(imagem, "jpeg", output);
+
+            return output.toByteArray();
+
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Test
+    void fotoPrivadaNaoConsultaDadosBinarios() {
+
+        privateFields(b, SocialVisibility.SOMENTE_EU);
+
+        assertThrows(
+                ResponseStatusException.class,
+                () -> editor.foto(1L, 2L)
+        );
+
+        verify(photos, never())
+                .findPhotoData(anyLong());
+    }
+
+    @Test
+    void bloqueioImpedeConsultaDosDadosBinarios() {
+
+        when(blocks.bloqueados(1L, 2L))
+                .thenReturn(true);
+
+        assertThrows(
+                ResponseStatusException.class,
+                () -> editor.foto(1L, 2L)
+        );
+
+        verify(photos, never())
+                .findPhotoData(anyLong());
+    }
+
+    @Test
+    void participantePodeVisualizarMiniatura() {
+
+        assertArrayEquals(
+                miniaturas.get(b.getId()),
+                editor.miniatura(1L, 2L)
+        );
+
+        verify(photos).findThumbnail(b.getId());
+
+        verify(photos, never())
+                .findPhotoData(anyLong());
+    }
+
+    @Test
+    void miniaturaPrivadaNaoConsultaDadosBinarios() {
+
+        privateFields(b, SocialVisibility.SOMENTE_EU);
+
+        assertEquals(404, assertThrows(
+                ResponseStatusException.class,
+                () -> editor.miniatura(1L, 2L)
+        ).getStatusCode().value());
+
+        verificarMiniaturaCondicionalNegada(404);
+
+        verify(photos, never())
+                .findThumbnail(anyLong());
+
+        verify(photos, never())
+                .findPhotoData(anyLong());
+    }
+
+    @Test
+    void titularPodeVisualizarMiniaturaPrivada() {
+
+        privateFields(b, SocialVisibility.SOMENTE_EU);
+
+        assertArrayEquals(
+                miniaturas.get(b.getId()),
+                editor.miniatura(2L, 2L)
+        );
+    }
+
+    @Test
+    void bloqueioImpedeAcessoAMiniatura() {
+
+        when(blocks.bloqueados(1L, 2L))
+                .thenReturn(true);
+
+        assertEquals(404, assertThrows(
+                ResponseStatusException.class,
+                () -> editor.miniatura(1L, 2L)
+        ).getStatusCode().value());
+
+        verificarMiniaturaCondicionalNegada(404);
+
+        verify(photos, never())
+                .findThumbnail(anyLong());
+    }
+
+    @Test
+    void miniaturaExigeContatoAceito() {
+
+        privateFields(b, SocialVisibility.CONTATOS);
+
+        var contato = new SocialContact();
+
+        contato.setStatus(SocialContactStatus.PENDENTE);
+
+        when(contacts.findByLowUserIdAndHighUserId(1L, 2L))
+                .thenReturn(Optional.of(contato));
+
+        assertThrows(
+                ResponseStatusException.class,
+                () -> editor.miniatura(1L, 2L)
+        );
+
+        contato.setStatus(SocialContactStatus.ACEITA);
+
+        assertArrayEquals(
+                miniaturas.get(b.getId()),
+                editor.miniatura(1L, 2L)
+        );
+
+        contato.setStatus(SocialContactStatus.ENCERRADA);
+        verificarMiniaturaCondicionalNegada(404);
+
+        assertThrows(
+                ResponseStatusException.class,
+                () -> editor.miniatura(1L, 2L)
+        );
+    }
+
+    @Test
+    void miniaturaExigeMaioridadeDoTitular() {
+
+        b.getUser().setDataNascimento(
+                java.time.LocalDate.now().minusYears(17)
+        );
+
+        assertEquals(404, assertThrows(
+                ResponseStatusException.class,
+                () -> editor.miniatura(1L, 2L)
+        ).getStatusCode().value());
+
+        verificarMiniaturaCondicionalNegada(404);
+
+        verify(photos, never())
+                .findThumbnail(anyLong());
+    }
+
+    @Test
+    void miniaturaExigeParticipacaoSocial() {
+
+        when(participation.participa(1L))
+                .thenReturn(false);
+
+        assertEquals(403, assertThrows(
+                ResponseStatusException.class,
+                () -> editor.miniatura(1L, 2L)
+        ).getStatusCode().value());
+
+        verificarMiniaturaCondicionalNegada(403);
+
+        verify(photos, never())
+                .findThumbnail(anyLong());
+    }
+
+    @Test
+    void perfilDesativadoNaoDisponibilizaMiniatura() {
+
+        b.setEnabled(false);
+
+        assertEquals(404, assertThrows(
+                ResponseStatusException.class,
+                () -> editor.miniatura(1L, 2L)
+        ).getStatusCode().value());
+
+        verificarMiniaturaCondicionalNegada(404);
+
+        verify(photos, never())
+                .findThumbnail(anyLong());
+    }
+    private void verificarMiniaturaCondicionalNegada(int status) {
+        assertEquals(status, assertThrows(ResponseStatusException.class,
+                () -> editor.miniaturaCondicional(1L, 2L, "a".repeat(64)))
+                .getStatusCode().value());
+        verify(photos, never()).findThumbnailConditional(anyLong(), anyString());
+        verify(photos, never()).findPhotoData(anyLong());
     }
 }

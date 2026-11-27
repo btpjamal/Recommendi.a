@@ -10,6 +10,7 @@ const NotificationContext = createContext(null);
 
 export function SocialNotificationsProvider({ children }) {
     const location = useLocation();
+    const pollRoute = location.pathname === "/recommendations" ? location.pathname : location.key;
     const [count, setCount] = useState(0);
     const [available, setAvailable] = useState(false);
     const [error, setError] = useState("");
@@ -40,7 +41,7 @@ export function SocialNotificationsProvider({ children }) {
         window.addEventListener("social-participation-changed", refresh);
         poll();
         return () => { clearTimeout(timer); controller.abort(); document.removeEventListener("visibilitychange", visible); window.removeEventListener("social-participation-changed", refresh); };
-    }, [location.key, revision, refresh]);
+    }, [pollRoute, revision, refresh]);
     const value = useMemo(() => ({ count, available, error, refresh }), [count, available, error, refresh]);
     return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 }

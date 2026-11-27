@@ -41,9 +41,7 @@ public class SocialProfile {
 
     @Column(length = 500)
     private String biografia;
-    @JsonIgnore
-    @Column(name = "foto", columnDefinition = "bytea")
-    private byte[] foto;
+
     @Enumerated(EnumType.STRING) @Column(nullable = false)
     private dev.jamal.projetotcc.Enum.SocialVisibility fotoVisibilidade = dev.jamal.projetotcc.Enum.SocialVisibility.PARTICIPANTES;
     @Enumerated(EnumType.STRING) @Column(nullable = false)

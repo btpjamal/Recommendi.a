@@ -2,20 +2,15 @@ package dev.jamal.projetotcc.Service.recommendation.criteria;
 
 import dev.jamal.projetotcc.Entities.*;
 import dev.jamal.projetotcc.Service.recommendation.model.CriterionResult;
+import dev.jamal.projetotcc.Service.recommendation.model.RecommendationContext;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 public class TimeCriterion implements RecommendationCriterion {
 
     @Override
-    public CriterionResult avaliar(
-            Hobby h,
-            RecommendationProfile p,
-            List<UserInterest> i,
-            List<UserHobbyFeedback> f
-    ) {
+    public CriterionResult avaliar(Hobby h, RecommendationContext contexto) {
+        RecommendationProfile p = contexto.perfil();
         if (h.getTempoNecessario() == null
                 || p.getTempoDisponivelSemanal() == null) {
             return CriterionResult.of(0, null);

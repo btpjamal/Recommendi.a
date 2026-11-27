@@ -9,7 +9,6 @@ import dev.jamal.projetotcc.Entities.UserHobby;
 import dev.jamal.projetotcc.Exception.BusinessException;
 import dev.jamal.projetotcc.Repository.HobbyRepository;
 import dev.jamal.projetotcc.Repository.PersonalizedPlanRepository;
-import dev.jamal.projetotcc.Repository.UserHobbyRepository;
 import dev.jamal.projetotcc.Service.AI.AIContextHashService;
 import dev.jamal.projetotcc.Service.AI.AIContextService;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +22,6 @@ public class RecommendationDetailsService {
     private final RecommendationService recommendationService;
 
     private final HobbyRepository hobbyRepository;
-    private final UserHobbyRepository userHobbyRepository;
     private final PersonalizedPlanRepository personalizedPlanRepository;
 
     private final AIContextService aiContextService;
@@ -40,16 +38,10 @@ public class RecommendationDetailsService {
                         new BusinessException("Hobby não encontrado ou indisponível para recomendação.")
                 );
 
-        HobbyRecommendationDTO recomendacao =
-                recommendationService.calcularRecomendacao(
-                        userId,
-                        hobbyId
-                );
-
-        UserHobby userHobby =
-                userHobbyRepository
-                        .findByUser_IdAndHobby_Id(userId, hobbyId)
-                        .orElse(null);
+        RecommendationService.Avaliacao avaliacao = recommendationService.avaliarHobbyElegivel(
+                userId, hobby, recommendationService.buscarPerfil(userId));
+        HobbyRecommendationDTO recomendacao = avaliacao.recomendacao();
+        UserHobby userHobby = avaliacao.vinculo();
 
         String nivelAtual =
                 userHobby != null
@@ -62,7 +54,7 @@ public class RecommendationDetailsService {
                         : null;
 
         RecommendationDetailsDTO.PlanoResumoDTO plano =
-                construirResumoPlano(userId, hobbyId);
+                construirResumoPlano(userId, hobby, avaliacao);
 
         return new RecommendationDetailsDTO(
                 hobby.getId(),
@@ -83,12 +75,13 @@ public class RecommendationDetailsService {
 
     private RecommendationDetailsDTO.PlanoResumoDTO construirResumoPlano(
             Long userId,
-            Long hobbyId
+            Hobby hobby,
+            RecommendationService.Avaliacao avaliacao
     ) {
 
         PersonalizedPlan plano =
                 personalizedPlanRepository
-                        .findByUser_IdAndHobby_Id(userId, hobbyId)
+                        .findByUser_IdAndHobby_Id(userId, hobby.getId())
                         .orElse(null);
 
         if (plano == null) {
@@ -101,10 +94,7 @@ public class RecommendationDetailsService {
         }
 
         AIUserContext contextoAtual =
-                aiContextService.construirContexto(
-                        userId,
-                        hobbyId
-                );
+                aiContextService.construirContexto(userId, hobby, avaliacao);
 
         String contextHashAtual =
                 aiContextHashService.calcular(contextoAtual);

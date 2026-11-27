@@ -23,18 +23,15 @@ public class SocialProfileService {
 
     public boolean elegivel(Long userId) {
 
-        User user = buscarUsuario(userId);
-
-        return maiorDeIdade(user);
+        var usuario = userRepository.findBirthDateById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        return maiorDeIdade(usuario.getDataNascimento());
     }
 
 
     public boolean participa(Long userId) {
 
-        return socialProfileRepository
-                .findByUser_Id(userId)
-                .map(SocialProfile::isEnabled)
-                .orElse(false);
+        return socialProfileRepository.existsByUser_IdAndEnabledTrue(userId);
     }
 
 
@@ -102,12 +99,16 @@ public class SocialProfileService {
 
     static boolean maiorDeIdade(User user) {
 
-        if (user.getDataNascimento() == null) {
+        return maiorDeIdade(user.getDataNascimento());
+    }
+
+    static boolean maiorDeIdade(LocalDate nascimento) {
+        if (nascimento == null) {
             return false;
         }
 
         int idade = Period.between(
-                user.getDataNascimento(),
+                nascimento,
                 LocalDate.now()
         ).getYears();
 

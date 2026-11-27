@@ -1,5 +1,5 @@
 import RecommendationBanner from "./RecommendationBanner";
-import { session } from "../../auth/session.js";
+import { isCurrentSession, session, sessionSnapshot } from "../../auth/session.js";
 import { useEffect, useRef , useState } from "react";
 import { api } from "../../api/api";
 import { useNavigate } from "react-router";
@@ -29,6 +29,7 @@ export default function DiscoverTab() {
     const modalRef = useRef(null);
 
     async function registrarFeedback(hobbyId, tipo) {
+        const { generation } = sessionSnapshot();
         try {
             const userId = session.getItem("userId");
             const token = session.getItem("token");
@@ -43,6 +44,7 @@ export default function DiscoverTab() {
                 }
             );
 
+            if (!isCurrentSession(generation)) return;
             setRecommendations((atuais) =>
                 atuais.filter((recommendation) => recommendation.hobbyId !== hobbyId)
             );
@@ -53,6 +55,10 @@ export default function DiscoverTab() {
     }
 
     useEffect(() => {
+        const { generation } = sessionSnapshot();
+        const controller = new AbortController();
+        const ativo = () => !controller.signal.aborted && isCurrentSession(generation);
+
         async function carregarRecomendacoes() {
             try {
                 setLoading(true);
@@ -61,37 +67,23 @@ export default function DiscoverTab() {
                 const userId = session.getItem("userId");
 
                 if (!token || !userId) {
-                    session.clear();
                     navigate("/login");
                     return;
                 }
 
-                const response = await api.get(`/recommendations/${userId}`, {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    },
-                );
-
-
-                setRecommendations(response.data);
+                const response = await api.get(`/recommendations/${userId}`, { signal: controller.signal });
+                if (ativo()) setRecommendations(response.data);
             } catch (error) {
-
-
-                if (error.response?.status === 401 || error.response?.status === 403) {
-                    session.clear();
-                    navigate("/login");
-                    return;
-                }
-
+                if (!ativo() || error.code === "ERR_CANCELED") return;
                 if (error.response?.status === 404) { navigate("/profile"); return; }
                 setErro("Não foi possível carregar as recomendações");
             } finally {
-                setLoading(false);
+                if (ativo()) setLoading(false);
             }
         }
 
         carregarRecomendacoes();
+        return () => controller.abort();
     }, [navigate]);
 
     useEffect(() => {

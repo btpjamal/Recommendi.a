@@ -1,7 +1,6 @@
 package dev.jamal.projetotcc.Controllers;
 
 import dev.jamal.projetotcc.DTO.Social.*;
-import dev.jamal.projetotcc.Repository.UserRepository;
 import dev.jamal.projetotcc.Service.Social.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,9 +15,9 @@ import java.util.Map;
 public class CommunityPostController {
     private final CommunityPostService service;
     private final CommunityPostImageService imageService;
-    private final UserRepository users;
+
     private Long ator(Authentication auth) {
-        return users.findByEmail(auth.getName()).orElseThrow(()->new ResponseStatusException(HttpStatus.UNAUTHORIZED)).getId();
+        return AuthenticatedUser.id(auth);
     }
     @GetMapping
     public ResponseEntity<CommunityPostPageDTO> listar(@PathVariable Long communityId,Authentication auth,

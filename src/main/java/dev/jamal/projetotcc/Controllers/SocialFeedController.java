@@ -1,7 +1,6 @@
 package dev.jamal.projetotcc.Controllers;
 
 import dev.jamal.projetotcc.DTO.Social.*;
-import dev.jamal.projetotcc.Repository.UserRepository;
 import dev.jamal.projetotcc.Service.Social.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -17,12 +16,10 @@ import java.util.Map;
 public class SocialFeedController {
     private final SocialFeedService feed;
     private final SocialFollowService follows;
-    private final UserRepository users;
+
 
     private Long ator(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-        return users.findByEmail(auth.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED)).getId();
+        return AuthenticatedUser.id(auth);
     }
 
     @GetMapping("/feed")

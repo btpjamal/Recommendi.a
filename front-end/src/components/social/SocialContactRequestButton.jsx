@@ -1,35 +1,58 @@
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import axios from "axios";
+import { isCurrentSession, sessionSnapshot, subscribeSessionToken } from "../../auth/session.js";
 import { api } from "../../api/api";
 import "./SocialContacts.css";
 
-export default function SocialContactRequestButton({ usuario, onSolicitada, onBloqueado }) {
+function getSessionGeneration() {
+    return sessionSnapshot().generation;
+}
+
+export default function SocialContactRequestButton(props) {
+    const generation = useSyncExternalStore(subscribeSessionToken, getSessionGeneration);
+    return <ContactActions key={JSON.stringify([generation, props.usuario.userId])} {...props}
+        generation={generation} />;
+}
+
+function ContactActions({ usuario, onSolicitada, onBloqueado, generation }) {
     const [aberto, setAberto] = useState(false);
     const [apresentacao, setApresentacao] = useState("");
     const [processando, setProcessando] = useState(false);
     const [erro, setErro] = useState("");
     const ocupado = useRef(false);
+    const lifetime = useRef(null);
+
+    useLayoutEffect(() => {
+        const controller = new AbortController();
+        lifetime.current = controller.signal;
+        return () => controller.abort();
+    }, []);
 
     async function executar(bloquear, event) {
         event?.preventDefault();
-        if (ocupado.current) return;
+        const signal = lifetime.current;
+        const active = () => signal && !signal.aborted && isCurrentSession(generation);
+        if (ocupado.current || !active()) return;
         ocupado.current = true;
         setProcessando(true);
         setErro("");
         try {
             if (bloquear) {
-                await api.post(`/community/contacts/blocks/${usuario.userId}`);
-                onBloqueado();
+                await api.post(`/community/contacts/blocks/${usuario.userId}`, undefined, { signal });
+                if (active()) onBloqueado();
             } else {
                 const resposta = await api.post("/community/contacts/requests", {
                     destinatarioId: usuario.userId, apresentacao: apresentacao.trim()
-                });
-                onSolicitada(resposta.data);
+                }, { signal });
+                if (active()) onSolicitada(resposta.data);
             }
         } catch (error) {
-            setErro(error.response?.data?.error || error.response?.data?.message || "Não foi possível concluir a operação.");
+            if (active() && !axios.isCancel(error)) setErro(error.response?.data?.error || error.response?.data?.message || "Não foi possível concluir a operação.");
         } finally {
-            ocupado.current = false;
-            setProcessando(false);
+            if (active()) {
+                ocupado.current = false;
+                setProcessando(false);
+            }
         }
     }
 
